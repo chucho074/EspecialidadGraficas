@@ -320,9 +320,47 @@ GraphicsAPI::createIndexBuffer(const Vector<char>& inData) {
 
   HRESULT hr = m_pDevice->CreateBuffer(&tmpDesc, &initData, &outData->m_pBuffer);
   if (FAILED(hr)) {
-    MessageBox(nullptr, L"Failed to create Vertex buffer", L"Error", MB_OK);
+    MessageBox(nullptr, L"Failed to create Index buffer", L"Error", MB_OK);
     return nullptr;
   }
 
   return outData;
+}
+
+UPtr<GraphicsBuffers> 
+GraphicsAPI::createConstantBuffer(const Vector<char>& inData) {
+  UPtr<GraphicsBuffers> outData = make_unique<GraphicsBuffers>();
+
+  D3D11_BUFFER_DESC tmpDesc;
+  memset(&tmpDesc, 0, sizeof(tmpDesc));
+  tmpDesc.Usage = D3D11_USAGE_DEFAULT;
+  tmpDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+  tmpDesc.CPUAccessFlags = 0;
+  tmpDesc.MiscFlags = 0;
+
+  tmpDesc.ByteWidth = inData.size();
+
+  D3D11_SUBRESOURCE_DATA initData;
+  initData.pSysMem = inData.data();
+  initData.SysMemPitch = 0;
+  initData.SysMemSlicePitch = 0;
+
+  HRESULT hr = m_pDevice->CreateBuffer(&tmpDesc, &initData, &outData->m_pBuffer);
+  if (FAILED(hr)) {
+    MessageBox(nullptr, L"Failed to create Constant buffer", L"Error", MB_OK);
+    return nullptr;
+  }
+
+  return outData;
+}
+
+void 
+GraphicsAPI::writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer, 
+                           const Vector<char>& inData) {
+  /*D3D11_MAPPED_SUBRESOURCE mappedResource;
+  m_pDeviceContext->Map(inBuffer->m_pBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+  memcpy(mappedResource.pData, inData.data(), inData.size());
+  m_pDeviceContext->Unmap(inBuffer->m_pBuffer, 0);*/
+
+  m_pDeviceContext->UpdateSubresource(inBuffer->m_pBuffer, 0, nullptr, inData.data(), 0, 0);
 }

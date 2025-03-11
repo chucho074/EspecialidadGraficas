@@ -21,6 +21,13 @@ struct SimpleVertex {
   Vector3 color;
 };
 
+struct MatrixCollection {
+  Matrix4 world;
+  Matrix4 view;
+  Matrix4 projection;
+};
+
+
 
 SDL_Window* g_pWindow = nullptr;
 UPtr<GraphicsAPI> g_pGPAI;
@@ -29,6 +36,11 @@ UPtr<PixelShader> g_pPixelShader;
 ID3D11InputLayout* g_pInputLayout = nullptr;
 UPtr<GraphicsBuffers> g_pVertexBuffer;
 UPtr<GraphicsBuffers> g_pIndexBuffer;
+UPtr<GraphicsBuffers> g_pCB_WVP;
+
+MatrixCollection g_WVP;
+
+Camera g_Camera;
 
  /* This function runs once at startup. */
 SDL_AppResult
@@ -157,6 +169,22 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
+  g_Camera.setLookAt(Vector3(10, 10, -5), Vector3(0,0,0), Vector3(0,1,0));
+  g_Camera.setPerspective(3.1415926353f/4.f, {640.f, 480.f}, 0.1f, 100.f);
+
+  
+  g_WVP.world.identity();
+  g_WVP.view = g_Camera.getViewMatrix();
+  g_WVP.projection = g_Camera.getProjectionMatrix();
+
+  g_WVP.world.transpose();
+  g_WVP.view.transpose();
+  g_WVP.projection.transpose();
+
+  Vector<char> matrix_data;
+  matrix_data.resize(sizeof(g_WVP));
+  memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+  g_pCB_WVP = g_pGPAI->createConstantBuffer(matrix_data);
 
   return SDL_APP_CONTINUE;
 }
@@ -219,6 +247,21 @@ SDL_AppIterate(void* appstate) {
   g_pGPAI->m_pDeviceContext->IASetIndexBuffer(g_pIndexBuffer->m_pBuffer,
                                               DXGI_FORMAT_R16_UINT,
                                               0);
+
+  static float rotationAngle = 0.f;
+  rotationAngle += 0.001f;
+  g_WVP.world.rotateY(rotationAngle);
+
+  g_WVP.world.transpose();
+
+  Vector<char> matrix_data;
+  matrix_data.resize(sizeof(g_WVP));
+  memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+  g_pGPAI->writeToBuffer(g_pCB_WVP, matrix_data);
+
+  g_pGPAI->m_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCB_WVP->m_pBuffer);
+
+
   //g_pGPAI->m_pDeviceContext->Draw(3, 0);
   g_pGPAI->m_pDeviceContext->DrawIndexed(36, 0, 0);
   g_pGPAI->m_pSwapChain->Present(0, 0);

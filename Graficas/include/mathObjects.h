@@ -11,6 +11,8 @@
  */
 #pragma once
 #include "stdHeaders.h"
+#include "Vectors.h"
+#include "Matrix4.h"
 
 const float PI = static_cast<float>(4.0f * std::atan(1.0f));
 
@@ -23,396 +25,6 @@ clamp(float inVal, float inMin, float inMax) {
   return inVal < inMin ? inMin : inVal > inMax ? inMax : inVal;
 }
 
-
-struct Matrix3 {
-  //Vector3 row0, row1, row2;
-  float m[3][3];
-};
-
-struct Matrix4 {
-  float m[4][4];
-
-  Matrix4
-  operator*(const Matrix4& inMat) const {
-    Matrix4 outData;
-    for(int32 i = 0; i < 4; i++) {
-      
-      outData.m[i][0] = m[i][0] * inMat.m[0][0] + m[i][1] * inMat.m[1][0] +
-                        m[i][2] * inMat.m[2][0] + m[i][3] * inMat.m[3][0];
-      outData.m[i][1] = m[i][0] * inMat.m[0][1] + m[i][1] * inMat.m[1][1] +
-                        m[i][2] * inMat.m[2][1] + m[i][3] * inMat.m[3][1];
-      outData.m[i][2] = m[i][0] * inMat.m[0][2] + m[i][1] * inMat.m[1][2] +
-                        m[i][2] * inMat.m[2][2] + m[i][3] * inMat.m[3][2];
-      outData.m[i][3] = m[i][0] * inMat.m[0][3] + m[i][1] * inMat.m[1][3] +
-                        m[i][2] * inMat.m[2][3] + m[i][3] * inMat.m[3][3];
-    }
-    return outData;
-  }
-
-  void 
-  transpose() {}
-};
-
-static const Matrix4 
-IDENTITY = {1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1};
-
-struct Vector3 {
-  float x;
-  float y;
-  float z;
-
-  Vector3() = default;
-  Vector3(float inX, float inY = 0.f, float inZ = 0.f)
-    : x(inX),
-    y(inY),
-    z(inZ) { }
-
-  Vector3 
-  operator+(const Vector3& inVec) const {
-    return {x + inVec.x, y + inVec.y, z + inVec.z};
-  }
-  
-  Vector3 
-  operator-(const Vector3& inVec) const {
-    return {x - inVec.x, y - inVec.y, z - inVec.z};
-  }
-
-  Vector3 
-  operator*(const Vector3& inVec) const {
-    return {x * inVec.x, y * inVec.y, z * inVec.z};
-  }
-  
-  Vector3
-  operator*(const Matrix3& inMatrix) const {
-    return { x * inMatrix.m[0][0] + y * inMatrix.m[0][1] + z * inMatrix.m[0][2],
-             x * inMatrix.m[1][0] + y * inMatrix.m[1][1] + z * inMatrix.m[1][2],
-             x * inMatrix.m[2][0] + y * inMatrix.m[2][1] + z * inMatrix.m[2][2] };
-  }
-
-  void
-  operator*=(const Matrix4& inMatrix) {
-    x = x * inMatrix.m[0][0] + y * inMatrix.m[0][1] + z * inMatrix.m[0][2] + 1 * inMatrix.m[0][3];
-    y = x * inMatrix.m[1][0] + y * inMatrix.m[1][1] + z * inMatrix.m[1][2] + 1 * inMatrix.m[1][3];  // Si es posicion es 1, si es direccion es 0 en la W
-    z = x * inMatrix.m[2][0] + y * inMatrix.m[2][1] + z * inMatrix.m[2][2] + 1 * inMatrix.m[2][3];
-  }
-
-  void
-  operator+=(const Vector3& inVec) {
-    x += inVec.x;
-    y += inVec.y;
-    z += inVec.z;
-  }
-
-  void
-  operator*=(const Vector3& inVec) {
-    x *= inVec.x;
-    y *= inVec.y;
-    z *= inVec.z;
-  }
-
-  Vector3 
-  operator/(const Vector3& inVec) const {
-    return {x / inVec.x, y / inVec.y, z / inVec.z};
-  }
-
-  Vector3
-  operator+(float inVal) const {
-    return {x + inVal, y + inVal, z + inVal};
-  }
-
-  Vector3
-  operator-(float inVal) const {
-    return {x - inVal, y - inVal, z - inVal};
-  }
-  
-  Vector3
-  operator*(float inVal) const {
-    return {x * inVal, y * inVal, z * inVal};
-  }
-
-  Vector3
-  operator/(float inVal) const {
-    return {x / inVal, y / inVal, z / inVal};
-  }
-
-  Vector3
-  operator-() const {
-    return {-x, -y, -z};
-  }
-
-
-  Vector3 
-  cross(const Vector3& inVect) const {
-    return {y * inVect.z - z * inVect.y, 
-            z * inVect.x - x * inVect.z, 
-            x * inVect.y - y * inVect.x};
-  }
-
-  Vector3
-  operator^(const Vector3& inVect) const { //For easy usage of cross prod
-    return cross(inVect);
-  }
-
-  
-  bool
-  operator!=(const Vector3& inVect) const {
-    return (x != inVect.x) || (y != inVect.y) || (z != inVect.z);
-  }
-  
-  bool
-  operator!=(const float& inVal) const {
-    return (x != inVal) || (y != inVal) || (z != inVal);
-  }
-
-  bool
-  operator==(const Vector3& inVect) const {
-    return (x == inVect.x) || (y == inVect.y);
-  }
-
-  bool
-  operator>(const float& inVal) const {
-    return (x >inVal) || (y > inVal) || (z > inVal);
-  }
-
-  bool
-  operator<(const float& inVal) const {
-    return (x < inVal) || (y < inVal) || (z > inVal);
-  }
-
-  float 
-  size() const {
-    return sqrtf(x * x + y * y + z * z);
-  }
-
-  Vector3
-  normalize() const {
-    float invLenght = 1.f / size();
-    return { x * invLenght,
-             y * invLenght,
-             z * invLenght};
-  }
-
-  float 
-  dot(const Vector3& inVect) const {
-    return x * inVect.x + y * inVect.y + z * inVect.z;
-  }
-
-  float
-  operator|(const Vector3& inVect) const { //For easy usage of dot prof
-    return dot(inVect);
-  }
-
-};
-
-struct Vector2 {
-  float x;
-  float y;
-
-  Vector2 
-  operator+(const Vector2& inVec) const {
-    return {x + inVec.x, y + inVec.y};
-  }
-  
-  Vector2 
-  operator-(const Vector2& inVec) const {
-    return {x - inVec.x, y - inVec.y};
-  }
-
-  Vector2 
-  operator*(const Vector2& inVec) const {
-    return {x * inVec.x, y * inVec.y};
-  }
-  
-  Vector2 
-  operator/(const Vector2& inVec) const {
-    return {x / inVec.x, y / inVec.y};
-  }
-
-  Vector2
-  operator+(float inVal) const {
-    return {x + inVal, y + inVal};
-  }
-
-  Vector2
-  operator-(float inVal) const {
-    return {x - inVal, y - inVal};
-  }
-  
-  Vector2
-  operator*(float inVal) const {
-    return {x * inVal, y * inVal};
-  }
-
-  Vector2
-  operator/(float inVal) const {
-    return {x / inVal, y / inVal};
-  }
-
-  Vector2
-  operator-() const {
-    return {-x, -y};
-  }
-
-  Vector2 
-  cross(const Vector2& inVect) const {
-    return {(x * inVect.y) - (y * inVect.x)};
-  }
-
-  Vector2
-  operator^(const Vector2& inVect) const { //For easy usage of cross prod
-    return cross(inVect);
-  }
-
-  
-  bool
-  operator!=(const Vector2& inVect) const {
-    return (x != inVect.x) || (y != inVect.y);
-  }
-  
-  bool
-  operator==(const Vector2& inVect) const {
-    return (x == inVect.x) || (y == inVect.y);
-  }
-  
-  bool
-  operator>(const float& inVal) const {
-    return (x >inVal) || (y > inVal);
-  }
-
-  bool
-  operator<(const float& inVal) const {
-    return (x < inVal) || (y < inVal);
-  }
-
-  float 
-  size() const {
-    return sqrtf(x * x + y * y);
-  }
-
-  Vector2
-  normalize() const {
-    float invLenght = 1.f / size();
-    return { x * invLenght,
-             y * invLenght};
-  }
-
-  float 
-  dot(const Vector2& inVect) const {
-    return x * inVect.x + y * inVect.y;
-  }
-
-  float
-  operator|(const Vector2& inVect) const { //For easy usage of dot prof
-    return dot(inVect);
-  }
-
-};
-
-struct Vector2i {
-  int32 x;
-  int32 y;
-
-  Vector2i 
-  operator+(const Vector2i& inVec) const {
-    return {x + inVec.x, y + inVec.y};
-  }
-  
-  Vector2i 
-  operator-(const Vector2i& inVec) const {
-    return {x - inVec.x, y - inVec.y};
-  }
-
-  Vector2i 
-  operator*(const Vector2i& inVec) const {
-    return {x * inVec.x, y * inVec.y};
-  }
-  
-  Vector2i 
-  operator/(const Vector2i& inVec) const {
-    return {x / inVec.x, y / inVec.y};
-  }
-
-  Vector2i
-  operator+(int32 inVal) const {
-    return {x + inVal, y + inVal};
-  }
-
-  Vector2i
-  operator-(int32 inVal) const {
-    return {x - inVal, y - inVal};
-  }
-  
-  Vector2i
-  operator*(int32 inVal) const {
-    return {x * inVal, y * inVal};
-  }
-
-  Vector2i
-  operator/(int32 inVal) const {
-    return {x / inVal, y / inVal};
-  }
-
-  Vector2i
-  operator-() const {
-    return {-x, -y};
-  }
-
-  Vector2i 
-  cross(const Vector2i& inVect) const {
-    return {(x * inVect.y) - (y * inVect.x)};
-  }
-
-  Vector2i
-  operator^(const Vector2i& inVect) const { //For easy usage of cross prod
-    return cross(inVect);
-  }
-
-  bool
-  operator!=(const Vector2i& inVect) const {
-    return (x != inVect.x) || (y != inVect.y);
-  }
-  
-  bool
-  operator==(const Vector2i& inVect) const {
-    return (x == inVect.x) || (y == inVect.y);
-  }
-
-  bool
-  operator>(const float& inVal) const {
-    return (x >inVal) || (y > inVal);
-  }
-
-  bool
-  operator<(const float& inVal) const {
-    return (x < inVal) || (y < inVal);
-  }
-
-  float 
-  size() const {
-    return sqrtf(x * x + y * y);
-  }
-
-  Vector2i
-  normalize() const {
-    float invLenght = 1.f / size();
-    return { (int32)(x * invLenght),
-             (int32)(y * invLenght)};
-  }
-
-  float 
-  dot(const Vector2i& inVect) const {
-    return x * inVect.x + y * inVect.y;
-  }
-
-  float
-  operator|(const Vector2i& inVect) const { //For easy usage of dot prof
-    return dot(inVect);
-  }
-
-};
 
 struct Color {
   uint8 r;
@@ -589,9 +201,9 @@ struct Mesh {
     //Get the rotation in radians
     Vector3 tmpRotRad = inRotDeg * DEG2RAD;
     Vector<Triangle> outData;
-    Matrix4 tmpTransform = IDENTITY;
-    Matrix4 tmpRotX = IDENTITY, tmpRotY = IDENTITY, tmpRotZ = IDENTITY;
-    Matrix4 tmpFinalRot = IDENTITY;
+    Matrix4 tmpTransform = Matrix4::IDENTITY;
+    Matrix4 tmpRotX = Matrix4::IDENTITY, tmpRotY = Matrix4::IDENTITY, tmpRotZ = Matrix4::IDENTITY;
+    Matrix4 tmpFinalRot = Matrix4::IDENTITY;
 
     float cosX = cos(tmpRotRad.x), sinX = sin(tmpRotRad.x);
     float cosY = cos(tmpRotRad.y), sinY = sin(tmpRotRad.y);
@@ -644,3 +256,48 @@ struct Mesh {
   }
 };
 
+struct Camera {
+
+  void
+  setLookAt(const Vector3& inEyePos, 
+            const Vector3& inTargetPos, 
+            const Vector3& inUpDir) {
+    position = inEyePos;
+    target = inTargetPos;
+    up = inUpDir;
+    viewMatrix.lookAt(position, target, up);
+  }
+
+  void
+  setPerspective(float inHalfFOV, Vector2 inScreenSize, float inMinZ, float inMaxZ) {
+    fov = inHalfFOV;
+    screenSize = inScreenSize;
+    minZ = inMinZ;
+    maxZ = inMaxZ;
+    projectionMatrix.Perspective(fov, screenSize, minZ, maxZ);
+  }
+
+  Matrix4
+  getViewMatrix() const {
+    return viewMatrix;
+  }
+
+  Matrix4
+  getProjectionMatrix() const {
+    return projectionMatrix;
+  }
+
+ private:
+  Vector3 position;
+  Vector3 target;
+  Vector3 up;
+
+  float fov;
+  Vector2 screenSize;
+  float minZ;
+  float maxZ;
+
+  Matrix4 viewMatrix;
+  Matrix4 projectionMatrix;
+
+};

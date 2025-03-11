@@ -47,7 +47,15 @@ class GraphicsAPI {
 
   UPtr<GraphicsBuffers> 
   createIndexBuffer(const Vector<char>& inData);
+
+  UPtr<GraphicsBuffers> 
+  createConstantBuffer(const Vector<char>& inData);
   
+  void
+  writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer, 
+                const Vector<char>& inData);
+
+
  private:
   /*void
   createDevice(Vector<IDXGIAdapter*> inAdapters);*/

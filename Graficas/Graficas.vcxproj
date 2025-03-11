@@ -146,16 +146,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\GraphicsAPI.cpp" />
+    <ClCompile Include="src\Matrix4.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\Source.cpp" />
+    <ClCompile Include="src\Vectors.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Buffers.h" />
     <ClInclude Include="include\GraphicsAPI.h" />
     <ClInclude Include="include\mathObjects.h" />
+    <ClInclude Include="include\Matrix4.h" />
     <ClInclude Include="include\PrerequisiteGraficas.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\stdHeaders.h" />
+    <ClInclude Include="include\Vectors.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
