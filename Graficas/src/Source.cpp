@@ -14,12 +14,9 @@
 
 #include <iostream>
 
+#include "PrerequisiteGraficas.h"
 #include "GraphicsAPI.h"
-
-struct SimpleVertex {
-  Vector3 position;
-  Vector3 color;
-};
+#include "Model.h"
 
 struct MatrixCollection {
   Matrix4 world;
@@ -27,10 +24,10 @@ struct MatrixCollection {
   Matrix4 projection;
 };
 
-
+Vector2 g_windowSize = {640 , 480};
 
 SDL_Window* g_pWindow = nullptr;
-UPtr<GraphicsAPI> g_pGPAI;
+UPtr<GraphicsAPI> g_pGAPI;
 UPtr<VertexShader> g_pVertexShader;
 UPtr<PixelShader> g_pPixelShader;
 ID3D11InputLayout* g_pInputLayout = nullptr;
@@ -41,6 +38,9 @@ UPtr<GraphicsBuffers> g_pCB_WVP;
 MatrixCollection g_WVP;
 
 Camera g_Camera;
+
+Model g_myModel;
+
 
  /* This function runs once at startup. */
 SDL_AppResult
@@ -54,27 +54,27 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   //Create sdl window
   g_pWindow = SDL_CreateWindow("Graficas Basicas", 
-                               640, 
-                               480, 
+                               g_windowSize.x, 
+                               g_windowSize.y, 
                                SDL_WINDOW_RESIZABLE);
 
   auto pHandle = SDL_GetPointerProperty(SDL_GetWindowProperties(g_pWindow), 
                                         SDL_PROP_WINDOW_WIN32_HWND_POINTER,
                                         nullptr);
   if(pHandle) {
-    g_pGPAI = make_unique<GraphicsAPI>(pHandle);
+    g_pGAPI = make_unique<GraphicsAPI>(pHandle);
 
-    if (!g_pGPAI) {
+    if (!g_pGAPI) {
       return SDL_APP_FAILURE;
     }
 
-    g_pVertexShader = g_pGPAI->createVertexShaderFromFile("Shaders/basicVertexShader.hlsl", 
+    g_pVertexShader = g_pGAPI->createVertexShaderFromFile("Shaders/basicVertexShader.hlsl", 
                                                           "vertex_main");
     if(!g_pVertexShader) {
       return SDL_APP_FAILURE;
     }
 
-    g_pPixelShader = g_pGPAI->createPixelShaderFromFile("Shaders/basicVertexShader.hlsl", 
+    g_pPixelShader = g_pGAPI->createPixelShaderFromFile("Shaders/basicVertexShader.hlsl", 
                                                         "pixel_main");
     if (!g_pPixelShader) {
       return SDL_APP_FAILURE;
@@ -86,7 +86,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
   };
 
-  g_pInputLayout = g_pGPAI->createInputLayout(inputElementDescs, g_pVertexShader);
+  g_pInputLayout = g_pGAPI->createInputLayout(inputElementDescs, g_pVertexShader);
   if (!g_pInputLayout) {
     return SDL_APP_FAILURE;
   }
@@ -148,7 +148,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   Vector<char> tmpVertexData;
   tmpVertexData.resize(sizeof(vertex));
   memcpy(tmpVertexData.data(), vertex, sizeof(vertex));
-  g_pVertexBuffer = g_pGPAI->createVertexBuffer(tmpVertexData);
+  g_pVertexBuffer = g_pGAPI->createVertexBuffer(tmpVertexData);
 
   if(!g_pVertexBuffer) {
     return SDL_APP_FAILURE;
@@ -157,9 +157,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   Vector<char> tmpIndexData;
   tmpIndexData.resize(sizeof(indices));
   memcpy(tmpIndexData.data(), indices, sizeof(indices));
-  g_pIndexBuffer = g_pGPAI->createIndexBuffer(tmpIndexData);
+  g_pIndexBuffer = g_pGAPI->createIndexBuffer(tmpIndexData);
 
-  if (!g_pVertexBuffer) {
+  if (!g_pIndexBuffer) {
     return SDL_APP_FAILURE;
   }
 
@@ -170,7 +170,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   }
 
   g_Camera.setLookAt(Vector3(10, 10, -5), Vector3(0,0,0), Vector3(0,1,0));
-  g_Camera.setPerspective(3.1415926353f/4.f, {640.f, 480.f}, 0.1f, 100.f);
+  g_Camera.setPerspective(3.1415926353f/4.f, g_windowSize, 0.1f, 100.f);
 
   
   g_WVP.world.identity();
@@ -184,7 +184,11 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
-  g_pCB_WVP = g_pGPAI->createConstantBuffer(matrix_data);
+  g_pCB_WVP = g_pGAPI->createConstantBuffer(matrix_data);
+
+  g_myModel.loadFromFile("Models/rex.obj", g_pGAPI);
+
+
 
   return SDL_APP_CONTINUE;
 }
@@ -210,43 +214,45 @@ SDL_AppIterate(void* appstate) {
   //IA > Input Assambly
   //OM > Output Merger
   D3D11_VIEWPORT vp;
-  vp.Width = 640;
-  vp.Height = 480;
+  vp.Width = g_windowSize.x;
+  vp.Height = g_windowSize.y;
   vp.MinDepth = 0.f;
   vp.MaxDepth = 1.f;
   vp.TopLeftX = 0; 
   vp.TopLeftY = 0;
 
-  g_pGPAI->m_pDeviceContext->OMSetRenderTargets(1, 
-                                                &g_pGPAI->m_pBackBufferRTV, 
-                                                g_pGPAI->m_pBackBufferDSV);
+  g_pGAPI->m_pDeviceContext->OMSetRenderTargets(1, 
+                                                &g_pGAPI->m_pBackBufferRTV, 
+                                                g_pGAPI->m_pBackBufferDSV);
   
   float clearColor[] = { 0.5f, 0.5f, 1.0f, 1.0f };
-  g_pGPAI->m_pDeviceContext->ClearRenderTargetView(g_pGPAI->m_pBackBufferRTV, 
+  g_pGAPI->m_pDeviceContext->ClearRenderTargetView(g_pGAPI->m_pBackBufferRTV, 
                                                    clearColor);
-  g_pGPAI->m_pDeviceContext->ClearDepthStencilView(g_pGPAI->m_pBackBufferDSV, 
+  g_pGAPI->m_pDeviceContext->ClearDepthStencilView(g_pGAPI->m_pBackBufferDSV, 
                                                    D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 
                                                    1.f, 
                                                    0);
 
-  g_pGPAI->m_pDeviceContext->VSSetShader(g_pVertexShader->m_pVertexShader, nullptr, 0);
-  g_pGPAI->m_pDeviceContext->PSSetShader(g_pPixelShader->m_pPixelShader, nullptr, 0);
+  g_pGAPI->m_pDeviceContext->VSSetShader(g_pVertexShader->m_pVertexShader, nullptr, 0);
+  g_pGAPI->m_pDeviceContext->PSSetShader(g_pPixelShader->m_pPixelShader, nullptr, 0);
 
-  g_pGPAI->m_pDeviceContext->IASetInputLayout(g_pInputLayout);
-  g_pGPAI->m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  g_pGAPI->m_pDeviceContext->IASetInputLayout(g_pInputLayout);
+  //g_pGAPI->m_pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  g_pGAPI->m_pDeviceContext->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(g_myModel.m_meshes[0].topology));
 
   UINT stride = sizeof(SimpleVertex);
   UINT offset = 0;
-  g_pGPAI->m_pDeviceContext->IASetVertexBuffers(0, 
+  g_pGAPI->m_pDeviceContext->IASetVertexBuffers(0, 
                                                 1,
                                                 &g_pVertexBuffer->m_pBuffer,
                                                 &stride,
                                                 &offset);
 
 
-  g_pGPAI->m_pDeviceContext->IASetIndexBuffer(g_pIndexBuffer->m_pBuffer,
+  g_pGAPI->m_pDeviceContext->IASetIndexBuffer(g_pIndexBuffer->m_pBuffer,
                                               DXGI_FORMAT_R16_UINT,
                                               0);
+  
 
   static float rotationAngle = 0.f;
   rotationAngle += 0.001f;
@@ -257,14 +263,22 @@ SDL_AppIterate(void* appstate) {
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
-  g_pGPAI->writeToBuffer(g_pCB_WVP, matrix_data);
+  g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  g_pGPAI->m_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCB_WVP->m_pBuffer);
+  g_pGAPI->m_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCB_WVP->m_pBuffer);
 
 
-  //g_pGPAI->m_pDeviceContext->Draw(3, 0);
-  g_pGPAI->m_pDeviceContext->DrawIndexed(36, 0, 0);
-  g_pGPAI->m_pSwapChain->Present(0, 0);
+  //g_pGAPI->m_pDeviceContext->Draw(3, 0);
+  //g_pGAPI->m_pDeviceContext->DrawIndexed(36, 0, 0);
+
+
+  g_myModel.setBuffers(g_pGAPI);
+
+  g_pGAPI->m_pDeviceContext->DrawIndexed(g_myModel.m_meshes[0].numIndices,
+                                         g_myModel.m_meshes[0].baseIndex, 
+                                         g_myModel.m_meshes[0].baseVertex);
+
+  g_pGAPI->m_pSwapChain->Present(0, 0);
 
   return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
