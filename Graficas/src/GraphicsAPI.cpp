@@ -146,7 +146,8 @@ GraphicsAPI::createTexture(int32 inWidth,
                            D3D11_USAGE inUsage, 
                            uint32 inBindFlags, 
                            uint32 inCpuAccessFlags, 
-                           uint32 inMipLevels) {
+                           uint32 inMipLevels, 
+                           ID3D11ShaderResourceView** inSRV) {
   ID3D11Texture2D* pOutTexture = nullptr;
 
   D3D11_TEXTURE2D_DESC desc;
@@ -167,8 +168,18 @@ GraphicsAPI::createTexture(int32 inWidth,
   if(FAILED(m_pDevice->CreateTexture2D(&desc, nullptr, &pOutTexture))) {
     return nullptr;
   }
+  if(inSRV != nullptr) {
+    if (inBindFlags & D3D11_BIND_SHADER_RESOURCE) {
+      D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC();
+      srvDesc.Format = inFormat;
+      srvDesc.Texture2D.MipLevels =  inMipLevels == 1 ? 1 : -1;
+      srvDesc.Texture2D.MostDetailedMip = 0;
+      srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 
+      m_pDevice->CreateShaderResourceView(pOutTexture, &srvDesc, inSRV);
+    }
 
+  }
   return pOutTexture;
 }
 
@@ -362,5 +373,5 @@ GraphicsAPI::writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer,
   memcpy(mappedResource.pData, inData.data(), inData.size());
   m_pDeviceContext->Unmap(inBuffer->m_pBuffer, 0);*/
 
-  m_pDeviceContext->UpdateSubresource(inBuffer->m_pBuffer, 0, nullptr, inData.data(), 0, 0);
+  m_pDeviceContext->UpdateSubresource1(inBuffer->m_pBuffer, 0, nullptr, inData.data(), 0, 0, 0);
 }

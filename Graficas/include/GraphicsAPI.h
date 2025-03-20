@@ -27,7 +27,8 @@ class GraphicsAPI {
                 D3D11_USAGE inUsage = D3D11_USAGE_DEFAULT,
                 uint32 inBindFlags = D3D11_BIND_SHADER_RESOURCE,
                 uint32 inCpuAccessFlags = 0,
-                uint32 inMipLevels = 1);
+                uint32 inMipLevels = 1, 
+                ID3D11ShaderResourceView** inSRV = nullptr);
 
    
 

@@ -17,6 +17,7 @@
 #include "PrerequisiteGraficas.h"
 #include "GraphicsAPI.h"
 #include "Model.h"
+#include "Texture.h"
 
 struct MatrixCollection {
   Matrix4 world;
@@ -24,7 +25,8 @@ struct MatrixCollection {
   Matrix4 projection;
 };
 
-Vector2 g_windowSize = {640 , 480};
+//Vector2 g_windowSize = {640 , 480};
+Vector2 g_windowSize = {1280 , 720};
 
 SDL_Window* g_pWindow = nullptr;
 UPtr<GraphicsAPI> g_pGAPI;
@@ -35,12 +37,20 @@ UPtr<GraphicsBuffers> g_pVertexBuffer;
 UPtr<GraphicsBuffers> g_pIndexBuffer;
 UPtr<GraphicsBuffers> g_pCB_WVP;
 
+ID3D11RasterizerState1* g_pRS_Default = nullptr;
+ID3D11RasterizerState1* g_pRS_Wireframe = nullptr;
+ID3D11RasterizerState1* g_pRS_Wireframe_NoCull = nullptr;
+
+ID3D11SamplerState* g_pSS_Point = nullptr;
+ID3D11SamplerState* g_pSS_Linear = nullptr;
+ID3D11SamplerState* g_pSS_Anisotropic = nullptr;
+
 MatrixCollection g_WVP;
 
 Camera g_Camera;
 
 Model g_myModel;
-
+Texture g_myTexture;
 
  /* This function runs once at startup. */
 SDL_AppResult
@@ -83,7 +93,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   Vector<D3D11_INPUT_ELEMENT_DESC> inputElementDescs = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
   };
 
   g_pInputLayout = g_pGAPI->createInputLayout(inputElementDescs, g_pVertexShader);
@@ -169,9 +180,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  g_Camera.setLookAt(Vector3(10, 10, -5), Vector3(0,0,0), Vector3(0,1,0));
+  g_Camera.setLookAt(Vector3(5, -5, -5), Vector3(0,0,0), Vector3(0,1,0));
   g_Camera.setPerspective(3.1415926353f/4.f, g_windowSize, 0.1f, 100.f);
-
+  
   
   g_WVP.world.identity();
   g_WVP.view = g_Camera.getViewMatrix();
@@ -181,6 +192,28 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.view.transpose();
   g_WVP.projection.transpose();
 
+  CD3D11_RASTERIZER_DESC1 descRD(D3D11_DEFAULT);
+  g_pGAPI->m_pDevice->CreateRasterizerState1(&descRD, &g_pRS_Default);
+
+  descRD.FillMode = D3D11_FILL_WIREFRAME;
+  descRD.CullMode = D3D11_CULL_NONE;
+  g_pGAPI->m_pDevice->CreateRasterizerState1(&descRD, &g_pRS_Wireframe_NoCull);
+
+  CD3D11_SAMPLER_DESC descSS(D3D11_DEFAULT);
+  descSS.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+  descSS.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+  descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+  g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Point);
+
+
+  descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+  g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Linear);
+
+
+  descSS.Filter = D3D11_FILTER_ANISOTROPIC;
+  descSS.MaxAnisotropy = 16; //Esto es lo que cambiamos en las opciones de los juegos
+  g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Anisotropic);
+
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
@@ -188,7 +221,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   g_myModel.loadFromFile("Models/rex.obj", g_pGAPI);
 
-
+  Image srcImage;
+  srcImage.decode("Models/Rex_C.bmp");
+  g_myTexture.createFromImage(srcImage, g_pGAPI);
 
   return SDL_APP_CONTINUE;
 }
@@ -253,9 +288,10 @@ SDL_AppIterate(void* appstate) {
                                               DXGI_FORMAT_R16_UINT,
                                               0);
   
+  
 
   static float rotationAngle = 0.f;
-  rotationAngle += 0.001f;
+  //rotationAngle += 0.001f;
   g_WVP.world.rotateY(rotationAngle);
 
   g_WVP.world.transpose();
@@ -273,6 +309,12 @@ SDL_AppIterate(void* appstate) {
 
 
   g_myModel.setBuffers(g_pGAPI);
+
+  g_pGAPI->m_pDeviceContext->PSSetShaderResources(0, 1, &g_myTexture.m_pSRV);
+
+  g_pGAPI->m_pDeviceContext->PSSetSamplers(0, 1, &g_pSS_Point);
+  g_pGAPI->m_pDeviceContext->PSSetSamplers(0, 1, &g_pSS_Linear);
+  g_pGAPI->m_pDeviceContext->PSSetSamplers(0, 1, &g_pSS_Anisotropic);
 
   g_pGAPI->m_pDeviceContext->DrawIndexed(g_myModel.m_meshes[0].numIndices,
                                          g_myModel.m_meshes[0].baseIndex, 

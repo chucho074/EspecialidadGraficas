@@ -30,6 +30,12 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   Vector<SimpleVertex> vertices;
   Vector<uint16> indices;
 
+  struct float2 {float u; float v;};
+  Vector<Vector3> temp_pos;
+  Vector<float2> temp_tc;
+
+
+  int32 vt_index = 0;
   for(const auto& line : lines) {
     Vector<String> tokens = split(line, ' ');
     if (tokens.empty()) {
@@ -37,20 +43,28 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
     }
     
     if (tokens[0] == "v") {
-      SimpleVertex vertex;
-      vertex.position.x = std::stof(tokens[1]);
-      vertex.position.y = std::stof(tokens[2]);
-      vertex.position.z = std::stof(tokens[3]);
-      vertex.color = Vector3( rand() / float(RAND_MAX), 
-                              rand() / float(RAND_MAX), 
-                              rand() / float(RAND_MAX));
-      vertices.push_back(vertex);
+      Vector3 pos;
+      pos.x = std::stof(tokens[1]);
+      pos.y = std::stof(tokens[2]);
+      pos.z = std::stof(tokens[3]);
+      
+      temp_pos.push_back(pos);
+    }
+
+    else if (tokens[0] == "vt") {
+      float2 uv;
+      uv.u = std::stof(tokens[1]);
+      uv.v = std::stof(tokens[2]);
+      temp_tc.push_back(uv);
     }
 
     else if (tokens[0] == "f") {
+      Vector<uint16> faceIndex;
       assert(tokens.size() == 4);
       for (size_t i = 1; i < tokens.size(); ++i) {
-        uint16 index = std::stoi(tokens[i]) - 1;
+        Vector<String> faceIndex = split(tokens[i], '/');
+        
+        uint16 index = std::stoi(faceIndex[i]) - 1;
         indices.push_back(index);
       }
     }
@@ -103,5 +117,6 @@ Model::setBuffers(const UPtr<GraphicsAPI>& inGAPI) {
   inGAPI->m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer->m_pBuffer,
                                               DXGI_FORMAT_R16_UINT,
                                               0);
+
 }
 

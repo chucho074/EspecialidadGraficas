@@ -19,6 +19,7 @@ class GraphicsAPI;
 struct SimpleVertex {
   Vector3 position;
   Vector3 color;
+  float u, v;
 };
 
 class Model
