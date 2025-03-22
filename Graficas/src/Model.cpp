@@ -11,6 +11,26 @@
 #include "Model.h"
 #include "GraphicsAPI.h"
 
+struct FaceVertex {
+  int32 vertex_index = -1;
+  int32 uv_index = -1;
+
+  bool 
+  operator==(const FaceVertex& vertex) const {
+    return vertex_index == vertex.vertex_index && uv_index == vertex.uv_index;
+  }
+};
+
+namespace std {
+  template<>
+  struct hash<FaceVertex> {
+    size_t operator()(const FaceVertex& vertex) const {
+      return hash<int32>()(vertex.vertex_index)
+             ^ hash<int32>()(vertex.uv_index);
+    }
+  };
+}
+
 bool 
 Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   
@@ -30,9 +50,10 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   Vector<SimpleVertex> vertices;
   Vector<uint16> indices;
 
-  struct float2 {float u; float v;};
+
   Vector<Vector3> temp_pos;
-  Vector<float2> temp_tc;
+  Vector<Vector2> temp_tc;
+  UMap<FaceVertex, uint16> uniqueVertices;
 
 
   int32 vt_index = 0;
@@ -52,21 +73,44 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
     }
 
     else if (tokens[0] == "vt") {
-      float2 uv;
-      uv.u = std::stof(tokens[1]);
-      uv.v = std::stof(tokens[2]);
+      Vector2 uv;
+      uv.x = std::stof(tokens[1]);
+      uv.y = std::stof(tokens[2]);
       temp_tc.push_back(uv);
     }
 
     else if (tokens[0] == "f") {
       Vector<uint16> faceIndex;
+
       assert(tokens.size() == 4);
       for (size_t i = 1; i < tokens.size(); ++i) {
-        Vector<String> faceIndex = split(tokens[i], '/');
+        Vector<String> fi = split(tokens[i], '/');
         
-        uint16 index = std::stoi(faceIndex[i]) - 1;
-        indices.push_back(index);
+        FaceVertex fv;
+
+        fv.vertex_index = std::stoi(fi[0]) - 1;
+        fv.uv_index = std::stoi(fi[1]) - 1;
+
+        
+
+        if (uniqueVertices.find(fv) == uniqueVertices.end()) {
+          uniqueVertices[fv] = static_cast<uint16>(vertices.size());
+
+          SimpleVertex mvertex;
+          mvertex.position = temp_pos[fv.vertex_index];
+          mvertex.color = Vector3(1.f, 1.f, 1.f);
+          mvertex.u = temp_tc[fv.uv_index].x;
+          mvertex.v = 1.0 - temp_tc[fv.uv_index].y;
+
+          vertices.push_back(mvertex);
+        }
+
+        faceIndex.push_back(uniqueVertices[fv]);
       }
+
+      indices.push_back(faceIndex[0]);
+      indices.push_back(faceIndex[1]);
+      indices.push_back(faceIndex[2]);
     }
   }
 

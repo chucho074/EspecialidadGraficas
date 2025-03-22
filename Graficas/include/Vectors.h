@@ -38,6 +38,16 @@ struct Vector3 {
     return {x * inVec.x, y * inVec.y, z * inVec.z};
   }
   
+  bool
+  operator==(const Vector3& inVec) const {
+    return x == inVec.x && y == inVec.y && z == inVec.z;
+  }
+
+  bool
+  operator!=(const Vector3& inVec) const {
+    return !(*this == inVec);
+  }
+
   Vector3
   operator*(const Matrix3& inMatrix) const;
 
@@ -100,21 +110,10 @@ struct Vector3 {
   operator^(const Vector3& inVect) const { //For easy usage of cross prod
     return cross(inVect);
   }
-
-  
-  bool
-  operator!=(const Vector3& inVect) const {
-    return (x != inVect.x) || (y != inVect.y) || (z != inVect.z);
-  }
   
   bool
   operator!=(const float& inVal) const {
     return (x != inVal) || (y != inVal) || (z != inVal);
-  }
-
-  bool
-  operator==(const Vector3& inVect) const {
-    return (x == inVect.x) || (y == inVect.y);
   }
 
   bool

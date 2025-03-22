@@ -174,6 +174,16 @@ template<class Key,
   class Compare = std::less<Key>,
   class Alloc = std::allocator<Pair<const Key, T>>>
 using Map = std::map<Key, T, Compare, Alloc>;
+/**
+ * @brief      Unordered Maps.
+ * @tparam     Key
+ * @tparam     T
+ * @tparam     Compare
+ * @tparam     Alloc
+ */
+template<class Key,
+         class T>
+using UMap = std::unordered_map<Key, T>;
 
 /**
  * @brief      Shared Pointers.
