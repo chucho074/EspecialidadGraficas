@@ -1,4 +1,5 @@
 Texture2D txColor : register(t0);
+Texture2D txReflect : register(t1);
 
 SamplerState samPoint : register(s0);
 SamplerState samLinear : register(s1);
@@ -38,5 +39,16 @@ PixelInput vertex_main(VertexInput Input) {
 float4 pixel_main(PixelInput Input) : SV_Target {
   float4 color = txColor.Sample(samLinear, Input.texCoord);
   return color;
-  //return float4(Input.texCoord, 0.f, 1.f);
+}
+
+float4 pixel_reflect_main(PixelInput Input) : SV_Target {
+  float4 color = txColor.Sample(samLinear, Input.texCoord);
+  
+  float2 screenPos = Input.position.xy;
+  float2 texSize;
+  txReflect.GetDimensions(texSize.x, texSize.y);
+  screenPos = screenPos / texSize;
+  
+  float4 colorReflect = txReflect.Sample(samLinear, screenPos);
+  return saturate(color + (colorReflect * 0.35));
 }

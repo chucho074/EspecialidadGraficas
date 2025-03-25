@@ -147,7 +147,9 @@ GraphicsAPI::createTexture(int32 inWidth,
                            uint32 inBindFlags, 
                            uint32 inCpuAccessFlags, 
                            uint32 inMipLevels, 
-                           ID3D11ShaderResourceView** inSRV) {
+                           ID3D11ShaderResourceView** inSRV,
+                           ID3D11RenderTargetView** inRTV,
+                           ID3D11DepthStencilView** inDSV) {
   ID3D11Texture2D* pOutTexture = nullptr;
 
   D3D11_TEXTURE2D_DESC desc;
@@ -168,6 +170,7 @@ GraphicsAPI::createTexture(int32 inWidth,
   if(FAILED(m_pDevice->CreateTexture2D(&desc, nullptr, &pOutTexture))) {
     return nullptr;
   }
+  //
   if(inSRV != nullptr) {
     if (inBindFlags & D3D11_BIND_SHADER_RESOURCE) {
       D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC();
@@ -180,6 +183,26 @@ GraphicsAPI::createTexture(int32 inWidth,
     }
 
   }
+  //
+  if(inRTV != nullptr) {
+    if (inBindFlags & D3D11_BIND_RENDER_TARGET) {
+      D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = CD3D11_RENDER_TARGET_VIEW_DESC();
+      rtvDesc.Format = inFormat;
+      rtvDesc.Texture2D.MipSlice = 0;
+      rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+      m_pDevice->CreateRenderTargetView(pOutTexture, &rtvDesc, inRTV);
+    }
+  }
+  if (inDSV != nullptr) {
+    if(inBindFlags & D3D11_BIND_DEPTH_STENCIL) {
+      D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = CD3D11_DEPTH_STENCIL_VIEW_DESC();
+      dsvDesc.Format = inFormat;
+      dsvDesc.Texture2D.MipSlice = 0;
+      dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+      m_pDevice->CreateDepthStencilView(pOutTexture, &dsvDesc, inDSV);
+    }
+  }
+
   return pOutTexture;
 }
 
@@ -374,4 +397,19 @@ GraphicsAPI::writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer,
   m_pDeviceContext->Unmap(inBuffer->m_pBuffer, 0);*/
 
   m_pDeviceContext->UpdateSubresource1(inBuffer->m_pBuffer, 0, nullptr, inData.data(), 0, 0, 0);
+}
+
+void 
+GraphicsAPI::setVertexShader(const UPtr<VertexShader>& inShader) {
+  m_pDeviceContext->VSSetShader(inShader->m_pVertexShader, nullptr, 0);
+}
+
+void 
+GraphicsAPI::setPixelShader(const UPtr<PixelShader>& inShader) {
+  m_pDeviceContext->PSSetShader(inShader->m_pPixelShader, nullptr, 0);
+}
+
+void 
+GraphicsAPI::setTopology(int32 inTopologyType) {
+  m_pDeviceContext->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(inTopologyType));
 }

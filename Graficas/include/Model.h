@@ -34,6 +34,9 @@ class Model
   void
   setBuffers(const UPtr<GraphicsAPI>& inGAPI);
 
+  void
+  draw(const UPtr<GraphicsAPI>& inGAPI);
+
   Vector<MeshData> m_meshes;
 
  protected:

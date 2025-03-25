@@ -12,8 +12,6 @@
 #include "Texture.h"
 #include "GraphicsAPI.h"
 
-//using std::min;
-
 Texture::~Texture() {
   SAFE_RELEASE(m_pTexture);
   SAFE_RELEASE(m_pSRV);
@@ -238,5 +236,19 @@ Texture::draw(Image& inData,
       inData.setPixel({inX + j, inY + i}, blendedColor.toColor());
       
     }
+  }
+}
+
+void 
+Texture::clearTexture(float inClearColor[4], const UPtr<GraphicsAPI>& inGAPI) {
+  if (m_pRTV != nullptr) {
+    inGAPI->m_pDeviceContext->ClearRenderTargetView(m_pRTV, inClearColor);
+  }
+
+  if (m_pDSV != nullptr) {
+    inGAPI->m_pDeviceContext->ClearDepthStencilView(m_pDSV, 
+                                                    D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+                                                    1.f,
+                                                    0);
   }
 }

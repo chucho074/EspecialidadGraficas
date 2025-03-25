@@ -61,6 +61,9 @@ class Texture
        TEXTURE_ADDRESS::E inAddressMode = TEXTURE_ADDRESS::kCLAMP,
        BLEND_MODE::E inBlend = BLEND_MODE::kNONE);
 
+  
+  void
+  clearTexture(float inClearColor[4], const UPtr<GraphicsAPI>& inGAPI);
 
   Image m_image;
 
@@ -70,6 +73,5 @@ class Texture
   ID3D11DepthStencilView* m_pDSV = nullptr;
 
   Vector<Image> m_mips;
-
 
 };

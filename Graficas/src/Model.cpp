@@ -164,3 +164,10 @@ Model::setBuffers(const UPtr<GraphicsAPI>& inGAPI) {
 
 }
 
+void 
+Model::draw(const UPtr<GraphicsAPI>& inGAPI) {
+  inGAPI->m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
+                                        m_meshes[0].baseIndex, 
+                                        m_meshes[0].baseVertex);
+}
+

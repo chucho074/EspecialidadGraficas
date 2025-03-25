@@ -28,7 +28,9 @@ class GraphicsAPI {
                 uint32 inBindFlags = D3D11_BIND_SHADER_RESOURCE,
                 uint32 inCpuAccessFlags = 0,
                 uint32 inMipLevels = 1, 
-                ID3D11ShaderResourceView** inSRV = nullptr);
+                ID3D11ShaderResourceView** inSRV = nullptr,
+                ID3D11RenderTargetView** inRTV = nullptr,
+                ID3D11DepthStencilView** inDSV = nullptr);
 
    
 
@@ -56,10 +58,15 @@ class GraphicsAPI {
   writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer, 
                 const Vector<char>& inData);
 
+  void
+  setVertexShader(const UPtr<VertexShader>& inShader);
 
+  void
+  setPixelShader(const UPtr<PixelShader>& inShader);
+
+  void
+  setTopology(int32 inTopologyType);
  private:
-  /*void
-  createDevice(Vector<IDXGIAdapter*> inAdapters);*/
 
   void
   QueryInterces(uint32 inWidth, uint32 inHeight);

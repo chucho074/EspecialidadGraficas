@@ -27,7 +27,6 @@ Shader::compile(const Path& inFilePath,
 
   ID3DBlob* pErrorBlob = nullptr;
 
-
   HRESULT hr = D3DCompile(vShaderCode.data(),
                           vShaderCode.size(),
                           nullptr,

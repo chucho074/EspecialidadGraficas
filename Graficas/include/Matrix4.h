@@ -63,6 +63,13 @@ class Matrix4 {
   void
   rotateY(float inAngle);
 
+  void
+  scale(float inScale);
+
+  void
+  scale(Vector3 inScale);
+
+
   static const Matrix4
   IDENTITY;
 };

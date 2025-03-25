@@ -151,8 +151,24 @@ Matrix4::rotateY(float inAngle) {
   m[2][2] = cos(inAngle);
 }
 
+void 
+Matrix4::scale(float inScale) {
+  identity();
+  m[0][0] = inScale;
+  m[1][1] = inScale;
+  m[2][2] = inScale;
+}
+
+void 
+Matrix4::scale(Vector3 inScale) {
+  identity();
+  m[0][0] = inScale.x;
+  m[1][1] = inScale.y;
+  m[2][2] = inScale.z;
+}
+
 Matrix4
 IDENTITY = { 1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1 };
+             0, 1, 0, 0,
+             0, 0, 1, 0,
+             0, 0, 0, 1 };
