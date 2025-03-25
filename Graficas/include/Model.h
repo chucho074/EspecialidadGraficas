@@ -31,6 +31,11 @@ class Model
   bool
   loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI);
 
+  bool 
+  loadFromMem(const Vector<SimpleVertex>& inVertexData,
+              const Vector<uint16>& inIndexData,
+              const UPtr<GraphicsAPI>& inGAPI);
+
   void
   setBuffers(const UPtr<GraphicsAPI>& inGAPI);
 

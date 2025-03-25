@@ -199,7 +199,9 @@ Texture::draw(Image& inData,
   for(int32 i = 0; i < realHeight; ++i) {
     for(int32 j = 0; j < realWidth; ++j) {
       
-      FloatColor srcColor = sampleTexture({static_cast<float>(j) / realWidth, static_cast<float>(i) / realHeight}, inAddressMode);
+      FloatColor srcColor = sampleTexture({static_cast<float>(j) / realWidth, 
+                                           static_cast<float>(i) / realHeight}, 
+                                          inAddressMode);
       FloatColor dstColor = FloatColor(inData.getPixel({inX + j, inY + i}));
       
       //Esta es la lina donde se deberia de cambiar para el modo de blend.

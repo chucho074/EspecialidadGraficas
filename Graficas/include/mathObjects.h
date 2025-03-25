@@ -54,13 +54,13 @@ struct Color {
   }
 };
 
-static Color Black {0, 0, 0, 255};
-static Color White {255, 255, 255, 255};
-static Color Red {255, 0, 0, 255};
-static Color Green {0, 255, 0, 255};
-static Color Blue {0, 0, 255, 255};
-static Color Purple {255, 0, 255, 255};
-static Color Grey {30, 30, 30, 255};
+static Color Black  {0,   0,   0,   255};
+static Color White  {255, 255, 255, 255};
+static Color Red    {255, 0,   0,   255};
+static Color Green  {0,   255, 0,   255};
+static Color Blue   {0,   0,   255, 255};
+static Color Purple {255, 0,   255, 255};
+static Color Grey   {30,  30,  30,  255};
 
 struct FloatColor {
   FloatColor() = default;
@@ -93,18 +93,23 @@ struct FloatColor {
     return 0.299f * r + 0.587f * g + 0.114f * b;//The max range of color the human eye can see. | Factor de luminancia persceptual
   }
 
+  float*
+  toArray() {
+    float outData[4] = {r, g, b, a};
+    return outData;
+  }
 
   FloatColor operator+(const FloatColor& inColor) {
     return FloatColor(r+inColor.r, g+inColor.g, b+inColor.b, a+inColor.a);
-  }
-  FloatColor operator+(float inScalar) {
-    return FloatColor(r + inScalar, g + inScalar, b + inScalar, a + inScalar);
   }
   FloatColor operator-(const FloatColor& inColor) {
     return FloatColor(r-inColor.r, g-inColor.g, b-inColor.b, a-inColor.a);
   }
   FloatColor operator*(const FloatColor& inColor) {
     return FloatColor(r * inColor.r, g*inColor.g, b*inColor.b, a*inColor.a);
+  }
+  FloatColor operator+(float inScalar) {
+    return FloatColor(r + inScalar, g + inScalar, b + inScalar, a + inScalar);
   }
   FloatColor operator*(float inScalar) {
     return FloatColor(r * inScalar, g * inScalar, b * inScalar, a * inScalar);

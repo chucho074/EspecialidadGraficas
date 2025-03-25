@@ -12,6 +12,7 @@
 #include "PrerequisiteGraficas.h"
 #include "Shader.h"
 #include "Buffers.h"
+#include "Texture.h"
 #include <d3d11_2.h>
 
 class GraphicsAPI {
@@ -31,8 +32,6 @@ class GraphicsAPI {
                 ID3D11ShaderResourceView** inSRV = nullptr,
                 ID3D11RenderTargetView** inRTV = nullptr,
                 ID3D11DepthStencilView** inDSV = nullptr);
-
-   
 
   UPtr<VertexShader>
   createVertexShaderFromFile(const Path& inFilePath, 
@@ -65,7 +64,28 @@ class GraphicsAPI {
   setPixelShader(const UPtr<PixelShader>& inShader);
 
   void
+  setRenderTargets(const Texture& inRTV, const Texture& inDSV);
+
+  void
+  setShaderResource(uint32 inStartSlot, const Texture& inSRV);
+
+  void
+  setRasterState(ID3D11RasterizerState1* inState);
+
+
+
+  void
   setTopology(int32 inTopologyType);
+
+  void
+  clearRTV(const Texture& inRTV, FloatColor inClearColor);
+
+  void
+  clearDSV(const Texture& inDSV);
+
+  void
+  clearSRV(int32 inSlot);
+
  private:
 
   void
@@ -78,8 +98,8 @@ class GraphicsAPI {
   ID3D11DeviceContext1* m_pDeviceContext = nullptr;
   IDXGISwapChain1* m_pSwapChain = nullptr;
 
-  ID3D11RenderTargetView* m_pBackBufferRTV = nullptr; 
-  ID3D11DepthStencilView* m_pBackBufferDSV = nullptr;
+  Texture m_pBackBufferRTV;
+  Texture m_pBackBufferDSV;
 
   ID3D11InputLayout* m_pInputLayout = nullptr;
 

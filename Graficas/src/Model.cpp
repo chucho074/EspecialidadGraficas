@@ -24,7 +24,8 @@ struct FaceVertex {
 namespace std {
   template<>
   struct hash<FaceVertex> {
-    size_t operator()(const FaceVertex& vertex) const {
+    size_t 
+    operator()(const FaceVertex& vertex) const {
       return hash<int32>()(vertex.vertex_index)
              ^ hash<int32>()(vertex.uv_index);
     }
@@ -50,11 +51,9 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   Vector<SimpleVertex> vertices;
   Vector<uint16> indices;
 
-
   Vector<Vector3> temp_pos;
   Vector<Vector2> temp_tc;
   UMap<FaceVertex, uint16> uniqueVertices;
-
 
   int32 vt_index = 0;
   for(const auto& line : lines) {
@@ -91,8 +90,6 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
         fv.vertex_index = std::stoi(fi[0]) - 1;
         fv.uv_index = std::stoi(fi[1]) - 1;
 
-        
-
         if (uniqueVertices.find(fv) == uniqueVertices.end()) {
           uniqueVertices[fv] = static_cast<uint16>(vertices.size());
 
@@ -124,7 +121,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
 
   mesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-
+  //Create the information of the buffers.
   Vector<char> tmpVertexData;
   tmpVertexData.resize(vertices.size() * sizeof(SimpleVertex));
   memcpy(tmpVertexData.data(), vertices.data(), vertices.size() * sizeof(SimpleVertex));
@@ -147,20 +144,60 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   return true;
 }
 
+bool 
+Model::loadFromMem(const Vector<SimpleVertex>& inVertexData, 
+                   const Vector<uint16>& inIndexData, 
+                   const UPtr<GraphicsAPI>& inGAPI) {
+
+  m_meshes.resize(1);
+  auto& mesh = m_meshes[0];
+  mesh.baseVertex = 0;
+  mesh.numVertices = inVertexData.size();
+
+  mesh.baseIndex = 0;
+  mesh.numIndices = inIndexData.size();
+
+  mesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+  Vector<char> tmpVertexData;
+  tmpVertexData.resize(inVertexData.size() * sizeof(SimpleVertex));
+  memcpy(tmpVertexData.data(), 
+         inVertexData.data(), 
+         inVertexData.size() * sizeof(SimpleVertex));
+  m_pVertexBuffer = inGAPI->createVertexBuffer(tmpVertexData);
+
+  if(!m_pVertexBuffer) {
+    return false;
+  }
+
+  Vector<char> tmpIndexData;
+  tmpIndexData.resize(inIndexData.size() * sizeof(uint16));
+  memcpy(tmpIndexData.data(), 
+         inIndexData.data(), 
+         inIndexData.size() * sizeof(uint16));
+  m_pIndexBuffer = inGAPI->createIndexBuffer(tmpIndexData);
+
+  if(!m_pIndexBuffer) {
+    return false;
+  }
+
+  return true;
+}
+
 void 
 Model::setBuffers(const UPtr<GraphicsAPI>& inGAPI) {
-  UINT stride = sizeof(SimpleVertex);
-  UINT offset = 0;
+  uint32 stride = sizeof(SimpleVertex);
+  uint32 offset = 0;
   inGAPI->m_pDeviceContext->IASetVertexBuffers(0, 
-                                                1,
-                                                &m_pVertexBuffer->m_pBuffer,
-                                                &stride,
-                                                &offset);
+                                               1,
+                                               &m_pVertexBuffer->m_pBuffer,
+                                               &stride,
+                                               &offset);
 
 
   inGAPI->m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer->m_pBuffer,
-                                              DXGI_FORMAT_R16_UINT,
-                                              0);
+                                             DXGI_FORMAT_R16_UINT,
+                                             0);
 
 }
 

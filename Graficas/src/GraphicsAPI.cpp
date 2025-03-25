@@ -10,7 +10,6 @@
  */
 #include "GraphicsAPI.h"
 
-
 #include <fstream>
 
 #include <d3dcompiler.h>
@@ -218,7 +217,7 @@ GraphicsAPI::QueryInterces(uint32 inWidth, uint32 inHeight) {
 
   if(FAILED(m_pDevice->CreateRenderTargetView(pBackBuffer, 
                                               nullptr, 
-                                              &m_pBackBufferRTV))) {
+                                              &m_pBackBufferRTV.m_pRTV))) {
     __debugbreak();
   }
 
@@ -238,7 +237,7 @@ GraphicsAPI::QueryInterces(uint32 inWidth, uint32 inHeight) {
     return;
   }
 
-  m_pDevice->CreateDepthStencilView(pDepthStencil, nullptr, &m_pBackBufferDSV);
+  m_pDevice->CreateDepthStencilView(pDepthStencil, nullptr, &m_pBackBufferDSV.m_pDSV);
 
   SAFE_RELEASE(pDepthStencil);
 }
@@ -410,6 +409,52 @@ GraphicsAPI::setPixelShader(const UPtr<PixelShader>& inShader) {
 }
 
 void 
+GraphicsAPI::setRenderTargets(const Texture& inRTV, const Texture& inDSV) {
+  m_pDeviceContext->OMSetRenderTargets(1,
+                                       &inRTV.m_pRTV,
+                                       inDSV.m_pDSV);
+}
+
+void 
+GraphicsAPI::setShaderResource(uint32 inStartSlot, const Texture& inSRV) {
+  m_pDeviceContext->PSSetShaderResources(inStartSlot, 1, &inSRV.m_pSRV);
+
+}
+
+void 
+GraphicsAPI::setRasterState(ID3D11RasterizerState1* inState) {
+  m_pDeviceContext->RSSetState(inState);
+
+}
+
+void 
 GraphicsAPI::setTopology(int32 inTopologyType) {
   m_pDeviceContext->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(inTopologyType));
+}
+
+void 
+GraphicsAPI::clearRTV(const Texture& inRTV, FloatColor inClearColor) {
+  
+  float tmpColor[4] = {inClearColor.r, 
+                       inClearColor.g, 
+                       inClearColor.b, 
+                       inClearColor.a};
+
+  m_pDeviceContext->ClearRenderTargetView(inRTV.m_pRTV,
+                                          tmpColor);
+                                          //inClearColor.toArray());
+}
+
+void 
+GraphicsAPI::clearDSV(const Texture& inDSV) {
+  m_pDeviceContext->ClearDepthStencilView(inDSV.m_pDSV,
+                                          D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+                                          1.f,
+                                          0);
+}
+
+void 
+GraphicsAPI::clearSRV(int32 inSlot) {
+  ID3D11ShaderResourceView* nullSRV = nullptr;
+  m_pDeviceContext->PSSetShaderResources(inSlot, 1, &nullSRV);
 }

@@ -51,6 +51,7 @@ MatrixCollection g_WVP;
 
 Camera g_Camera;
 
+Model g_cubeModel;
 Model g_myModel;
 Model g_TerrainModel;
 Texture g_myTexture;
@@ -114,88 +115,16 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  SimpleVertex vertex[] = {
-    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-
-    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(0, 0, 1)  }  //Vector2(0.0f, 1.0f), -0.f },
-
-  };
-
-
-  unsigned short indices[] = {
-      3,1,0,
-      2,1,3,
-
-      6,4,5,
-      7,4,6,
-
-      11,9,8,
-      10,9,11,
-
-      14,12,13,
-      15,12,14,
-
-      19,17,16,
-      18,17,19,
-
-      22,20,21,
-      23,20,22
-  };
-
-  Vector<char> tmpVertexData;
-  tmpVertexData.resize(sizeof(vertex));
-  memcpy(tmpVertexData.data(), vertex, sizeof(vertex));
-  g_pVertexBuffer = g_pGAPI->createVertexBuffer(tmpVertexData);
-
-  if(!g_pVertexBuffer) {
-    return SDL_APP_FAILURE;
-  }
-
-  Vector<char> tmpIndexData;
-  tmpIndexData.resize(sizeof(indices));
-  memcpy(tmpIndexData.data(), indices, sizeof(indices));
-  g_pIndexBuffer = g_pGAPI->createIndexBuffer(tmpIndexData);
-
-  if (!g_pIndexBuffer) {
-    return SDL_APP_FAILURE;
-  }
-
-
   if(!g_pWindow) {
     SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
 
+  //Set camera info
   g_Camera.setLookAt(Vector3(5, -5, -5), Vector3(0,0,0), Vector3(0,1,0));
   g_Camera.setPerspective(3.1415926353f/4.f, g_windowSize, 0.1f, 100.f);
   
-  
+  //Set world info
   g_WVP.world.identity();
   g_WVP.view = g_Camera.getViewMatrix();
   g_WVP.projection = g_Camera.getProjectionMatrix();
@@ -204,6 +133,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.view.transpose();
   g_WVP.projection.transpose();
 
+  //Set the reaster and sampler
   CD3D11_RASTERIZER_DESC1 descRD(D3D11_DEFAULT);
   g_pGAPI->m_pDevice->CreateRasterizerState1(&descRD, &g_pRS_Default);
 
@@ -221,11 +151,11 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
   g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Linear);
 
-
   descSS.Filter = D3D11_FILTER_ANISOTROPIC;
   descSS.MaxAnisotropy = 16; //Esto es lo que cambiamos en las opciones de los juegos
   g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Anisotropic);
 
+  //Create the WVP buffer 
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
@@ -259,18 +189,85 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   descSS.MaxAnisotropy = 16;
   g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Anisotropic);*/
 
+  //Load models and textures
+  
+  //Cube model
+  Vector<SimpleVertex> vertex = {
+    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
+    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
+    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
+    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
 
-  g_myModel.loadFromFile("Models/rex.obj", g_pGAPI);
-  g_TerrainModel.loadFromFile("Models/disc.obj", g_pGAPI);
+    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
+    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
+    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
+    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
+    
+    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
+    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
+    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
+    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
+    
+    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
+    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
+    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
+    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
+    
+    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 0.0f), -0.f },
+    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 0.0f), -0.f },
+    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 1.0f), -0.f },
+    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 1.0f), -0.f },
+    
+    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 0.0f), -0.f },
+    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 0.0f), -0.f },
+    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 1.0f), -0.f },
+    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(0, 0, 1)  }  //Vector2(0.0f, 1.0f), -0.f },
+
+  };
+
+  Vector<uint16> indices = {
+      3,1,0,
+      2,1,3,
+
+      6,4,5,
+      7,4,6,
+
+      11,9,8,
+      10,9,11,
+
+      14,12,13,
+      15,12,14,
+
+      19,17,16,
+      18,17,19,
+
+      22,20,21,
+      23,20,22
+  };
+
+  if(!g_cubeModel.loadFromMem(vertex, indices, g_pGAPI)) {
+    return SDL_APP_FAILURE;
+  }
+
+  //Rex model
+  if(!g_myModel.loadFromFile("Models/rex.obj", g_pGAPI)) {
+    return SDL_APP_FAILURE;
+  };
 
   Image srcImage;
   srcImage.decode("Models/Rex_C.bmp");
   g_myTexture.createFromImage(srcImage, g_pGAPI);
 
+  //Disc model
+  if(!g_TerrainModel.loadFromFile("Models/disc.obj", g_pGAPI)) {
+    return SDL_APP_FAILURE;
+  }
+
   Image terrainImage;
   terrainImage.decode("Models/Terrain.bmp");
   g_TerrainTexture.createFromImage(terrainImage, g_pGAPI);
 
+  //Reflection textures
   g_rtReflection.m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
                                                      g_windowSize.y,
                                                      DXGI_FORMAT_B8G8R8A8_UNORM,
@@ -291,6 +288,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                      nullptr,
                                                      nullptr,
                                                      &g_dsReflection.m_pDSV);
+
   return SDL_APP_CONTINUE;
 }
 
@@ -323,41 +321,28 @@ SDL_AppIterate(void* appstate) {
   vp.TopLeftY = 0;
 
 
-  g_pGAPI->m_pDeviceContext->OMSetRenderTargets(1, 
-                                                &g_pGAPI->m_pBackBufferRTV, 
-                                                g_pGAPI->m_pBackBufferDSV);
+  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, 
+                            g_pGAPI->m_pBackBufferDSV);
   
-  float clearColor[] = { 0.5f, 0.5f, 1.0f, 1.0f };
-  float blackClearColor[] = { 0.0f, 0.f, 0.0f, 1.0f };
-  g_rtReflection.clearTexture(blackClearColor, g_pGAPI);
-  g_dsReflection.clearTexture(blackClearColor, g_pGAPI);
+  
+  FloatColor clearColor = { 0.5f, 0.5f, 1.0f, 1.0f };
+  //float clearColor[4] = { 0.5f, 0.5f, 1.0f, 1.0f };
+  FloatColor blackClearColor = { 0.0f, 0.f, 0.0f, 1.0f };
+  g_rtReflection.clearTexture(blackClearColor.toArray(), g_pGAPI);
+  g_dsReflection.clearTexture(blackClearColor.toArray(), g_pGAPI);
 
-  g_pGAPI->m_pDeviceContext->ClearRenderTargetView(g_pGAPI->m_pBackBufferRTV, 
-                                                   clearColor);
+  //g_pGAPI->m_pDeviceContext->ClearRenderTargetView(g_pGAPI->m_pBackBufferRTV.m_pRTV, clearColor);
+  g_pGAPI->clearRTV(g_pGAPI->m_pBackBufferRTV, clearColor);
 
-  g_pGAPI->m_pDeviceContext->ClearDepthStencilView(g_pGAPI->m_pBackBufferDSV, 
-                                                   D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 
-                                                   1.f, 
-                                                   0);
+  g_pGAPI->clearDSV(g_pGAPI->m_pBackBufferDSV);
 
   g_pGAPI->setVertexShader(g_pVertexShader);
   g_pGAPI->setPixelShader(g_pPixelShader);
 
   g_pGAPI->m_pDeviceContext->IASetInputLayout(g_pInputLayout);
   g_pGAPI->setTopology(g_myModel.m_meshes[0].topology);
-
-  UINT stride = sizeof(SimpleVertex);
-  UINT offset = 0;
-  g_pGAPI->m_pDeviceContext->IASetVertexBuffers(0, 
-                                                1,
-                                                &g_pVertexBuffer->m_pBuffer,
-                                                &stride,
-                                                &offset);
-
-
-  g_pGAPI->m_pDeviceContext->IASetIndexBuffer(g_pIndexBuffer->m_pBuffer,
-                                              DXGI_FORMAT_R16_UINT,
-                                              0);
+  
+  g_cubeModel.setBuffers(g_pGAPI);
   
   static float rotationAngle = 0.f;
   //rotationAngle += 0.001f;
@@ -383,7 +368,7 @@ SDL_AppIterate(void* appstate) {
 
   g_pGAPI->m_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCB_WVP->m_pBuffer);
 
-  g_pGAPI->m_pDeviceContext->RSSetState(g_pRS_Default);
+  g_pGAPI->setRasterState(g_pRS_Default);
 
   //Set the samplers
   g_pGAPI->m_pDeviceContext->PSSetSamplers(0, 1, &g_pSS_Point);
@@ -400,15 +385,11 @@ SDL_AppIterate(void* appstate) {
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  g_pGAPI->m_pDeviceContext->OMSetRenderTargets(1, 
-                                                &g_pGAPI->m_pBackBufferRTV, 
-                                                g_pGAPI->m_pBackBufferDSV);
-
-
+  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
+  
   g_myModel.setBuffers(g_pGAPI);
 
-  g_pGAPI->m_pDeviceContext->PSSetShaderResources(0, 1, &g_myTexture.m_pSRV);
-
+  g_pGAPI->setShaderResource(0, g_myTexture);
 
   g_myModel.draw(g_pGAPI);
 
@@ -423,18 +404,14 @@ SDL_AppIterate(void* appstate) {
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  g_pGAPI->m_pDeviceContext->RSSetState(g_pRS_CullFront);
+  g_pGAPI->setRasterState(g_pRS_CullFront);
 
-
-  ID3D11ShaderResourceView* nullRTV = nullptr;
-  g_pGAPI->m_pDeviceContext->PSSetShaderResources(1, 1, &nullRTV);
+  g_pGAPI->clearSRV(1);
   
-  g_pGAPI->m_pDeviceContext->OMSetRenderTargets(1,
-                                                &g_rtReflection.m_pRTV,
-                                                g_dsReflection.m_pDSV);
+  g_pGAPI->setRenderTargets(g_rtReflection, g_dsReflection);
   
   g_myModel.setBuffers(g_pGAPI); 
-  g_pGAPI->m_pDeviceContext->PSSetShaderResources(0, 1, &g_myTexture.m_pSRV);
+  g_pGAPI->setShaderResource(0, g_myTexture);
 
   g_myModel.draw(g_pGAPI);
   ////////////////////////////////////////////////////////////////////////////////////////////
@@ -448,19 +425,16 @@ SDL_AppIterate(void* appstate) {
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  g_pGAPI->m_pDeviceContext->RSSetState(g_pRS_Default);
+  g_pGAPI->setRasterState(g_pRS_Default);
 
   g_TerrainModel.setBuffers(g_pGAPI);
 
-
-  g_pGAPI->m_pDeviceContext->OMSetRenderTargets(1, 
-                                                &g_pGAPI->m_pBackBufferRTV, 
-                                                g_pGAPI->m_pBackBufferDSV);
+  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
 
   g_pGAPI->setPixelShader(g_pPixelShader_Reflect);
 
-  g_pGAPI->m_pDeviceContext->PSSetShaderResources(0, 1, &g_TerrainTexture.m_pSRV);
-  g_pGAPI->m_pDeviceContext->PSSetShaderResources(1, 1, &g_rtReflection.m_pSRV);
+  g_pGAPI->setShaderResource(0, g_TerrainTexture);
+  g_pGAPI->setShaderResource(1, g_rtReflection);
 
 
   g_TerrainModel.draw(g_pGAPI);
