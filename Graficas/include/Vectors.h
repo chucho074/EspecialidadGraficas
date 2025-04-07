@@ -10,18 +10,39 @@
  */
 #pragma once
 #include "stdHeaders.h"
-#include "Matrix4.h"
 
-struct Vector3 {
+class Vector3 {
+ public:
+  Vector3() {
+    *this = Vector3::ZERO;
+  };
+  Vector3(float inX, float inY = 0.f, float inZ = 0.f) {
+    x = inX;
+    y = inY;
+    z = inZ;
+  }
+
+  Vector3(const Vector3& inVec) {
+    x = inVec.x;
+    y = inVec.y;
+    z = inVec.z;
+  }; 
+
+  ~Vector3() = default;
+
   float x;
   float y;
   float z;
 
-  Vector3() = default;
-  Vector3(float inX, float inY = 0.f, float inZ = 0.f)
-    : x(inX),
-    y(inY),
-    z(inZ) { }
+  /**
+   * @brief A zero vector (0,0,0)
+   */
+  static const Vector3 ZERO;
+
+  /**
+   * @brief A unit vector (1,1,1)
+   */
+  static const Vector3 UNIT;
 
   Vector3 
   operator+(const Vector3& inVec) const {
@@ -38,6 +59,14 @@ struct Vector3 {
     return {x * inVec.x, y * inVec.y, z * inVec.z};
   }
   
+  const Vector3&
+  operator=(const Vector3& inVec) {
+    x = inVec.x;
+    y = inVec.y;
+    z = inVec.z;
+    return *this;
+  }
+  
   bool
   operator==(const Vector3& inVec) const {
     return x == inVec.x && y == inVec.y && z == inVec.z;
@@ -48,11 +77,7 @@ struct Vector3 {
     return !(*this == inVec);
   }
 
-  Vector3
-  operator*(const Matrix3& inMatrix) const;
-
-  void
-  operator*=(const Matrix4& inMatrix);
+  
 
   void
   operator+=(const Vector3& inVec) {
@@ -151,7 +176,8 @@ struct Vector3 {
 
 };
 
-struct Vector2 {
+class Vector2 {
+ public:
   float x;
   float y;
 
@@ -255,7 +281,8 @@ struct Vector2 {
 
 };
 
-struct Vector2i {
+class Vector2i {
+ public:
   int32 x;
   int32 y;
 

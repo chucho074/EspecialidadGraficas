@@ -9,9 +9,6 @@
  * @include
  */
 #include "GraphicsAPI.h"
-
-#include <fstream>
-
 #include <d3dcompiler.h>
 
 #define WIN32_LEAN_AND_MEAN
@@ -180,7 +177,6 @@ GraphicsAPI::createTexture(int32 inWidth,
 
       m_pDevice->CreateShaderResourceView(pOutTexture, &srvDesc, inSRV);
     }
-
   }
   //
   if(inRTV != nullptr) {
@@ -387,6 +383,20 @@ GraphicsAPI::createConstantBuffer(const Vector<char>& inData) {
   return outData;
 }
 
+ID3D11RasterizerState1* 
+GraphicsAPI::createRasterState(CD3D11_RASTERIZER_DESC1 inDesc) {
+  ID3D11RasterizerState1* outRaster;
+  m_pDevice->CreateRasterizerState1(&inDesc, &outRaster);
+  return outRaster;
+}
+
+ID3D11SamplerState* 
+GraphicsAPI::createSamplerState(CD3D11_SAMPLER_DESC inDesc) {
+  ID3D11SamplerState* outSampler;
+  m_pDevice->CreateSamplerState(&inDesc, &outSampler);
+  return outSampler;
+}
+
 void 
 GraphicsAPI::writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer, 
                            const Vector<char>& inData) {
@@ -395,7 +405,18 @@ GraphicsAPI::writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer,
   memcpy(mappedResource.pData, inData.data(), inData.size());
   m_pDeviceContext->Unmap(inBuffer->m_pBuffer, 0);*/
 
-  m_pDeviceContext->UpdateSubresource1(inBuffer->m_pBuffer, 0, nullptr, inData.data(), 0, 0, 0);
+  m_pDeviceContext->UpdateSubresource1(inBuffer->m_pBuffer, 
+                                       0, 
+                                       nullptr, 
+                                       inData.data(), 
+                                       0, 
+                                       0, 
+                                       0);
+}
+
+void 
+GraphicsAPI::setInputLayout(ID3D11InputLayout* inInputLayout) {
+  m_pDeviceContext->IASetInputLayout(inInputLayout);
 }
 
 void 
@@ -424,6 +445,17 @@ GraphicsAPI::setShaderResource(uint32 inStartSlot, const Texture& inSRV) {
 void 
 GraphicsAPI::setRasterState(ID3D11RasterizerState1* inState) {
   m_pDeviceContext->RSSetState(inState);
+
+}
+
+void 
+GraphicsAPI::setSamplers(int32 inSlot, ID3D11SamplerState* inSampler) {
+  m_pDeviceContext->PSSetSamplers(inSlot, 1, &inSampler);
+}
+
+void 
+GraphicsAPI::setConstantBuffer(int32 inSlot, const UPtr<GraphicsBuffers>& inBuffer) {
+  m_pDeviceContext->VSSetConstantBuffers(inSlot, 1, &inBuffer->m_pBuffer);
 
 }
 

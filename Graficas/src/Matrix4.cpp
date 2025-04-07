@@ -11,6 +11,12 @@
 #include "Matrix4.h"
 #include "Vectors.h"
 
+const Matrix4 
+Matrix4::IDENTITY(1, 0, 0, 0,
+                  0, 1, 0, 0,
+                  0, 0, 1, 0,
+                  0, 0, 0, 1 );
+
 void 
 Matrix4::identity() {
   for (int32 i = 0; i < 4; ++i) {
@@ -31,10 +37,13 @@ Matrix4::operator*(const Matrix4& inMat) const {
 
     outData.m[i][0] = m[i][0] * inMat.m[0][0] + m[i][1] * inMat.m[1][0] +
       m[i][2] * inMat.m[2][0] + m[i][3] * inMat.m[3][0];
+
     outData.m[i][1] = m[i][0] * inMat.m[0][1] + m[i][1] * inMat.m[1][1] +
       m[i][2] * inMat.m[2][1] + m[i][3] * inMat.m[3][1];
+
     outData.m[i][2] = m[i][0] * inMat.m[0][2] + m[i][1] * inMat.m[1][2] +
       m[i][2] * inMat.m[2][2] + m[i][3] * inMat.m[3][2];
+
     outData.m[i][3] = m[i][0] * inMat.m[0][3] + m[i][1] * inMat.m[1][3] +
       m[i][2] * inMat.m[2][3] + m[i][3] * inMat.m[3][3];
   }
@@ -46,7 +55,8 @@ Matrix4::lookAt(const Vector3& inEyePos,
                 const Vector3& inTargetPos, 
                 const Vector3& inUpDir) {
 
-  const Vector3 ZAxis = (inEyePos - inTargetPos).normalize();
+  const Vector3 WAxis = (inEyePos - inTargetPos).normalize();
+  const Vector3 ZAxis = (inTargetPos - inEyePos).normalize();
   const Vector3 XAxis = inUpDir.cross(ZAxis).normalize();
   const Vector3 YAxis = ZAxis.cross(XAxis);
 
@@ -140,15 +150,44 @@ Matrix4::transpose() {
   }
 }
 
+
+Matrix4&
+Matrix4::getTransposed() const {
+  Matrix4 outData;
+  outData = *this;
+  outData.transpose();
+  return outData;
+}
+
+void 
+Matrix4::rotateX(float inAngle) {
+  identity();
+  //Y  X
+  m[1][1] = cos(inAngle);
+  m[1][2] = -sin(inAngle);
+  m[2][1] = sin(inAngle);
+  m[2][2] = cos(inAngle);
+}
+
 void 
 Matrix4::rotateY(float inAngle) {
   
   identity();
-
+  //Y  X
   m[0][0] = cos(inAngle);
   m[0][2] = sin(inAngle);
   m[2][0] = -sin(inAngle);
   m[2][2] = cos(inAngle);
+}
+
+void 
+Matrix4::rotateZ(float inAngle) {
+  identity();
+  //Y  X
+  m[0][0] = cos(inAngle);
+  m[1][0] = sin(inAngle);
+  m[0][1] = -sin(inAngle);
+  m[1][1] = cos(inAngle);
 }
 
 void 
@@ -167,8 +206,36 @@ Matrix4::scale(Vector3 inScale) {
   m[2][2] = inScale.z;
 }
 
-Matrix4
-IDENTITY = { 1, 0, 0, 0,
-             0, 1, 0, 0,
-             0, 0, 1, 0,
-             0, 0, 0, 1 };
+Matrix4 
+Matrix4::getRotatedX(float inAngle) {
+  Matrix4 outData;
+  //outData.identity();
+  outData.rotateX(inAngle);
+  return outData;
+}
+
+Matrix4 
+Matrix4::getRotatedY(float inAngle) {
+  Matrix4 outData;
+  //outData.identity();
+  outData.rotateY(inAngle);
+  return outData;
+}
+
+Matrix4 
+Matrix4::getRotatedZ(float inAngle) {
+  Matrix4 outData;
+  //outData.identity();
+  outData.rotateZ(inAngle);
+  return outData;
+}
+
+Matrix4 
+Matrix4::getTranslated(const Vector3& inTranslation) {
+  Matrix4 outData;
+  outData.identity();
+  outData.Translate(inTranslation);
+  return outData;
+}
+
+

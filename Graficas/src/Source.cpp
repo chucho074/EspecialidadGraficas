@@ -18,6 +18,7 @@
 #include "GraphicsAPI.h"
 #include "Model.h"
 #include "Texture.h"
+#include "Transform.h"
 
 struct MatrixCollection {
   Matrix4 world;
@@ -25,7 +26,6 @@ struct MatrixCollection {
   Matrix4 projection;
 };
 
-//Vector2 g_windowSize = {640 , 480};
 Vector2 g_windowSize = {1280 , 720};
 
 SDL_Window* g_pWindow = nullptr;
@@ -52,7 +52,10 @@ MatrixCollection g_WVP;
 Camera g_Camera;
 
 Model g_cubeModel;
-Model g_myModel;
+
+Model g_myModel; //Dino
+Model g_carModel; 
+Texture g_carTexture;
 Model g_TerrainModel;
 Texture g_myTexture;
 Texture g_TerrainTexture;
@@ -60,7 +63,9 @@ Texture g_TerrainTexture;
 Texture g_rtReflection;
 Texture g_dsReflection;
 
- /* This function runs once at startup. */
+Transform g_worldTransform;
+
+/* This function runs once at startup. */
 SDL_AppResult
 SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
@@ -97,6 +102,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     if (!g_pPixelShader) {
       return SDL_APP_FAILURE;
     }
+
     g_pPixelShader_Reflect = g_pGAPI->createPixelShaderFromFile("Shaders/basicVertexShader.hlsl", 
                                                                 "pixel_reflect_main");
     if (!g_pPixelShader_Reflect) {
@@ -109,8 +115,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
   };
-
+  
   g_pInputLayout = g_pGAPI->createInputLayout(inputElementDescs, g_pVertexShader);
+  
   if (!g_pInputLayout) {
     return SDL_APP_FAILURE;
   }
@@ -121,7 +128,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   }
 
   //Set camera info
-  g_Camera.setLookAt(Vector3(5, -5, -5), Vector3(0,0,0), Vector3(0,1,0));
+  g_Camera.setLookAt(Vector3(5, -5, -5), Vector3(0, 0, 0), Vector3(0, 1, 0));
   g_Camera.setPerspective(3.1415926353f/4.f, g_windowSize, 0.1f, 100.f);
   
   //Set world info
@@ -135,25 +142,24 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   //Set the reaster and sampler
   CD3D11_RASTERIZER_DESC1 descRD(D3D11_DEFAULT);
-  g_pGAPI->m_pDevice->CreateRasterizerState1(&descRD, &g_pRS_Default);
+  g_pRS_Default = g_pGAPI->createRasterState(descRD);
 
   descRD.FillMode = D3D11_FILL_WIREFRAME;
   descRD.CullMode = D3D11_CULL_NONE;
-  g_pGAPI->m_pDevice->CreateRasterizerState1(&descRD, &g_pRS_Wireframe_NoCull);
+  g_pRS_Wireframe_NoCull = g_pGAPI->createRasterState(descRD);
 
   CD3D11_SAMPLER_DESC descSS(D3D11_DEFAULT);
   descSS.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
   descSS.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
   descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-  g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Point);
-
+  g_pSS_Point = g_pGAPI->createSamplerState(descSS);
 
   descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-  g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Linear);
+  g_pSS_Linear = g_pGAPI->createSamplerState(descSS);
 
   descSS.Filter = D3D11_FILTER_ANISOTROPIC;
   descSS.MaxAnisotropy = 16; //Esto es lo que cambiamos en las opciones de los juegos
-  g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Anisotropic);
+  g_pSS_Anisotropic = g_pGAPI->createSamplerState(descSS);
 
   //Create the WVP buffer 
   Vector<char> matrix_data;
@@ -191,6 +197,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   //Load models and textures
   
+  /////////////////////////////////////////////////////////////////////////////
+  
   //Cube model
   Vector<SimpleVertex> vertex = {
     { Vector3(-1.0f,  1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
@@ -225,7 +233,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   };
 
-  Vector<uint16> indices = {
+  Vector<uint32> indices = {
       3,1,0,
       2,1,3,
 
@@ -248,16 +256,36 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   if(!g_cubeModel.loadFromMem(vertex, indices, g_pGAPI)) {
     return SDL_APP_FAILURE;
   }
+  /////////////////////////////////////////////////////////////////////////////
+  
+  //Car model
+  if(!g_carModel.loadFromFile("Models/audi.obj", g_pGAPI)) {
+  //if(!g_carModel.loadFromFile("Models/911-gt3.obj", g_pGAPI)) {
+    return SDL_APP_FAILURE;
+  }
 
+  Image carImage;
+  carImage.decode("Models/Untitled.bmp");
+  g_carTexture.createFromImage(carImage, g_pGAPI);
+  //Setting positions to Rex
+  g_carModel.m_transform.setPosition({0, 0, 0});
+  g_carModel.m_transform.setScale(3.f);
+
+  /////////////////////////////////////////////////////////////////////////////
+  
   //Rex model
   if(!g_myModel.loadFromFile("Models/rex.obj", g_pGAPI)) {
     return SDL_APP_FAILURE;
-  };
+  }
 
   Image srcImage;
   srcImage.decode("Models/Rex_C.bmp");
   g_myTexture.createFromImage(srcImage, g_pGAPI);
+  //Setting positions to Rex
+  g_myModel.m_transform.setPosition({0, 0, 0});
 
+  /////////////////////////////////////////////////////////////////////////////
+  
   //Disc model
   if(!g_TerrainModel.loadFromFile("Models/disc.obj", g_pGAPI)) {
     return SDL_APP_FAILURE;
@@ -266,6 +294,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   Image terrainImage;
   terrainImage.decode("Models/Terrain.bmp");
   g_TerrainTexture.createFromImage(terrainImage, g_pGAPI);
+
+  g_TerrainModel.m_transform.setPosition({0, 0, 0});
+  g_TerrainModel.m_transform.setScale(0.08f);
 
   //Reflection textures
   g_rtReflection.m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
@@ -306,9 +337,6 @@ SDL_AppEvent(void* appstate, SDL_Event* event) {
 SDL_AppResult
 SDL_AppIterate(void* appstate) {
 
-  /* put the newly-cleared rendering on the screen. */
-  //SDL_RenderPresent(g_renderer);
-
   //Rellenar el input assembly
   //IA > Input Assambly
   //OM > Output Merger
@@ -320,18 +348,14 @@ SDL_AppIterate(void* appstate) {
   vp.TopLeftX = 0; 
   vp.TopLeftY = 0;
 
-
   g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, 
                             g_pGAPI->m_pBackBufferDSV);
   
-  
   FloatColor clearColor = { 0.5f, 0.5f, 1.0f, 1.0f };
-  //float clearColor[4] = { 0.5f, 0.5f, 1.0f, 1.0f };
   FloatColor blackClearColor = { 0.0f, 0.f, 0.0f, 1.0f };
   g_rtReflection.clearTexture(blackClearColor.toArray(), g_pGAPI);
   g_dsReflection.clearTexture(blackClearColor.toArray(), g_pGAPI);
 
-  //g_pGAPI->m_pDeviceContext->ClearRenderTargetView(g_pGAPI->m_pBackBufferRTV.m_pRTV, clearColor);
   g_pGAPI->clearRTV(g_pGAPI->m_pBackBufferRTV, clearColor);
 
   g_pGAPI->clearDSV(g_pGAPI->m_pBackBufferDSV);
@@ -339,49 +363,56 @@ SDL_AppIterate(void* appstate) {
   g_pGAPI->setVertexShader(g_pVertexShader);
   g_pGAPI->setPixelShader(g_pPixelShader);
 
-  g_pGAPI->m_pDeviceContext->IASetInputLayout(g_pInputLayout);
+  g_pGAPI->setInputLayout(g_pInputLayout);
   g_pGAPI->setTopology(g_myModel.m_meshes[0].topology);
   
   g_cubeModel.setBuffers(g_pGAPI);
   
   static float rotationAngle = 0.f;
-  //rotationAngle += 0.001f;
-  Matrix4 rotation; //000
-  rotation.rotateY(rotationAngle);
+  rotationAngle += 0.01f;
 
-  Matrix4 translation1; //000
-  translation1.identity();
-  translation1.Translate(Vector3(0, 0, 0));
-  Matrix4 translation2; //1.5, 0, -2.5
-  translation2.identity();
-  translation2.Translate({1.5, 0, -2.5});
   Matrix4 translation3; //000
   translation3.identity();
   translation3.Translate({0, 0, 0});
 
-
-  g_WVP.world = rotation * translation1;
-  g_WVP.world.transpose();
+  g_worldTransform.setRotation({0, rotationAngle, 0});
 
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
 
-  g_pGAPI->m_pDeviceContext->VSSetConstantBuffers(0, 1, &g_pCB_WVP->m_pBuffer);
+  g_pGAPI->setConstantBuffer(0, g_pCB_WVP);
 
-  g_pGAPI->setRasterState(g_pRS_Default);
+  //g_pGAPI->setRasterState(g_pRS_Default);
+  g_pGAPI->setRasterState(g_pRS_Wireframe);
 
   //Set the samplers
-  g_pGAPI->m_pDeviceContext->PSSetSamplers(0, 1, &g_pSS_Point);
-  g_pGAPI->m_pDeviceContext->PSSetSamplers(0, 1, &g_pSS_Linear);
-  g_pGAPI->m_pDeviceContext->PSSetSamplers(0, 1, &g_pSS_Anisotropic);
+  g_pGAPI->setSamplers(0, g_pSS_Point);
+  g_pGAPI->setSamplers(0, g_pSS_Linear);
+  g_pGAPI->setSamplers(0, g_pSS_Anisotropic);
 
+  ////////////////////////////////////////////////////////////////////////////////////////////    Car
+  
+  g_WVP.world = g_worldTransform.getMatrix() * g_carModel.m_transform.getMatrix();
 
+  g_WVP.world.transpose();
+  memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+  g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////
-  Matrix4 dinoTransform;
-  dinoTransform.identity();
-  //rotation.rotateY(rotationAngle);
-  g_WVP.world = dinoTransform * rotation * translation1;
+  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
+  
+  g_carModel.setBuffers(g_pGAPI);
+
+  g_pGAPI->setShaderResource(0, g_carTexture);
+
+  g_carModel.draw(g_pGAPI);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////    Rex
+  
+  g_pGAPI->setRasterState(g_pRS_Default);
+
+  g_WVP.world.transpose();
+  g_WVP.world = g_worldTransform.getMatrix() * g_myModel.m_transform.getMatrix();
+  
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
@@ -391,16 +422,16 @@ SDL_AppIterate(void* appstate) {
 
   g_pGAPI->setShaderResource(0, g_myTexture);
 
-  g_myModel.draw(g_pGAPI);
+  //g_myModel.draw(g_pGAPI);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////  Reflection
+  
   Matrix4 refScale; //Reflection
   refScale.identity();
   refScale.scale({1, -1, 1});
-  rotation.rotateY(rotationAngle);
-  g_WVP.world = refScale * rotation * translation3;
-  g_WVP.world.transpose();
+  g_WVP.world = refScale * g_worldTransform.getMatrix() * translation3;
 
+  g_WVP.world.transpose();
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
@@ -413,15 +444,13 @@ SDL_AppIterate(void* appstate) {
   g_myModel.setBuffers(g_pGAPI); 
   g_pGAPI->setShaderResource(0, g_myTexture);
 
-  g_myModel.draw(g_pGAPI);
-  ////////////////////////////////////////////////////////////////////////////////////////////
-  Matrix4 floorScale;
-  floorScale.identity();
-  floorScale.scale(0.08f);
-  rotation.rotateY(rotationAngle);
-  g_WVP.world = floorScale * rotation * translation2;
-  g_WVP.world.transpose();
+  //g_myModel.draw(g_pGAPI);
 
+  ////////////////////////////////////////////////////////////////////////////////////////////  Floor
+
+  g_WVP.world = g_worldTransform.getMatrix() * g_TerrainModel.m_transform.getMatrix();
+
+  g_WVP.world.transpose();
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
@@ -437,7 +466,7 @@ SDL_AppIterate(void* appstate) {
   g_pGAPI->setShaderResource(1, g_rtReflection);
 
 
-  g_TerrainModel.draw(g_pGAPI);
+  //g_TerrainModel.draw(g_pGAPI);
 
 
   g_pGAPI->m_pDeviceContext->PSSetShader(g_pPixelShader->m_pPixelShader, nullptr, 0);

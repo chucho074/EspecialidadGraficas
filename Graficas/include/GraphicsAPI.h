@@ -52,10 +52,19 @@ class GraphicsAPI {
 
   UPtr<GraphicsBuffers> 
   createConstantBuffer(const Vector<char>& inData);
+
+  ID3D11RasterizerState1*
+  createRasterState(CD3D11_RASTERIZER_DESC1 inDesc);
+
+  ID3D11SamplerState*
+  createSamplerState(CD3D11_SAMPLER_DESC inDesc);
   
   void
   writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer, 
                 const Vector<char>& inData);
+  
+  void
+  setInputLayout(ID3D11InputLayout* inInputLayout);
 
   void
   setVertexShader(const UPtr<VertexShader>& inShader);
@@ -72,7 +81,11 @@ class GraphicsAPI {
   void
   setRasterState(ID3D11RasterizerState1* inState);
 
+  void
+  setSamplers(int32 inSlot, ID3D11SamplerState* inSampler);
 
+  void
+  setConstantBuffer(int32 inSlot, const UPtr<GraphicsBuffers>& inBuffer);
 
   void
   setTopology(int32 inTopologyType);

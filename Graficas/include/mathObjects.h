@@ -154,38 +154,42 @@ struct Mesh {
     float cosY = cos(inAngle.y), sinY = sin(inAngle.y);
     float cosZ = cos(inAngle.z), sinZ = sin(inAngle.z);
     //escala, Rotacion posicion
-    Matrix3 rotX = {
-      1,    0,     0,
-      0, cosX, -sinX,
-      0, sinX,  cosX
+    Matrix4 rotX = {
+      1,    0,     0, 0,
+      0, cosX, -sinX, 0,
+      0, sinX,  cosX, 0,
+      0,    0,     0, 1
     };
 
-    Matrix3 rotY = {
-      cosY,    0,  sinY,
-         0,    1,     0,
-     -sinY,    0,  cosY
+    Matrix4 rotY = {
+      cosY,    0,  sinY, 0,
+         0,    1,     0, 0,
+     -sinY,    0,  cosY, 0,
+         0,    0,     0, 1
+
     };
 
-    Matrix3 rotZ = {
-      cosZ, -sinZ,     0,
-      sinZ,  cosZ,     0,
-         0,     0,     1
+    Matrix4 rotZ = {
+      cosZ, -sinZ,    0, 0,
+      sinZ,  cosZ,    0, 0,
+         0,     0,    1, 0,
+         0,    0,     0, 1
     };
 
     for(const auto& iterTriangle : m_triangles) {
       Triangle tmpTriangle = iterTriangle;
       //Rotate in X
-      tmpTriangle.v0.position = tmpTriangle.v0.position * rotX;
-      tmpTriangle.v1.position = tmpTriangle.v1.position * rotX;
-      tmpTriangle.v2.position = tmpTriangle.v2.position * rotX;
+      tmpTriangle.v0.position = rotX.TransformPosition(tmpTriangle.v0.position);
+      tmpTriangle.v1.position = rotX.TransformPosition(tmpTriangle.v1.position);
+      tmpTriangle.v2.position = rotX.TransformPosition(tmpTriangle.v2.position);
       //Rotate in Y (with the previous calculated data)
-      tmpTriangle.v0.position = tmpTriangle.v0.position * rotY;
-      tmpTriangle.v1.position = tmpTriangle.v1.position * rotY;
-      tmpTriangle.v2.position = tmpTriangle.v2.position * rotY;
+      tmpTriangle.v0.position = rotY.TransformPosition(tmpTriangle.v0.position);
+      tmpTriangle.v1.position = rotY.TransformPosition(tmpTriangle.v1.position);
+      tmpTriangle.v2.position = rotY.TransformPosition(tmpTriangle.v2.position);
       //Rotate in Z (with the previous calculated data)
-      tmpTriangle.v0.position = tmpTriangle.v0.position * rotZ;
-      tmpTriangle.v1.position = tmpTriangle.v1.position * rotZ;
-      tmpTriangle.v2.position = tmpTriangle.v2.position * rotZ;
+      tmpTriangle.v0.position = rotZ.TransformPosition(tmpTriangle.v0.position);
+      tmpTriangle.v1.position = rotZ.TransformPosition(tmpTriangle.v1.position);
+      tmpTriangle.v2.position = rotZ.TransformPosition(tmpTriangle.v2.position);
       //Save the data to return 
       outData.push_back(tmpTriangle);
     }
@@ -252,9 +256,9 @@ struct Mesh {
 
     for (const auto& iterTriangle : m_triangles) {
       Triangle tmpTriangle = iterTriangle;
-      tmpTriangle.v0.position *= tmpTransform;
-      tmpTriangle.v1.position *= tmpTransform;
-      tmpTriangle.v2.position *= tmpTransform;
+      tmpTransform.TransformPosition(tmpTriangle.v0.position);
+      tmpTransform.TransformPosition(tmpTriangle.v1.position);
+      tmpTransform.TransformPosition(tmpTriangle.v2.position);
       outData.push_back(tmpTriangle);
     }
     return outData;

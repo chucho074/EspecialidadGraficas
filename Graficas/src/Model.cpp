@@ -49,11 +49,11 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
 
   Vector<String> lines = split(fileData, '\n');
   Vector<SimpleVertex> vertices;
-  Vector<uint16> indices;
+  Vector<uint32> indices;
 
   Vector<Vector3> temp_pos;
   Vector<Vector2> temp_tc;
-  UMap<FaceVertex, uint16> uniqueVertices;
+  UMap<FaceVertex, uint32> uniqueVertices;
 
   int32 vt_index = 0;
   for(const auto& line : lines) {
@@ -79,7 +79,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
     }
 
     else if (tokens[0] == "f") {
-      Vector<uint16> faceIndex;
+      Vector<uint32> faceIndex;
 
       assert(tokens.size() == 4);
       for (size_t i = 1; i < tokens.size(); ++i) {
@@ -91,7 +91,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
         fv.uv_index = std::stoi(fi[1]) - 1;
 
         if (uniqueVertices.find(fv) == uniqueVertices.end()) {
-          uniqueVertices[fv] = static_cast<uint16>(vertices.size());
+          uniqueVertices[fv] = static_cast<uint32>(vertices.size());
 
           SimpleVertex mvertex;
           mvertex.position = temp_pos[fv.vertex_index];
@@ -132,8 +132,8 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   }
 
   Vector<char> tmpIndexData;
-  tmpIndexData.resize(indices.size() * sizeof(uint16));
-  memcpy(tmpIndexData.data(), indices.data(), indices.size() * sizeof(uint16));
+  tmpIndexData.resize(indices.size() * sizeof(uint32));
+  memcpy(tmpIndexData.data(), indices.data(), indices.size() * sizeof(uint32));
   m_pIndexBuffer = inGAPI->createIndexBuffer(tmpIndexData);
 
   if (!m_pIndexBuffer) {
@@ -146,7 +146,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
 
 bool 
 Model::loadFromMem(const Vector<SimpleVertex>& inVertexData, 
-                   const Vector<uint16>& inIndexData, 
+                   const Vector<uint32>& inIndexData, 
                    const UPtr<GraphicsAPI>& inGAPI) {
 
   m_meshes.resize(1);
@@ -171,10 +171,10 @@ Model::loadFromMem(const Vector<SimpleVertex>& inVertexData,
   }
 
   Vector<char> tmpIndexData;
-  tmpIndexData.resize(inIndexData.size() * sizeof(uint16));
+  tmpIndexData.resize(inIndexData.size() * sizeof(uint32));
   memcpy(tmpIndexData.data(), 
          inIndexData.data(), 
-         inIndexData.size() * sizeof(uint16));
+         inIndexData.size() * sizeof(uint32));
   m_pIndexBuffer = inGAPI->createIndexBuffer(tmpIndexData);
 
   if(!m_pIndexBuffer) {
@@ -196,7 +196,7 @@ Model::setBuffers(const UPtr<GraphicsAPI>& inGAPI) {
 
 
   inGAPI->m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer->m_pBuffer,
-                                             DXGI_FORMAT_R16_UINT,
+                                             DXGI_FORMAT_R32_UINT,
                                              0);
 
 }

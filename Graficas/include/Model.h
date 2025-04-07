@@ -11,7 +11,7 @@
 #pragma once
 #include "PrerequisiteGraficas.h"
 #include "Buffers.h"
-
+#include "Transform.h"
 #include "Mesh.h"
 
 class GraphicsAPI;
@@ -25,15 +25,15 @@ struct SimpleVertex {
 class Model
 {
  public:
-	Model() = default;
-	~Model() = default;
+  Model() = default;
+  ~Model() = default;
 
   bool
   loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI);
 
   bool 
   loadFromMem(const Vector<SimpleVertex>& inVertexData,
-              const Vector<uint16>& inIndexData,
+              const Vector<uint32>& inIndexData,
               const UPtr<GraphicsAPI>& inGAPI);
 
   void
@@ -43,6 +43,8 @@ class Model
   draw(const UPtr<GraphicsAPI>& inGAPI);
 
   Vector<MeshData> m_meshes;
+
+  Transform m_transform;
 
  protected:
   UPtr<GraphicsBuffers> m_pVertexBuffer;
