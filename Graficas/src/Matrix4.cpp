@@ -55,8 +55,8 @@ Matrix4::lookAt(const Vector3& inEyePos,
                 const Vector3& inTargetPos, 
                 const Vector3& inUpDir) {
 
-  const Vector3 WAxis = (inEyePos - inTargetPos).normalize();
-  const Vector3 ZAxis = (inTargetPos - inEyePos).normalize();
+  const Vector3 ZAxis = (inEyePos - inTargetPos).normalize();
+  const Vector3 WAxis = (inTargetPos - inEyePos).normalize();
   const Vector3 XAxis = inUpDir.cross(ZAxis).normalize();
   const Vector3 YAxis = ZAxis.cross(XAxis);
 

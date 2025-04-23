@@ -275,6 +275,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   
   //Rex model
   if(!g_myModel.loadFromFile("Models/rex.obj", g_pGAPI)) {
+    __debugbreak();
     return SDL_APP_FAILURE;
   }
 
@@ -375,7 +376,7 @@ SDL_AppIterate(void* appstate) {
   translation3.identity();
   translation3.Translate({0, 0, 0});
 
-  g_worldTransform.setRotation({0, rotationAngle, 0});
+  //g_worldTransform.setRotation({0, rotationAngle, 0});
 
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
@@ -404,7 +405,7 @@ SDL_AppIterate(void* appstate) {
 
   g_pGAPI->setShaderResource(0, g_carTexture);
 
-  g_carModel.draw(g_pGAPI);
+  //g_carModel.draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////    Rex
   
@@ -422,7 +423,7 @@ SDL_AppIterate(void* appstate) {
 
   g_pGAPI->setShaderResource(0, g_myTexture);
 
-  //g_myModel.draw(g_pGAPI);
+  g_myModel.draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Reflection
   
@@ -444,7 +445,7 @@ SDL_AppIterate(void* appstate) {
   g_myModel.setBuffers(g_pGAPI); 
   g_pGAPI->setShaderResource(0, g_myTexture);
 
-  //g_myModel.draw(g_pGAPI);
+  g_myModel.draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Floor
 
@@ -466,7 +467,7 @@ SDL_AppIterate(void* appstate) {
   g_pGAPI->setShaderResource(1, g_rtReflection);
 
 
-  //g_TerrainModel.draw(g_pGAPI);
+  g_TerrainModel.draw(g_pGAPI);
 
 
   g_pGAPI->m_pDeviceContext->PSSetShader(g_pPixelShader->m_pPixelShader, nullptr, 0);
