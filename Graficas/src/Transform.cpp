@@ -51,10 +51,10 @@ Transform::getMatrix() {
     outData = outData * Matrix4::getRotatedX(m_rotation.x);
   }
   if(m_rotation.y || 0) {
-    outData = outData* Matrix4::getRotatedY(m_rotation.y);
+    outData = outData * Matrix4::getRotatedY(m_rotation.y);
   }
   if(m_rotation.z || 0) {
-    outData = outData* Matrix4::getRotatedZ(m_rotation.z);
+    outData = outData * Matrix4::getRotatedZ(m_rotation.z);
   }
   
   //Pos

@@ -13,6 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\SG">
+      <UniqueIdentifier>{4c5d4422-4bfe-46d0-ad84-f9a5ad182340}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Math">
+      <UniqueIdentifier>{3fa9296b-a71c-4521-83ce-76786df2cba0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GAPI">
+      <UniqueIdentifier>{b3b4a2ed-e595-4697-b0e9-89f77d29ba3e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Source.cpp">
@@ -45,11 +54,17 @@
     <ClCompile Include="src\Transform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\SceneNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UUID.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SceneGraph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\GraphicsAPI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\stdHeaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -59,35 +74,53 @@
     <ClInclude Include="include\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Buffers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\mathObjects.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Matrix4.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Vectors.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\Model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\Image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Rect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\Transform.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SceneGraph.h">
+      <Filter>Header Files\SG</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SceneNode.h">
+      <Filter>Header Files\SG</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Actor.h">
+      <Filter>Header Files\SG</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UUID.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mathObjects.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Matrix4.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Rect.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Vectors.h">
+      <Filter>Header Files\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Buffers.h">
+      <Filter>Header Files\GAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GraphicsAPI.h">
+      <Filter>Header Files\GAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Texture.h">
+      <Filter>Header Files\GAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Object.h">
+      <Filter>Header Files\SG</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

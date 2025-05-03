@@ -16,6 +16,7 @@
 
 #define SAFE_RELEASE(x) if(x != nullptr) x->Release(); x=nullptr;
 #define SAFE_DELETE(x) if(x != nullptr) delete(x); x=nullptr;
+#define UNREFERENCED_PARAMETER(x) (void)x
 
 static String 
 trim(const String & str) {

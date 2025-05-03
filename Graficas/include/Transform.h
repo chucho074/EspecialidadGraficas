@@ -32,10 +32,8 @@ class Transform {
   getMatrix();
 
  protected:
+
   Vector3 m_scale;
   Vector3 m_position;
   Vector3 m_rotation;
-
-
- private:
 };

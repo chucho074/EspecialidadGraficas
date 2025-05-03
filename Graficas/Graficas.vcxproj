@@ -150,13 +150,17 @@
     <ClCompile Include="src\Matrix4.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Model.cpp" />
+    <ClCompile Include="src\SceneGraph.cpp" />
+    <ClCompile Include="src\SceneNode.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\Source.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\Transform.cpp" />
+    <ClCompile Include="src\UUID.cpp" />
     <ClCompile Include="src\Vectors.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\Actor.h" />
     <ClInclude Include="include\Buffers.h" />
     <ClInclude Include="include\GraphicsAPI.h" />
     <ClInclude Include="include\Image.h" />
@@ -164,12 +168,16 @@
     <ClInclude Include="include\Matrix4.h" />
     <ClInclude Include="include\Mesh.h" />
     <ClInclude Include="include\Model.h" />
+    <ClInclude Include="include\Object.h" />
     <ClInclude Include="include\PrerequisiteGraficas.h" />
     <ClInclude Include="include\Rect.h" />
+    <ClInclude Include="include\SceneGraph.h" />
+    <ClInclude Include="include\SceneNode.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\stdHeaders.h" />
     <ClInclude Include="include\Texture.h" />
     <ClInclude Include="include\Transform.h" />
+    <ClInclude Include="include\UUID.h" />
     <ClInclude Include="include\Vectors.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
