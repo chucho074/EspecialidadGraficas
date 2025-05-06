@@ -19,7 +19,9 @@ class Actor : public SceneNode {
   virtual ~Actor() = default;
 
   virtual void
-  init(Vector3 inPos, Vector3 inScale = {1.f, 1.f, 1.f}, Vector3 inRotation = Vector3::ZERO) {
+  init(Vector3 inPos, 
+       Vector3 inScale = Vector3::UNIT,
+       Vector3 inRotation = Vector3::ZERO) {
     setPosition(inPos);
     setScale(inScale);
     setRotation(inRotation);
@@ -61,7 +63,7 @@ class Actor : public SceneNode {
       Vector3 rotatedPosition;
 
       rotatedPosition.x = m_transform.getLocalPosition().x * cos(parentRotation.y) - m_transform.getLocalPosition().z * sin(parentRotation.y);
-      rotatedPosition.y = m_transform.getLocalPosition().y;
+      rotatedPosition.y = m_transform.getLocalPosition().y + parentActor->m_transform.getGlobalPosition().y;
       rotatedPosition.z = m_transform.getLocalPosition().x * sin(parentRotation.y) + m_transform.getLocalPosition().z * cos(parentRotation.y);
 
       m_transform.setGlobalPosition(parentActor->m_transform.getGlobalPosition() + rotatedPosition);

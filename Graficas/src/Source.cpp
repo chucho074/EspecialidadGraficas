@@ -58,14 +58,8 @@ Camera g_Camera;
 Model g_cubeModel;
 
 SPtr<Prop> g_pDinoActor;
-Model g_myModel; //Dino
 SPtr<Prop> g_pCarActor;
-Model g_carModel; 
-Texture g_carTexture;
 SPtr<Prop> g_pTerrainActor;
-Model g_TerrainModel;
-Texture g_TerrainTexture;
-Texture g_myTexture;
 
 Texture g_rtReflection;
 Texture g_dsReflection;
@@ -270,23 +264,21 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   /////////////////////////////////////////////////////////////////////////////
   
   //Car model
+  g_pCarActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0, 0, 0), Vector3(3.f,3.f,3.f)));
+
   //if(!g_carModel.loadFromFile("Models/audi.obj", g_pGAPI)) {
-  if(!g_carModel.loadFromFile("Models/rex.obj", g_pGAPI)) { 
-  //if(!g_carModel.loadFromFile("Models/911-gt3.obj", g_pGAPI)) {
+  if(!g_pCarActor->m_model.loadFromFile("Models/rex.obj", g_pGAPI)) { 
     return SDL_APP_FAILURE;
   }
 
   Image carImage;
   carImage.decode("Models/Untitled.bmp");
-  g_carTexture.createFromImage(carImage, g_pGAPI);
-  //Setting positions to Rex
-  g_carModel.m_transform.setLocalPosition({0, 0, 0});
-  g_carModel.m_transform.setLocalScale(3.f);
+  g_pCarActor->m_texture.createFromImage(carImage, g_pGAPI);
 
   /////////////////////////////////////////////////////////////////////////////
   
 
-  g_pDinoActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0,0,0)));
+  g_pDinoActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0.8,0,0)));
 
   //Rex model
   if(!g_pDinoActor->m_model.loadFromFile("Models/rex.obj", g_pGAPI)) {
@@ -297,22 +289,19 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   Image srcImage;
   srcImage.decode("Models/Rex_C.bmp");
   g_pDinoActor->m_texture.createFromImage(srcImage, g_pGAPI);
-  //Setting positions to Rex
-  //g_myModel.m_transform.setLocalPosition({0, 0, 0});
 
   /////////////////////////////////////////////////////////////////////////////
   
+  g_pTerrainActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0, 0, 0), Vector3(0.08f, 0.08f, 0.08f)));
+
   //Disc model
-  if(!g_TerrainModel.loadFromFile("Models/disc.obj", g_pGAPI)) {
+  if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj", g_pGAPI)) {
     return SDL_APP_FAILURE;
   }
 
   Image terrainImage;
   terrainImage.decode("Models/Terrain.bmp");
-  g_TerrainTexture.createFromImage(terrainImage, g_pGAPI);
-
-  g_TerrainModel.m_transform.setLocalPosition({0, 0, 0});
-  g_TerrainModel.m_transform.setLocalScale(0.08f);
+  g_pTerrainActor->m_texture.createFromImage(terrainImage, g_pGAPI);
 
   //Reflection textures
   g_rtReflection.m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
@@ -410,7 +399,7 @@ SDL_AppIterate(void* appstate) {
 
   ////////////////////////////////////////////////////////////////////////////////////////////    Car
   
-  g_WVP.world = g_worldTransform.getMatrix() * g_carModel.m_transform.getMatrix();
+  g_WVP.world = g_worldTransform.getMatrix() * g_pCarActor->m_transform.getMatrix();
 
   g_WVP.world.transpose();
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
@@ -418,11 +407,7 @@ SDL_AppIterate(void* appstate) {
 
   g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
   
-  g_carModel.setBuffers(g_pGAPI);
-
-  g_pGAPI->setShaderResource(0, g_carTexture);
-
-  //g_carModel.draw(g_pGAPI);
+  //g_pCarActor->draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////    Rex
   
@@ -436,7 +421,8 @@ SDL_AppIterate(void* appstate) {
 
   g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
   
-  g_sceneGraph->draw(g_pGAPI);
+  g_pDinoActor->draw(g_pGAPI);
+  //g_sceneGraph->draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Reflection
   
@@ -455,11 +441,11 @@ SDL_AppIterate(void* appstate) {
   
   g_pGAPI->setRenderTargets(g_rtReflection, g_dsReflection);
   
-  g_pDinoActor->draw(g_pGAPI);
+  //g_pDinoActor->draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Floor
 
-  g_WVP.world = g_worldTransform.getMatrix() * g_TerrainModel.m_transform.getMatrix();
+  g_WVP.world = g_worldTransform.getMatrix() * g_pTerrainActor->m_transform.getMatrix();
 
   g_WVP.world.transpose();
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
@@ -467,17 +453,17 @@ SDL_AppIterate(void* appstate) {
 
   g_pGAPI->setRasterState(g_pRS_Default);
 
-  g_TerrainModel.setBuffers(g_pGAPI);
+  //g_TerrainModel.setBuffers(g_pGAPI);
 
   g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
 
   g_pGAPI->setPixelShader(g_pPixelShader_Reflect);
 
-  g_pGAPI->setShaderResource(0, g_TerrainTexture);
+  //g_pGAPI->setShaderResource(0, g_TerrainTexture);
   g_pGAPI->setShaderResource(1, g_rtReflection);
 
 
-  g_TerrainModel.draw(g_pGAPI);
+  //g_TerrainModel.draw(g_pGAPI);
 
 
   g_pGAPI->m_pDeviceContext->PSSetShader(g_pPixelShader->m_pPixelShader, nullptr, 0);

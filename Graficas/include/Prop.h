@@ -22,7 +22,9 @@ class Prop : public Actor {
   ~Prop() = default;
 
   virtual void
-  init(Vector3 inPos, Vector3 inScale = {1.f, 1.f, 1.f}, Vector3 inRotation = Vector3::ZERO) override {
+  init(Vector3 inPos, 
+       Vector3 inScale = Vector3::UNIT, 
+       Vector3 inRotation = Vector3::ZERO) override {
     Actor::init(inPos, inScale, inRotation);
 
   }

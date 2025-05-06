@@ -99,21 +99,21 @@ Transform::getMatrix() {
   Matrix4 outData;
   outData.identity();
   //Scale
-  outData.scale(m_localScale);
+  outData.scale(m_globalScale);
 
   //Rot
-  if(m_localRotation.x || 0) {
-    outData = outData * Matrix4::getRotatedX(m_localRotation.x);
+  if(m_globalRotation.x || 0) {
+    outData = outData * Matrix4::getRotatedX(m_globalRotation.x);
   }
-  if(m_localRotation.y || 0) {
-    outData = outData * Matrix4::getRotatedY(m_localRotation.y);
+  if(m_globalRotation.y || 0) {
+    outData = outData * Matrix4::getRotatedY(m_globalRotation.y);
   }
-  if(m_localRotation.z || 0) {
-    outData = outData * Matrix4::getRotatedZ(m_localRotation.z);
+  if(m_globalRotation.z || 0) {
+    outData = outData * Matrix4::getRotatedZ(m_globalRotation.z);
   }
   
   //Pos
-  outData = outData * Matrix4::getTranslated(m_localPosition);
+  outData = outData * Matrix4::getTranslated(m_globalPosition);
 
   return outData;
 }
