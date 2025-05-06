@@ -145,6 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Actor.cpp" />
     <ClCompile Include="src\GraphicsAPI.cpp" />
     <ClCompile Include="src\Image.cpp" />
     <ClCompile Include="src\Matrix4.cpp" />
@@ -170,6 +171,7 @@
     <ClInclude Include="include\Model.h" />
     <ClInclude Include="include\Object.h" />
     <ClInclude Include="include\PrerequisiteGraficas.h" />
+    <ClInclude Include="include\Prop.h" />
     <ClInclude Include="include\Rect.h" />
     <ClInclude Include="include\SceneGraph.h" />
     <ClInclude Include="include\SceneNode.h" />

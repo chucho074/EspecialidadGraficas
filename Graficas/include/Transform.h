@@ -17,23 +17,50 @@ class Transform {
   ~Transform() = default;
 
   void
-  setScale(float inScale);
+  setLocalScale(float inScale);
   
   void
-  setScale(const Vector3& inScale);
+  setLocalScale(const Vector3& inScale);
 
   void
-  setRotation(const Vector3& inRotatio);
+  setLocalRotation(const Vector3& inRotation);
 
   void
-  setPosition(const Vector3& inPos);
+  setLocalPosition(const Vector3& inPos);
+  
+
+  
+  void
+  setGlobalScale(float inScale);
+  
+  void
+  setGlobalScale(const Vector3& inScale);
+
+  void
+  setGlobalRotation(const Vector3& inRotation);
+
+  void
+  setGlobalPosition(const Vector3& inPos);
+
+
+  Vector3 getLocalPosition() const;
+  Vector3 getLocalScale() const;
+  Vector3 getLocalRotation() const;
+
+  Vector3 getGlobalPosition() const;
+  Vector3 getGlobalScale() const;
+  Vector3 getGlobalRotation() const;
 
   Matrix4
   getMatrix();
 
  protected:
 
-  Vector3 m_scale;
-  Vector3 m_position;
-  Vector3 m_rotation;
+  Vector3 m_localScale;
+  Vector3 m_localPosition;
+  Vector3 m_localRotation;
+
+  Vector3 m_globalScale;
+  Vector3 m_globalPosition;
+  Vector3 m_globalRotation;
 };

@@ -1,5 +1,5 @@
 /**
- * @file    UUID.h
+ * @file    UID.h
  * @author  Jesus Alberto Del Moral Cupil
  * @e       edgv24c.jmoral@uartesdigitales.edu.mx
  * @date    30/4/2025
@@ -11,25 +11,25 @@
 #pragma once
 #include "PrerequisiteGraficas.h"
 
-class UUID {
+class UID {
 public:
   //Default constructor.
-  UUID();
+  UID();
 
   //Constructor for own purposes.
-  UUID(uint64 inData);
+  UID(uint64 inData);
 
   //Copy constructor.
-  UUID(const UUID& inUUID) = default;
+  UID(const UID& inUUID) = default;
 
   //Destructor
-  ~UUID() = default;
+  ~UID() = default;
 
   operator uint64() const {
     return m_uuid;
   }
 
-  static const UUID
+  static const UID
     ZERO;
 
 private:
@@ -40,8 +40,8 @@ private:
 
 namespace std {
   template<>
-  struct hash<UUID> {
-    size_T operator()(const UUID& inUUID) const {
+  struct hash<UID> {
+    size_T operator()(const UID& inUUID) const {
       return hash<uint64>()((uint64)inUUID);
     }
   };

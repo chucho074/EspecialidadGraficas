@@ -19,6 +19,8 @@
 #include "Model.h"
 #include "Texture.h"
 #include "Transform.h"
+#include "SceneGraph.h"
+#include "Prop.h"
 
 struct MatrixCollection {
   Matrix4 world;
@@ -27,6 +29,8 @@ struct MatrixCollection {
 };
 
 Vector2 g_windowSize = {1280 , 720};
+
+SPtr<SceneGraph> g_sceneGraph;
 
 SDL_Window* g_pWindow = nullptr;
 UPtr<GraphicsAPI> g_pGAPI;
@@ -53,12 +57,15 @@ Camera g_Camera;
 
 Model g_cubeModel;
 
+SPtr<Prop> g_pDinoActor;
 Model g_myModel; //Dino
+SPtr<Prop> g_pCarActor;
 Model g_carModel; 
 Texture g_carTexture;
+SPtr<Prop> g_pTerrainActor;
 Model g_TerrainModel;
-Texture g_myTexture;
 Texture g_TerrainTexture;
+Texture g_myTexture;
 
 Texture g_rtReflection;
 Texture g_dsReflection;
@@ -126,6 +133,10 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
+
+  g_sceneGraph = make_shared<SceneGraph>();
+
+  g_sceneGraph->init();
 
   //Set camera info
   g_Camera.setLookAt(Vector3(5, -5, -5), Vector3(0, 0, 0), Vector3(0, 1, 0));
@@ -259,7 +270,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   /////////////////////////////////////////////////////////////////////////////
   
   //Car model
-  if(!g_carModel.loadFromFile("Models/audi.obj", g_pGAPI)) {
+  //if(!g_carModel.loadFromFile("Models/audi.obj", g_pGAPI)) {
+  if(!g_carModel.loadFromFile("Models/rex.obj", g_pGAPI)) { 
   //if(!g_carModel.loadFromFile("Models/911-gt3.obj", g_pGAPI)) {
     return SDL_APP_FAILURE;
   }
@@ -268,22 +280,25 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   carImage.decode("Models/Untitled.bmp");
   g_carTexture.createFromImage(carImage, g_pGAPI);
   //Setting positions to Rex
-  g_carModel.m_transform.setPosition({0, 0, 0});
-  g_carModel.m_transform.setScale(3.f);
+  g_carModel.m_transform.setLocalPosition({0, 0, 0});
+  g_carModel.m_transform.setLocalScale(3.f);
 
   /////////////////////////////////////////////////////////////////////////////
   
+
+  g_pDinoActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0,0,0)));
+
   //Rex model
-  if(!g_myModel.loadFromFile("Models/rex.obj", g_pGAPI)) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/rex.obj", g_pGAPI)) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
 
   Image srcImage;
   srcImage.decode("Models/Rex_C.bmp");
-  g_myTexture.createFromImage(srcImage, g_pGAPI);
+  g_pDinoActor->m_texture.createFromImage(srcImage, g_pGAPI);
   //Setting positions to Rex
-  g_myModel.m_transform.setPosition({0, 0, 0});
+  //g_myModel.m_transform.setLocalPosition({0, 0, 0});
 
   /////////////////////////////////////////////////////////////////////////////
   
@@ -296,8 +311,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   terrainImage.decode("Models/Terrain.bmp");
   g_TerrainTexture.createFromImage(terrainImage, g_pGAPI);
 
-  g_TerrainModel.m_transform.setPosition({0, 0, 0});
-  g_TerrainModel.m_transform.setScale(0.08f);
+  g_TerrainModel.m_transform.setLocalPosition({0, 0, 0});
+  g_TerrainModel.m_transform.setLocalScale(0.08f);
 
   //Reflection textures
   g_rtReflection.m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
@@ -338,6 +353,8 @@ SDL_AppEvent(void* appstate, SDL_Event* event) {
 SDL_AppResult
 SDL_AppIterate(void* appstate) {
 
+  g_sceneGraph->update(0.f);
+
   //Rellenar el input assembly
   //IA > Input Assambly
   //OM > Output Merger
@@ -365,7 +382,7 @@ SDL_AppIterate(void* appstate) {
   g_pGAPI->setPixelShader(g_pPixelShader);
 
   g_pGAPI->setInputLayout(g_pInputLayout);
-  g_pGAPI->setTopology(g_myModel.m_meshes[0].topology);
+  g_pGAPI->setTopology(g_pDinoActor->m_model.m_meshes[0].topology);
   
   g_cubeModel.setBuffers(g_pGAPI);
   
@@ -412,18 +429,14 @@ SDL_AppIterate(void* appstate) {
   g_pGAPI->setRasterState(g_pRS_Default);
 
   g_WVP.world.transpose();
-  g_WVP.world = g_worldTransform.getMatrix() * g_myModel.m_transform.getMatrix();
+  g_WVP.world = g_worldTransform.getMatrix() * g_pDinoActor->m_transform.getMatrix();
   
   memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
   g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
   
-  g_myModel.setBuffers(g_pGAPI);
-
-  g_pGAPI->setShaderResource(0, g_myTexture);
-
-  g_myModel.draw(g_pGAPI);
+  g_sceneGraph->draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Reflection
   
@@ -442,10 +455,7 @@ SDL_AppIterate(void* appstate) {
   
   g_pGAPI->setRenderTargets(g_rtReflection, g_dsReflection);
   
-  g_myModel.setBuffers(g_pGAPI); 
-  g_pGAPI->setShaderResource(0, g_myTexture);
-
-  g_myModel.draw(g_pGAPI);
+  g_pDinoActor->draw(g_pGAPI);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Floor
 

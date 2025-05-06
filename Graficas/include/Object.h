@@ -23,12 +23,12 @@ class Object {
   }
 
   void
-  setName(StringView& inName) {
+  setName(StringView inName) {
     m_name = inName;
   }
 
   void
-  setID(const UUID& inID) {
+  setID(const UID& inID) {
     m_id = inID;
   }
 
@@ -37,7 +37,7 @@ class Object {
     return m_name;
   }
 
-  const UUID&
+  const UID&
   getID() const {
     return m_id;
   }
@@ -49,7 +49,7 @@ class Object {
 
  protected:
   String m_name;
-  UUID m_id = UUID::ZERO;
+  UID m_id = UID::ZERO;
   bool m_isActive = true;
 
 };

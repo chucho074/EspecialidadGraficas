@@ -63,6 +63,9 @@
     <ClCompile Include="src\SceneGraph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Actor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\stdHeaders.h">
@@ -120,6 +123,9 @@
       <Filter>Header Files\GAPI</Filter>
     </ClInclude>
     <ClInclude Include="include\Object.h">
+      <Filter>Header Files\SG</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Prop.h">
       <Filter>Header Files\SG</Filter>
     </ClInclude>
   </ItemGroup>

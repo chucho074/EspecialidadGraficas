@@ -27,10 +27,11 @@ class SceneNode : public Object {
   static SPtr<T> 
   createSceneObject(Args&&... args);
 
- protected:
   
-  WPtr<SceneNode> m_parent;
   Vector<SPtr<SceneNode>> m_children;
+
+ protected:
+  WPtr<SceneNode> m_parent;
 
   SPtr<SceneNode> 
   sharedFromSelf() {

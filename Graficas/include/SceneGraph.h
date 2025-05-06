@@ -19,6 +19,15 @@ class SceneGraph {
   SceneGraph() = default;
   ~SceneGraph() = default;
 
+  void
+  init();
+
+  void
+  update(float inDT);
+
+  void 
+  draw(const UPtr<GraphicsAPI>& inGAPI);
+
   /**
    * @brief      .
    * @param      inParent      .
@@ -36,19 +45,23 @@ class SceneGraph {
    */
   void
   addActor(const SPtr<Actor>& inActor,
-           SPtr<SceneNode> inParent);
+           SPtr<SceneNode> inParent) {}
+
+  void
+  removeActor(SPtr<Actor> inActor);
+  
   /**
    * @brief    Obtain the actor childs of the root.
    * @return   Returns the list of the actors who there parent is the root.
    */
-  Vector<SPtr<Actor>>
+  Vector<SPtr<Actor>>&
   getActorsFromRoot();
  
   /**
    * @brief    Gets a list of actors by the parent.
    * @param    inParent      The reference of the parent to search.
    */
-  List<SPtr<SceneNode>>
+  List<SPtr<SceneNode>>&
   getNodesByParent(WPtr<SceneNode> inParent);
 
   /**
@@ -76,7 +89,12 @@ class SceneGraph {
   /**
    * @brief    The root of the Scene.
    */
-  SPtr<SceneNode> m_root;
+  SPtr<Actor> m_root;
+
+  /**
+   * @brief 
+   */
+  Vector<SPtr<Actor>> m_actors;
 
  public:
    
@@ -88,7 +106,7 @@ class SceneGraph {
   /**
    * @brief    The ID of the scene.
    */
-  UUID m_sceneID;
+  UID m_sceneID;
 
   /**
    * @brief    The number of the actors.
@@ -97,3 +115,23 @@ class SceneGraph {
 
 
 };
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+template<typename T, typename... Args>
+inline SPtr<Actor>
+SceneGraph::spawnActor(const SPtr<SceneNode>& inParent, Args&&... args) {
+  static_assert(std::is_base_of<Actor, T>::value, "T must be derived from Actor");
+
+  SPtr<T> outActor = SceneNode::createSceneObject<T>();
+  outActor->init(std::forward<Args>(args)...);
+  //outActor->onSuscribeEvents(m_inputEvents);
+  m_actors.push_back(outActor);
+  if(inParent) {
+    inParent->addChild(outActor);
+  }
+  else {
+    m_root->addChild(outActor);
+  }
+  return outActor;
+}
