@@ -133,6 +133,7 @@ GraphicsAPI::~GraphicsAPI() {
   SAFE_RELEASE(m_pSwapChain);
   SAFE_RELEASE(m_pDeviceContext);
   SAFE_RELEASE(m_pDevice);
+  SAFE_RELEASE(m_pInputLayout);
 }
 
 ID3D11Texture2D* 
@@ -456,6 +457,7 @@ GraphicsAPI::setSamplers(int32 inSlot, ID3D11SamplerState* inSampler) {
 void 
 GraphicsAPI::setConstantBuffer(int32 inSlot, const UPtr<GraphicsBuffers>& inBuffer) {
   m_pDeviceContext->VSSetConstantBuffers(inSlot, 1, &inBuffer->m_pBuffer);
+  m_pDeviceContext->PSSetConstantBuffers(inSlot, 1, &inBuffer->m_pBuffer);
 
 }
 

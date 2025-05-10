@@ -26,6 +26,9 @@ struct MatrixCollection {
   Matrix4 world;
   Matrix4 view;
   Matrix4 projection;
+  Vector3 viewDir;
+
+  float time;
 };
 
 Vector2 g_windowSize = {1280 , 720};
@@ -66,6 +69,29 @@ Texture g_dsReflection;
 
 Transform g_worldTransform;
 
+void recompileShaders() {
+  auto pVertexShader = g_pGAPI->createVertexShaderFromFile("Shaders/basicVertexShader.hlsl",
+                                                           "vertex_main");
+  if(pVertexShader) {
+    g_pVertexShader = std::move(pVertexShader);
+  }
+
+
+  auto pPixelShader = g_pGAPI->createPixelShaderFromFile("Shaders/basicVertexShader.hlsl",
+                                                         "pixel_main");
+  if(pPixelShader) {
+    g_pPixelShader = std::move(pPixelShader);
+  }
+
+  auto pPixelShader_Reflect = g_pGAPI->createPixelShaderFromFile("Shaders/basicVertexShader.hlsl",
+                                                                 "pixel_reflect_main");
+  if(pPixelShader_Reflect) {
+    g_pPixelShader_Reflect = std::move(pPixelShader_Reflect);
+  }
+
+}
+
+
 /* This function runs once at startup. */
 SDL_AppResult
 SDL_AppInit(void** appstate, int argc, char* argv[]) {
@@ -92,29 +118,14 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
       return SDL_APP_FAILURE;
     }
 
-    g_pVertexShader = g_pGAPI->createVertexShaderFromFile("Shaders/basicVertexShader.hlsl", 
-                                                          "vertex_main");
-    if(!g_pVertexShader) {
-      return SDL_APP_FAILURE;
-    }
-
-    g_pPixelShader = g_pGAPI->createPixelShaderFromFile("Shaders/basicVertexShader.hlsl", 
-                                                        "pixel_main");
-    if (!g_pPixelShader) {
-      return SDL_APP_FAILURE;
-    }
-
-    g_pPixelShader_Reflect = g_pGAPI->createPixelShaderFromFile("Shaders/basicVertexShader.hlsl", 
-                                                                "pixel_reflect_main");
-    if (!g_pPixelShader_Reflect) {
-      return SDL_APP_FAILURE;
-    }
+    recompileShaders();
   }
 
   Vector<D3D11_INPUT_ELEMENT_DESC> inputElementDescs = {
-    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    {"NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0}
   };
   
   g_pInputLayout = g_pGAPI->createInputLayout(inputElementDescs, g_pVertexShader);
@@ -140,6 +151,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.world.identity();
   g_WVP.view = g_Camera.getViewMatrix();
   g_WVP.projection = g_Camera.getProjectionMatrix();
+
+  g_WVP.viewDir = g_Camera.getViewDir();
+  g_WVP.time = 1.f;
 
   g_WVP.world.transpose();
   g_WVP.view.transpose();
@@ -267,7 +281,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_pCarActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0, 0, 0), Vector3(3.f,3.f,3.f)));
 
   //if(!g_carModel.loadFromFile("Models/audi.obj", g_pGAPI)) {
-  if(!g_pCarActor->m_model.loadFromFile("Models/rex.obj", g_pGAPI)) { 
+  //if(!g_pCarActor->m_model.loadFromFile("Models/rex.obj", g_pGAPI)) { 
+  if(!g_pCarActor->m_model.loadFromFile("Models/rex_norm.obj", g_pGAPI)) { 
     return SDL_APP_FAILURE;
   }
 
@@ -278,10 +293,10 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   /////////////////////////////////////////////////////////////////////////////
   
 
-  g_pDinoActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0.8,0,0)));
+  g_pDinoActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0,0,0)));
 
   //Rex model
-  if(!g_pDinoActor->m_model.loadFromFile("Models/rex.obj", g_pGAPI)) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj", g_pGAPI)) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
@@ -335,6 +350,13 @@ SDL_AppEvent(void* appstate, SDL_Event* event) {
   if (event->type == SDL_EVENT_QUIT) {
     return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
   }
+
+  if (event->type == SDL_EVENT_KEY_UP) {
+    if(event->key.key == SDLK_F5) {
+      recompileShaders();
+    }
+  }
+
   return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
 
@@ -383,6 +405,11 @@ SDL_AppIterate(void* appstate) {
   translation3.Translate({0, 0, 0});
 
   //g_worldTransform.setRotation({0, rotationAngle, 0});
+
+  static float tempo = 0.f;
+  tempo += 0.0001f;
+  
+  g_WVP.time = tempo;
 
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
@@ -479,6 +506,17 @@ SDL_AppIterate(void* appstate) {
 /* This function runs once at shutdown. */
 void
 SDL_AppQuit(void* appstate, SDL_AppResult result) {
+
+
+  SAFE_RELEASE(g_pInputLayout);
+  SAFE_RELEASE(g_pRS_Default);
+  SAFE_RELEASE(g_pRS_Wireframe);
+  SAFE_RELEASE(g_pRS_Wireframe_NoCull);
+  SAFE_RELEASE(g_pRS_CullFront);
+  SAFE_RELEASE(g_pSS_Point);
+  SAFE_RELEASE(g_pSS_Linear);
+  SAFE_RELEASE(g_pSS_Anisotropic);
+
   /* SDL will clean up the window/renderer for us. */
   if(g_pWindow) {
     SDL_DestroyWindow(g_pWindow);

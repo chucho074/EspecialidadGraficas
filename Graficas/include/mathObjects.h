@@ -296,6 +296,16 @@ struct Camera {
     return projectionMatrix;
   }
 
+  Vector3
+  getPosition() const {
+    return position;
+  }
+
+  Vector3
+  getViewDir() const {
+    return (target - position).normalize();
+  }
+
  private:
   Vector3 position;
   Vector3 target;

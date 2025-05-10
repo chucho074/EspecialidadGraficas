@@ -14,10 +14,13 @@
 struct FaceVertex {
   int32 vertex_index = -1;
   int32 uv_index = -1;
+  int32 normal_index = -1;
 
   bool 
   operator==(const FaceVertex& vertex) const {
-    return vertex_index == vertex.vertex_index && uv_index == vertex.uv_index;
+    return vertex_index == vertex.vertex_index 
+           && uv_index == vertex.uv_index 
+           && normal_index == vertex.normal_index;
   }
 };
 
@@ -53,6 +56,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
 
   Vector<Vector3> temp_pos;
   Vector<Vector2> temp_tc;
+  Vector<Vector3> temp_norm;
   UMap<FaceVertex, uint32> uniqueVertices;
 
   int32 vt_index = 0;
@@ -61,6 +65,13 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
     if (tokens.empty()) {
       continue;
     }
+
+    if(tokens[0] == "#") {
+      continue;
+    }
+    /*if(tokens[0] == " ") {
+      continue;
+    }*/
     
     if (tokens[0] == "v") {
       Vector3 pos;
@@ -77,6 +88,13 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
       uv.y = std::stof(tokens[2]);
       temp_tc.push_back(uv);
     }
+    else if(tokens[0] == "vn") {
+      Vector3 normal;
+      normal.x = std::stof(tokens[1]);
+      normal.y = std::stof(tokens[2]);
+      normal.z = std::stof(tokens[3]);
+      temp_norm.push_back(normal);
+    }
 
     else if (tokens[0] == "f") {
       Vector<uint32> faceIndex;
@@ -89,6 +107,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
 
         fv.vertex_index = std::stoi(fi[0]) - 1;
         fv.uv_index = std::stoi(fi[1]) - 1;
+        fv.normal_index = std::stoi(fi[2]) - 1;
 
         if (uniqueVertices.find(fv) == uniqueVertices.end()) {
           uniqueVertices[fv] = static_cast<uint32>(vertices.size());
@@ -96,6 +115,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
           SimpleVertex mvertex;
           mvertex.position = temp_pos[fv.vertex_index];
           mvertex.color = Vector3(1.f, 1.f, 1.f);
+          mvertex.normal = temp_norm[fv.normal_index];
           mvertex.u = temp_tc[fv.uv_index].x;
           mvertex.v = 1.0 - temp_tc[fv.uv_index].y;
 
