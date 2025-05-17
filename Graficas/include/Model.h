@@ -20,6 +20,7 @@ struct SimpleVertex {
   Vector3 position;
   Vector3 color;
   Vector3 normal;
+  Vector3 tangent;
   float u, v;
 };
 
@@ -31,6 +32,10 @@ class Model
 
   bool
   loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI);
+
+  void
+  computeTangentSpace();
+
 
   bool 
   loadFromMem(const Vector<SimpleVertex>& inVertexData,
@@ -44,6 +49,10 @@ class Model
   draw(const UPtr<GraphicsAPI>& inGAPI);
 
   Vector<MeshData> m_meshes;
+
+  Vector<SimpleVertex> m_vertices;
+  Vector<uint32> m_indices;
+
 
   Transform m_transform;
 

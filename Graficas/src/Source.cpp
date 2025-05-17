@@ -125,7 +125,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    {"TANGENT",  0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 48, D3D11_INPUT_PER_VERTEX_DATA, 0}
   };
   
   g_pInputLayout = g_pGAPI->createInputLayout(inputElementDescs, g_pVertexShader);
@@ -305,6 +306,11 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   srcImage.decode("Models/Rex_C.bmp");
   g_pDinoActor->m_texture.createFromImage(srcImage, g_pGAPI);
 
+  Image normalImage;
+  normalImage.decode("Models/Rex_N.bmp");
+  g_pDinoActor->m_normalTexture.createFromImage(normalImage, g_pGAPI);
+
+
   /////////////////////////////////////////////////////////////////////////////
   
   g_pTerrainActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0, 0, 0), Vector3(0.08f, 0.08f, 0.08f)));
@@ -421,8 +427,8 @@ SDL_AppIterate(void* appstate) {
 
   //Set the samplers
   g_pGAPI->setSamplers(0, g_pSS_Point);
-  g_pGAPI->setSamplers(0, g_pSS_Linear);
-  g_pGAPI->setSamplers(0, g_pSS_Anisotropic);
+  g_pGAPI->setSamplers(1, g_pSS_Linear);
+  g_pGAPI->setSamplers(2, g_pSS_Anisotropic);
 
   ////////////////////////////////////////////////////////////////////////////////////////////    Car
   
@@ -447,7 +453,7 @@ SDL_AppIterate(void* appstate) {
   g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
   g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
-  
+
   g_pDinoActor->draw(g_pGAPI);
   //g_sceneGraph->draw(g_pGAPI);
 

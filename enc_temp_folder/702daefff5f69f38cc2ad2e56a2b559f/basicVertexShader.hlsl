@@ -51,18 +51,6 @@ PixelInput vertex_main(VertexInput Input) {
   return output;
 }
 
-
-float3
-BRDF(float3 normal, 
-     float3 lightDir,
-     float3 viewDir,
-     float3 reflectDir,
-     float3 diffuseColor,
-     float3 specularColor) {
-  
-  
-}
-
 float4 pixel_main(PixelInput Input) : SV_Target {
   
   //float4 normal = txNormal.Sample(samLinear, Input.texCoord); //Esta en espacio de tangentes
@@ -93,20 +81,19 @@ float4 pixel_main(PixelInput Input) : SV_Target {
   spotAngle = cos(spotAngle); 
 
   //Lamber factor
-  float DiffuseIncidence = dot(lightDir, normal.xyz);
+  float DiffuseIncidence = dot(lightDir, normal);
   float IncidenceToLight = dot(-spotDir, lightDir);
   
   //Specular
   //Compute light reflection
-  float3 ReflectVector = reflect(lightDir, normal.xyz); //Direccion de la luz que va a entrar a la superficie y la normal
+  float3 ReflectVector = reflect(lightDir, normal); //Direccion de la luz que va a entrar a la superficie y la normal
   float3 myViewDir = -ViewDir;
-  //float3 myViewDir = normalize(viewPos - Input.posW);
   
   float3 H = normalize(lightDir + myViewDir); //H = half
   
   //float SpecularIncidence = max(0.0f, dot(myViewDir, ReflectVector));
   float SpecularIncidence = max(0.0f, dot(myViewDir, H));
-  SpecularIncidence = pow(SpecularIncidence, 38); //Aqui iria el valor de especularidad que se le desea dar al material
+  SpecularIncidence = pow(SpecularIncidence, 3); //Aqui iria el valor de especularidad que se le desea dar al material
   
   
   if (IncidenceToLight < spotAngle) {
@@ -118,9 +105,11 @@ float4 pixel_main(PixelInput Input) : SV_Target {
 
   float4 color = txColor.Sample(samLinear, Input.texCoord);
   
+
+  
   color.rgb *= SpecularIncidence;
   color.rgb *= DiffuseIncidence;
-  color.rgb += 0.2f;
+  
   
   //Returns the normal 
   //return float4(normal.xyz, 1);
@@ -131,8 +120,8 @@ float4 pixel_main(PixelInput Input) : SV_Target {
   
   //Color difuso
   //Light Output = kDiffuse + kSpecular + kAmbient
-  return color;
-  //return color + SpecularIncidence;
+  //return color;
+  return color + SpecularIncidence;
 }
 
 float4 pixel_reflect_main(PixelInput Input) : SV_Target {

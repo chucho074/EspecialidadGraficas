@@ -79,18 +79,20 @@ class Vector3 {
 
   
 
-  void
+  Vector3&
   operator+=(const Vector3& inVec) {
     x += inVec.x;
     y += inVec.y;
     z += inVec.z;
+    return *this;
   }
 
-  void
+  Vector3&
   operator*=(const Vector3& inVec) {
     x *= inVec.x;
     y *= inVec.y;
     z *= inVec.z;
+    return *this;
   }
 
   Vector3 
@@ -178,6 +180,11 @@ class Vector3 {
 
 class Vector2 {
  public:
+  Vector2() = default;
+   Vector2(float inX, float inY = 0.f) :
+     x(inX),
+     y(inY) {   }
+
   float x;
   float y;
 

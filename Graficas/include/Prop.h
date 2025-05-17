@@ -40,6 +40,10 @@ class Prop : public Actor {
 
     m_model.setBuffers(inGAPI);
     inGAPI->setShaderResource(0, m_texture);
+    
+    if (m_normalTexture.m_pTexture) {
+      inGAPI->setShaderResource(1, m_normalTexture);
+    }
 
     m_model.draw(inGAPI);
   }
@@ -48,4 +52,5 @@ class Prop : public Actor {
 
   Model m_model;
   Texture m_texture;
+  Texture m_normalTexture;
 };
