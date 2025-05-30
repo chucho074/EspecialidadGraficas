@@ -310,6 +310,14 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   normalImage.decode("Models/Rex_N.bmp");
   g_pDinoActor->m_normalTexture.createFromImage(normalImage, g_pGAPI);
 
+  Image roughnessImage;
+  normalImage.decode("Models/Rex_R.bmp");
+  g_pDinoActor->m_roughnessTexture.createFromImage(normalImage, g_pGAPI);
+
+  Image metalicImage;
+  normalImage.decode("Models/Rex_M.bmp");
+  g_pDinoActor->m_metalicTexture.createFromImage(normalImage, g_pGAPI);
+
 
   /////////////////////////////////////////////////////////////////////////////
   

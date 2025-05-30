@@ -21,7 +21,7 @@ class Prop : public Actor {
   Prop() = default;
   ~Prop() = default;
 
-  virtual void
+  void
   init(Vector3 inPos, 
        Vector3 inScale = Vector3::UNIT, 
        Vector3 inRotation = Vector3::ZERO) override {
@@ -29,13 +29,13 @@ class Prop : public Actor {
 
   }
 
-  virtual void
+  void
   update(float inDT) override {
     Actor::update(inDT);
 
   }
 
-  virtual void
+  void
   draw(const UPtr<GraphicsAPI>& inGAPI) override {
 
     m_model.setBuffers(inGAPI);
@@ -43,6 +43,14 @@ class Prop : public Actor {
     
     if (m_normalTexture.m_pTexture) {
       inGAPI->setShaderResource(1, m_normalTexture);
+    }
+
+    if (m_roughnessTexture.m_pTexture) {
+      inGAPI->setShaderResource(2, m_roughnessTexture);
+    }
+
+    if (m_metalicTexture.m_pTexture) {
+      inGAPI->setShaderResource(3, m_metalicTexture);
     }
 
     m_model.draw(inGAPI);
@@ -53,4 +61,6 @@ class Prop : public Actor {
   Model m_model;
   Texture m_texture;
   Texture m_normalTexture;
+  Texture m_roughnessTexture;
+  Texture m_metalicTexture;
 };
