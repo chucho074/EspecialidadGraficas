@@ -25,9 +25,9 @@ SceneGraph::update(float inDT) {
 }
 
 void 
-SceneGraph::draw(const UPtr<GraphicsAPI>& inGAPI) {
+SceneGraph::draw() {
   for(auto& actor : m_actors) {
-    actor->draw(inGAPI);
+    actor->draw();
   }
 }
 

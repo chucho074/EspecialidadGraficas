@@ -178,12 +178,12 @@ float4 pixel_main(PixelInput Input) : SV_Target {
   normal.xyz = normalize(mul(normal.xyz, TBN));
   
   //incidencia de la luz //Light position
-  float3 lightPos = float3(-20.0f, 2.0f, 2.0f);
+  float3 lightPos = float3(0.0f, 0.0f, 0.0f);
   
   //Directional Light
   float3 lightDir = normalize(lightPos - Input.posWorld);
   
-  float3 color = BRDF_Cook_Torrance(normal.xyz,
+  float3 finalColor = BRDF_Cook_Torrance(normal.xyz,
                                     lightDir,
                                     normalize(ViewDir - Input.posWorld),
                                     normalize(reflect(-lightDir, normal.xyz)),
@@ -192,7 +192,7 @@ float4 pixel_main(PixelInput Input) : SV_Target {
                                     roughness);
   
   //Lo = kD + kS + kA
-  return float4(color, 1.0f);
+  return float4(finalColor, 1.0f);
 
 }
 

@@ -26,7 +26,7 @@ class SceneGraph {
   update(float inDT);
 
   void 
-  draw(const UPtr<GraphicsAPI>& inGAPI);
+  draw();
 
   /**
    * @brief      .

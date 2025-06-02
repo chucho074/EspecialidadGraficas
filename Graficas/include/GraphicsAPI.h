@@ -14,9 +14,12 @@
 #include "Buffers.h"
 #include "Texture.h"
 #include <d3d11_2.h>
+#include "Module.h"
 
-class GraphicsAPI {
+class GraphicsAPI : public Module<GraphicsAPI> {
  public:
+  GraphicsAPI() = default;
+
   GraphicsAPI(void* inWindow);
 
   ~GraphicsAPI();
@@ -73,10 +76,10 @@ class GraphicsAPI {
   setPixelShader(const UPtr<PixelShader>& inShader);
 
   void
-  setRenderTargets(const Texture& inRTV, const Texture& inDSV);
+  setRenderTargets(SPtr<Texture> inRTV, SPtr<Texture> inDSV);
 
   void
-  setShaderResource(uint32 inStartSlot, const Texture& inSRV);
+  setShaderResource(uint32 inStartSlot, SPtr<Texture> inSRV);
 
   void
   setRasterState(ID3D11RasterizerState1* inState);
@@ -91,10 +94,13 @@ class GraphicsAPI {
   setTopology(int32 inTopologyType);
 
   void
-  clearRTV(const Texture& inRTV, FloatColor inClearColor);
+  setViewport(const D3D11_VIEWPORT& inViewport);
 
   void
-  clearDSV(const Texture& inDSV);
+  clearRTV(SPtr<Texture> inRTV, FloatColor inClearColor);
+
+  void
+  clearDSV(SPtr<Texture> inDSV);
 
   void
   clearSRV(int32 inSlot);
@@ -111,9 +117,12 @@ class GraphicsAPI {
   ID3D11DeviceContext1* m_pDeviceContext = nullptr;
   IDXGISwapChain1* m_pSwapChain = nullptr;
 
-  Texture m_pBackBufferRTV;
-  Texture m_pBackBufferDSV;
+  SPtr<Texture> m_pBackBufferRTV;
+  SPtr<Texture> m_pBackBufferDSV;
 
   ID3D11InputLayout* m_pInputLayout = nullptr;
 
 };
+
+GraphicsAPI&
+g_graphicsAPI();

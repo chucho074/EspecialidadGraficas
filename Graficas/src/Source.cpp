@@ -36,11 +36,14 @@ Vector2 g_windowSize = {1280 , 720};
 SPtr<SceneGraph> g_sceneGraph;
 
 SDL_Window* g_pWindow = nullptr;
-UPtr<GraphicsAPI> g_pGAPI;
+GraphicsAPI* g_pGAPI = nullptr;
+
 UPtr<VertexShader> g_pVertexShader;
 UPtr<PixelShader> g_pPixelShader;
 UPtr<PixelShader> g_pPixelShader_Reflect;
+
 ID3D11InputLayout* g_pInputLayout = nullptr;
+
 UPtr<GraphicsBuffers> g_pVertexBuffer;
 UPtr<GraphicsBuffers> g_pIndexBuffer;
 UPtr<GraphicsBuffers> g_pCB_WVP;
@@ -58,14 +61,12 @@ MatrixCollection g_WVP;
 
 Camera g_Camera;
 
-Model g_cubeModel;
-
 SPtr<Prop> g_pDinoActor;
-SPtr<Prop> g_pCarActor;
 SPtr<Prop> g_pTerrainActor;
+SPtr<Prop> g_pBunnyActor;
 
-Texture g_rtReflection;
-Texture g_dsReflection;
+SPtr<Texture> g_rtReflection;
+SPtr<Texture> g_dsReflection;
 
 Transform g_worldTransform;
 
@@ -112,7 +113,11 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                         SDL_PROP_WINDOW_WIN32_HWND_POINTER,
                                         nullptr);
   if(pHandle) {
-    g_pGAPI = make_unique<GraphicsAPI>(pHandle);
+    //Initialize GraphicsAPI
+    GraphicsAPI::startUp();
+    GraphicsAPI* GAPI = new GraphicsAPI(reinterpret_cast<void*>(pHandle));
+    g_graphicsAPI().setObject(GAPI);
+    g_pGAPI = &g_graphicsAPI();
 
     if (!g_pGAPI) {
       return SDL_APP_FAILURE;
@@ -216,147 +221,72 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_pGAPI->m_pDevice->CreateSamplerState(&descSS, &g_pSS_Anisotropic);*/
 
   //Load models and textures
-  
-  /////////////////////////////////////////////////////////////////////////////
-  
-  //Cube model
-  Vector<SimpleVertex> vertex = {
-    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-
-    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(0, 1, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(1, 0, 0)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(1, 0, 0)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3(-1.0f, -1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f, -1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 1.0f), -0.f },
-    
-    { Vector3(-1.0f, -1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(0.0f, 0.0f), -0.f },
-    { Vector3( 1.0f, -1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 0.0f), -0.f },
-    { Vector3( 1.0f,  1.0f,  1.0f), Vector3(0, 0, 1)  }, //Vector2(1.0f, 1.0f), -0.f },
-    { Vector3(-1.0f,  1.0f,  1.0f), Vector3(0, 0, 1)  }  //Vector2(0.0f, 1.0f), -0.f },
-
-  };
-
-  Vector<uint32> indices = {
-      3,1,0,
-      2,1,3,
-
-      6,4,5,
-      7,4,6,
-
-      11,9,8,
-      10,9,11,
-
-      14,12,13,
-      15,12,14,
-
-      19,17,16,
-      18,17,19,
-
-      22,20,21,
-      23,20,22
-  };
-
-  if(!g_cubeModel.loadFromMem(vertex, indices, g_pGAPI)) {
-    return SDL_APP_FAILURE;
-  }
-  /////////////////////////////////////////////////////////////////////////////
-  
-  //Car model
-  g_pCarActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0, 0, 0), Vector3(3.f,3.f,3.f)));
-
-  //if(!g_carModel.loadFromFile("Models/audi.obj", g_pGAPI)) {
-  //if(!g_pCarActor->m_model.loadFromFile("Models/rex.obj", g_pGAPI)) { 
-  if(!g_pCarActor->m_model.loadFromFile("Models/rex_norm.obj", g_pGAPI)) { 
-    return SDL_APP_FAILURE;
-  }
-
-  Image carImage;
-  carImage.decode("Models/Untitled.bmp");
-  g_pCarActor->m_texture.createFromImage(carImage, g_pGAPI);
-
-  /////////////////////////////////////////////////////////////////////////////
-  
-
-  g_pDinoActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0,0,0)));
+  g_pDinoActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), 
+                                                                          Vector3(0,0,0)));
 
   //Rex model
-  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj", g_pGAPI)) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
 
-  Image srcImage;
-  srcImage.decode("Models/Rex_C.bmp");
-  g_pDinoActor->m_texture.createFromImage(srcImage, g_pGAPI);
-
-  Image normalImage;
-  normalImage.decode("Models/Rex_N.bmp");
-  g_pDinoActor->m_normalTexture.createFromImage(normalImage, g_pGAPI);
-
-  Image roughnessImage;
-  normalImage.decode("Models/Rex_R.bmp");
-  g_pDinoActor->m_roughnessTexture.createFromImage(normalImage, g_pGAPI);
-
-  Image metalicImage;
-  normalImage.decode("Models/Rex_M.bmp");
-  g_pDinoActor->m_metalicTexture.createFromImage(normalImage, g_pGAPI);
+  g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
+  g_pDinoActor->m_material.setNormalTexture("Models/Rex_N.bmp");
+  g_pDinoActor->m_material.setRoughnessTexture("Models/Rex_R.bmp");
+  g_pDinoActor->m_material.setMetalicTexture("Models/Rex_M.bmp");
 
 
-  /////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////////////////
   
-  g_pTerrainActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), Vector3(0, 0, 0), Vector3(0.08f, 0.08f, 0.08f)));
+  g_pTerrainActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(), 
+                                                                             Vector3(0, 0, 0), 
+                                                                             Vector3(0.08f, 0.08f, 0.08f)));
 
   //Disc model
-  if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj", g_pGAPI)) {
+  if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj")) {
     return SDL_APP_FAILURE;
   }
 
-  Image terrainImage;
-  terrainImage.decode("Models/Terrain.bmp");
-  g_pTerrainActor->m_texture.createFromImage(terrainImage, g_pGAPI);
+  g_pTerrainActor->m_material.setAlbedo("Models/Terrain.bmp");
+
+  g_rtReflection = make_shared<Texture>();
+  g_dsReflection = make_shared<Texture>();
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+  g_pBunnyActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(),
+                                            Vector3(0, 0, 0),
+                                            Vector3(0.08f, 0.08f, 0.08f)));
+  
+  if(!g_pBunnyActor->m_model.loadFromFile("Models/bunny.obj")) {
+    __debugbreak();
+    return SDL_APP_FAILURE;
+  }
 
   //Reflection textures
-  g_rtReflection.m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
-                                                     g_windowSize.y,
-                                                     DXGI_FORMAT_B8G8R8A8_UNORM,
-                                                     D3D11_USAGE_DEFAULT,
-                                                     D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, 
-                                                     0,
-                                                     1,
-                                                     &g_rtReflection.m_pSRV,
-                                                     &g_rtReflection.m_pRTV);
+  g_rtReflection->m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
+                                                      g_windowSize.y,
+                                                      DXGI_FORMAT_B8G8R8A8_UNORM,
+                                                      D3D11_USAGE_DEFAULT,
+                                                      D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, 
+                                                      0,
+                                                      1,
+                                                      &g_rtReflection->m_pSRV,
+                                                      &g_rtReflection->m_pRTV);
 
-  g_dsReflection.m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
-                                                     g_windowSize.y,
-                                                     DXGI_FORMAT_D24_UNORM_S8_UINT,
-                                                     D3D11_USAGE_DEFAULT,
-                                                     D3D11_BIND_DEPTH_STENCIL, 
-                                                     0,
-                                                     1,
-                                                     nullptr,
-                                                     nullptr,
-                                                     &g_dsReflection.m_pDSV);
+  g_dsReflection->m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
+                                                      g_windowSize.y,
+                                                      DXGI_FORMAT_D24_UNORM_S8_UINT,
+                                                      D3D11_USAGE_DEFAULT,
+                                                      D3D11_BIND_DEPTH_STENCIL, 
+                                                      0,
+                                                      1,
+                                                      nullptr,
+                                                      nullptr,
+                                                      &g_dsReflection->m_pDSV);
 
   return SDL_APP_CONTINUE;
 }
-
 
 /* This function runs when a new event (mouse input, keypresses, etc) occurs. */
 SDL_AppResult
@@ -383,139 +313,151 @@ SDL_AppIterate(void* appstate) {
   //Rellenar el input assembly
   //IA > Input Assambly
   //OM > Output Merger
-  D3D11_VIEWPORT vp;
-  vp.Width = g_windowSize.x;
-  vp.Height = g_windowSize.y;
-  vp.MinDepth = 0.f;
-  vp.MaxDepth = 1.f;
-  vp.TopLeftX = 0; 
-  vp.TopLeftY = 0;
-
-  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, 
-                            g_pGAPI->m_pBackBufferDSV);
   
-  FloatColor clearColor = { 0.5f, 0.5f, 1.0f, 1.0f };
-  FloatColor blackClearColor = { 0.0f, 0.f, 0.0f, 1.0f };
-  g_rtReflection.clearTexture(blackClearColor.toArray(), g_pGAPI);
-  g_dsReflection.clearTexture(blackClearColor.toArray(), g_pGAPI);
+  //Set the viewport
+  {
+    D3D11_VIEWPORT vp;
+    vp.Width = g_windowSize.x;
+    vp.Height = g_windowSize.y;
+    vp.MinDepth = 0.f;
+    vp.MaxDepth = 1.f;
+    vp.TopLeftX = 0; 
+    vp.TopLeftY = 0;
+    g_pGAPI->setViewport(vp);
+  }
 
-  g_pGAPI->clearRTV(g_pGAPI->m_pBackBufferRTV, clearColor);
-
-  g_pGAPI->clearDSV(g_pGAPI->m_pBackBufferDSV);
-
-  g_pGAPI->setVertexShader(g_pVertexShader);
-  g_pGAPI->setPixelShader(g_pPixelShader);
-
-  g_pGAPI->setInputLayout(g_pInputLayout);
-  g_pGAPI->setTopology(g_pDinoActor->m_model.m_meshes[0].topology);
+  ////////////////////////////////////////////////////////////////////////////////////////////
   
-  g_cubeModel.setBuffers(g_pGAPI);
+  //Reset Values and clear RTs & DSVs
+  {
+    g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, 
+                              g_pGAPI->m_pBackBufferDSV);
+    
+    FloatColor clearColor = { 0.5f, 0.5f, 1.0f, 1.0f };
+    FloatColor blackClearColor = { 0.0f, 0.f, 0.0f, 1.0f };
+    g_rtReflection->clearTexture(blackClearColor.toArray());
+    g_dsReflection->clearTexture(blackClearColor.toArray());
+
+    g_pGAPI->clearRTV(g_pGAPI->m_pBackBufferRTV, clearColor);
+    g_pGAPI->clearDSV(g_pGAPI->m_pBackBufferDSV);
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
   
+  //Set Shaders info
+  {
+    g_pGAPI->setVertexShader(g_pVertexShader);
+    g_pGAPI->setPixelShader(g_pPixelShader);
+
+    g_pGAPI->setInputLayout(g_pInputLayout);
+  }
+  
+  ////////////////////////////////////////////////////////////////////////////////////////////
   static float rotationAngle = 0.f;
-  rotationAngle += 0.01f;
-
-  Matrix4 translation3; //000
-  translation3.identity();
-  translation3.Translate({0, 0, 0});
+  rotationAngle += 0.1f;
 
   //g_worldTransform.setRotation({0, rotationAngle, 0});
 
   static float tempo = 0.f;
-  tempo += 0.0001f;
-  
+  tempo += 0.01f;
   g_WVP.time = tempo;
-
   Vector<char> matrix_data;
   matrix_data.resize(sizeof(g_WVP));
 
   g_pGAPI->setConstantBuffer(0, g_pCB_WVP);
 
-  //g_pGAPI->setRasterState(g_pRS_Default);
-  g_pGAPI->setRasterState(g_pRS_Wireframe);
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  //Set Rasterizer and samplers
+  {
+    //g_pGAPI->setRasterState(g_pRS_Default);
+    g_pGAPI->setRasterState(g_pRS_Wireframe);
 
-  //Set the samplers
-  g_pGAPI->setSamplers(0, g_pSS_Point);
-  g_pGAPI->setSamplers(1, g_pSS_Linear);
-  g_pGAPI->setSamplers(2, g_pSS_Anisotropic);
+    //Set the samplers
+    g_pGAPI->setSamplers(0, g_pSS_Point);
+    g_pGAPI->setSamplers(1, g_pSS_Linear);
+    g_pGAPI->setSamplers(2, g_pSS_Anisotropic);
+  }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////    Car
-  
-  g_WVP.world = g_worldTransform.getMatrix() * g_pCarActor->m_transform.getMatrix();
+  ////////////////////////////////////////////////////////////////////////////////////////////  Rex
+  {
+    g_pGAPI->setRasterState(g_pRS_Default);
 
-  g_WVP.world.transpose();
-  memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
-  g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
+    g_WVP.world.transpose();
+    g_WVP.world = g_worldTransform.getMatrix() * g_pDinoActor->m_transform.getMatrix();
+    
+    memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+    g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
-  
-  //g_pCarActor->draw(g_pGAPI);
+    g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////    Rex
-  
-  g_pGAPI->setRasterState(g_pRS_Default);
-
-  g_WVP.world.transpose();
-  g_WVP.world = g_worldTransform.getMatrix() * g_pDinoActor->m_transform.getMatrix();
-  
-  memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
-  g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
-
-  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
-
-  g_pDinoActor->draw(g_pGAPI);
-  //g_sceneGraph->draw(g_pGAPI);
-
+    g_pDinoActor->draw();
+  }
   ////////////////////////////////////////////////////////////////////////////////////////////  Reflection
-  
-  Matrix4 refScale; //Reflection
-  refScale.identity();
-  refScale.scale({1, -1, 1});
-  g_WVP.world = refScale * g_worldTransform.getMatrix() * translation3;
+  {
+    Matrix4 translation3; //000
+    translation3.identity();
+    translation3.Translate({0, 0, 0});
 
-  g_WVP.world.transpose();
-  memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
-  g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
+    Matrix4 refScale; //Reflection
+    refScale.identity();
+    refScale.scale({1, -1, 1});
+    g_WVP.world = refScale * g_worldTransform.getMatrix() * translation3;
 
-  g_pGAPI->setRasterState(g_pRS_CullFront);
+    g_WVP.world.transpose();
+    memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+    g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  g_pGAPI->clearSRV(1);
-  
-  g_pGAPI->setRenderTargets(g_rtReflection, g_dsReflection);
-  
-  //g_pDinoActor->draw(g_pGAPI);
+    g_pGAPI->setRasterState(g_pRS_CullFront);
 
+    g_pGAPI->clearSRV(1);
+    
+    g_pGAPI->setRenderTargets(g_rtReflection, g_dsReflection);
+    
+    g_pDinoActor->draw();
+  }
   ////////////////////////////////////////////////////////////////////////////////////////////  Floor
+  {
+    g_WVP.world = g_worldTransform.getMatrix() * g_pTerrainActor->m_transform.getMatrix();
 
-  g_WVP.world = g_worldTransform.getMatrix() * g_pTerrainActor->m_transform.getMatrix();
+    g_WVP.world.transpose();
+    memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+    g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
-  g_WVP.world.transpose();
-  memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
-  g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
+    g_pGAPI->setRasterState(g_pRS_Default);
 
-  g_pGAPI->setRasterState(g_pRS_Default);
+    g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
 
-  //g_TerrainModel.setBuffers(g_pGAPI);
+    g_pGAPI->setPixelShader(g_pPixelShader_Reflect);
 
-  g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
+    //g_pGAPI->setShaderResource(0, g_TerrainTexture);
+    g_pGAPI->setShaderResource(1, g_rtReflection);
 
-  g_pGAPI->setPixelShader(g_pPixelShader_Reflect);
+    g_pTerrainActor->draw();
 
-  //g_pGAPI->setShaderResource(0, g_TerrainTexture);
-  g_pGAPI->setShaderResource(1, g_rtReflection);
+    g_pGAPI->m_pDeviceContext->PSSetShader(g_pPixelShader->m_pPixelShader, nullptr, 0);
+  }
+  ////////////////////////////////////////////////////////////////////////////////////////////  Bunny
+  {
+    g_pGAPI->setRasterState(g_pRS_Default);
 
+    g_WVP.world.transpose();
+    g_WVP.world = g_worldTransform.getMatrix() * g_pBunnyActor->m_transform.getMatrix();
 
-  //g_TerrainModel.draw(g_pGAPI);
+    memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+    g_pGAPI->writeToBuffer(g_pCB_WVP, matrix_data);
 
+    g_pGAPI->setRenderTargets(g_pGAPI->m_pBackBufferRTV, g_pGAPI->m_pBackBufferDSV);
 
-  g_pGAPI->m_pDeviceContext->PSSetShader(g_pPixelShader->m_pPixelShader, nullptr, 0);
+    g_pBunnyActor->draw();
+  }
+
   ////////////////////////////////////////////////////////////////////////////////////////////
   
+
   g_pGAPI->m_pSwapChain->Present(0, 0);
 
   return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
-
-
 
 /* This function runs once at shutdown. */
 void

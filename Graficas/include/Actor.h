@@ -34,9 +34,7 @@ class Actor : public SceneNode {
   }
 
   virtual void
-  draw(const UPtr<GraphicsAPI>& inGAPI) { 
-    UNREFERENCED_PARAMETER(inGAPI);
-  }
+  draw() {}
 
   void
   setPosition(Vector3 inPosition) {

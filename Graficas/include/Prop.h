@@ -12,7 +12,7 @@
 #include "PrerequisiteGraficas.h"
 #include "Actor.h"
 #include "Model.h"
-#include "Texture.h"
+#include "Material.h"
 #include "GraphicsAPI.h"
 
 
@@ -36,31 +36,17 @@ class Prop : public Actor {
   }
 
   void
-  draw(const UPtr<GraphicsAPI>& inGAPI) override {
+  draw() override {
+    auto& GAPI = g_graphicsAPI();
 
-    m_model.setBuffers(inGAPI);
-    inGAPI->setShaderResource(0, m_texture);
-    
-    if (m_normalTexture.m_pTexture) {
-      inGAPI->setShaderResource(1, m_normalTexture);
-    }
+    m_material.draw();
 
-    if (m_roughnessTexture.m_pTexture) {
-      inGAPI->setShaderResource(2, m_roughnessTexture);
-    }
-
-    if (m_metalicTexture.m_pTexture) {
-      inGAPI->setShaderResource(3, m_metalicTexture);
-    }
-
-    m_model.draw(inGAPI);
+    m_model.draw();
   }
 
 
 
   Model m_model;
-  Texture m_texture;
-  Texture m_normalTexture;
-  Texture m_roughnessTexture;
-  Texture m_metalicTexture;
+
+  PBRMaterial m_material;
 };

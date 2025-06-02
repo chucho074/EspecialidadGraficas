@@ -10,7 +10,6 @@
 
 //using PixelShader = function<Color(float, float)>;
 
-
 namespace TEXTURE_ADDRESS {
   enum E {
     kCLAMP = 0,
@@ -35,6 +34,7 @@ namespace RegionCode {
 class Image {
  public:
   Image() = default;
+
   ~Image() {
     if (m_pixels) {
       //delete[] m_pixels;

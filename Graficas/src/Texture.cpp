@@ -19,32 +19,30 @@ Texture::~Texture() {
   SAFE_RELEASE(m_pDSV);
 }
 
-void 
-Texture::createFromImage(const Image& inImg) {
-  m_image = inImg;
-}
-
 void
-Texture::createFromImage(Image& inImg, const UPtr<GraphicsAPI>& inGAPI) {
-  createFromImage(inImg);
+Texture::createFromImage(Image& inImg) {
 
-  m_pTexture = inGAPI->createTexture(inImg.getWidth(), 
-                                     inImg.getHeight(), 
-                                     DXGI_FORMAT_B8G8R8A8_UNORM, 
-                                     D3D11_USAGE_DEFAULT, 
-                                     D3D11_BIND_SHADER_RESOURCE,
-                                     0, 
-                                     1,
-                                     &m_pSRV);
+  auto& gapi = g_graphicsAPI();
+
+  m_image = inImg;
+
+  m_pTexture = gapi.createTexture(inImg.getWidth(),
+                                  inImg.getHeight(), 
+                                  DXGI_FORMAT_B8G8R8A8_UNORM, 
+                                  D3D11_USAGE_DEFAULT, 
+                                  D3D11_BIND_SHADER_RESOURCE,
+                                  0, 
+                                  1,
+                                  &m_pSRV);
 
   if(m_pTexture) {
-    inGAPI->m_pDeviceContext->UpdateSubresource1(m_pTexture, 
-                                                 0, 
-                                                 nullptr, 
-                                                 reinterpret_cast<char*>(inImg.getPixels()), 
-                                                 inImg.getPitch(),
-                                                 0, 
-                                                 0);
+    gapi.m_pDeviceContext->UpdateSubresource1(m_pTexture,
+                                              0, 
+                                              nullptr, 
+                                              reinterpret_cast<char*>(inImg.getPixels()), 
+                                              inImg.getPitch(),
+                                              0, 
+                                              0);
 
 
 
@@ -242,15 +240,18 @@ Texture::draw(Image& inData,
 }
 
 void 
-Texture::clearTexture(float inClearColor[4], const UPtr<GraphicsAPI>& inGAPI) {
+Texture::clearTexture(float inClearColor[4]) {
+
+  auto& GAPI = g_graphicsAPI();
+
   if (m_pRTV != nullptr) {
-    inGAPI->m_pDeviceContext->ClearRenderTargetView(m_pRTV, inClearColor);
+    GAPI.m_pDeviceContext->ClearRenderTargetView(m_pRTV, inClearColor);
   }
 
   if (m_pDSV != nullptr) {
-    inGAPI->m_pDeviceContext->ClearDepthStencilView(m_pDSV, 
-                                                    D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-                                                    1.f,
-                                                    0);
+    GAPI.m_pDeviceContext->ClearDepthStencilView(m_pDSV, 
+                                                 D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+                                                 1.f,
+                                                 0);
   }
 }

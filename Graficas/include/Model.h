@@ -31,7 +31,7 @@ class Model
   ~Model() = default;
 
   bool
-  loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI);
+  loadFromFile(const Path& inPath);
 
   void
   computeTangentSpace();
@@ -39,22 +39,18 @@ class Model
 
   bool 
   loadFromMem(const Vector<SimpleVertex>& inVertexData,
-              const Vector<uint32>& inIndexData,
-              const UPtr<GraphicsAPI>& inGAPI);
+              const Vector<uint32>& inIndexData);
 
   void
-  setBuffers(const UPtr<GraphicsAPI>& inGAPI);
+  setBuffers();
 
   void
-  draw(const UPtr<GraphicsAPI>& inGAPI);
+  draw();
 
   Vector<MeshData> m_meshes;
 
   Vector<SimpleVertex> m_vertices;
   Vector<uint32> m_indices;
-
-
-  Transform m_transform;
 
  protected:
   UPtr<GraphicsBuffers> m_pVertexBuffer;

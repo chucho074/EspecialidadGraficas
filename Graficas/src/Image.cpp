@@ -40,6 +40,7 @@ void
 Image::decode(Path inFilePath) {
   fstream imgFile(inFilePath, ios::in | ios::binary | ios::ate);
   if(!imgFile.is_open()) {
+    decode("Models/missingTextureV2.bmp");
     __debugbreak();
     return;
   }
@@ -51,6 +52,7 @@ Image::decode(Path inFilePath) {
   imgFile.read(reinterpret_cast<char*>(&fileHeader), sizeof(MY_BITMAPFILEHEADER));
 
   if(fileHeader.bfType != 0x4D42) {
+    decode("Models/missingTextureV2.bmp");
     __debugbreak();
     return; //Not a BMP
   }

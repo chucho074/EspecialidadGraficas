@@ -311,8 +311,8 @@ struct Camera {
   Vector3 target;
   Vector3 up;
 
-  float fov;
   Vector2 screenSize;
+  float fov;
   float minZ;
   float maxZ;
 

@@ -208,13 +208,21 @@ GraphicsAPI::QueryInterces(uint32 inWidth, uint32 inHeight) {
     return;
   }
 
+  if(!m_pBackBufferRTV) {
+    m_pBackBufferRTV = make_shared<Texture>();
+  }
+
+  if(!m_pBackBufferDSV) {
+    m_pBackBufferDSV = make_shared<Texture>();
+  }
+
   ID3D11Texture2D* pBackBuffer = nullptr;
 
   m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)& pBackBuffer);
 
   if(FAILED(m_pDevice->CreateRenderTargetView(pBackBuffer, 
                                               nullptr, 
-                                              &m_pBackBufferRTV.m_pRTV))) {
+                                              &m_pBackBufferRTV->m_pRTV))) {
     __debugbreak();
   }
 
@@ -234,7 +242,7 @@ GraphicsAPI::QueryInterces(uint32 inWidth, uint32 inHeight) {
     return;
   }
 
-  m_pDevice->CreateDepthStencilView(pDepthStencil, nullptr, &m_pBackBufferDSV.m_pDSV);
+  m_pDevice->CreateDepthStencilView(pDepthStencil, nullptr, &m_pBackBufferDSV->m_pDSV);
 
   SAFE_RELEASE(pDepthStencil);
 }
@@ -431,15 +439,15 @@ GraphicsAPI::setPixelShader(const UPtr<PixelShader>& inShader) {
 }
 
 void 
-GraphicsAPI::setRenderTargets(const Texture& inRTV, const Texture& inDSV) {
+GraphicsAPI::setRenderTargets(SPtr<Texture> inRTV, SPtr<Texture> inDSV) {
   m_pDeviceContext->OMSetRenderTargets(1,
-                                       &inRTV.m_pRTV,
-                                       inDSV.m_pDSV);
+                                       &inRTV->m_pRTV,
+                                       inDSV->m_pDSV);
 }
 
 void 
-GraphicsAPI::setShaderResource(uint32 inStartSlot, const Texture& inSRV) {
-  m_pDeviceContext->PSSetShaderResources(inStartSlot, 1, &inSRV.m_pSRV);
+GraphicsAPI::setShaderResource(uint32 inStartSlot, SPtr<Texture> inSRV) {
+  m_pDeviceContext->PSSetShaderResources(inStartSlot, 1, &inSRV->m_pSRV);
 
 }
 
@@ -467,21 +475,26 @@ GraphicsAPI::setTopology(int32 inTopologyType) {
 }
 
 void 
-GraphicsAPI::clearRTV(const Texture& inRTV, FloatColor inClearColor) {
+GraphicsAPI::setViewport(const D3D11_VIEWPORT& inViewport) {
+  m_pDeviceContext->RSSetViewports(1, &inViewport);
+}
+
+void 
+GraphicsAPI::clearRTV(SPtr<Texture> inRTV, FloatColor inClearColor) {
   
   float tmpColor[4] = {inClearColor.r, 
                        inClearColor.g, 
                        inClearColor.b, 
                        inClearColor.a};
 
-  m_pDeviceContext->ClearRenderTargetView(inRTV.m_pRTV,
+  m_pDeviceContext->ClearRenderTargetView(inRTV->m_pRTV,
                                           tmpColor);
                                           //inClearColor.toArray());
 }
 
 void 
-GraphicsAPI::clearDSV(const Texture& inDSV) {
-  m_pDeviceContext->ClearDepthStencilView(inDSV.m_pDSV,
+GraphicsAPI::clearDSV(SPtr<Texture> inDSV) {
+  m_pDeviceContext->ClearDepthStencilView(inDSV->m_pDSV,
                                           D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
                                           1.f,
                                           0);
@@ -491,4 +504,10 @@ void
 GraphicsAPI::clearSRV(int32 inSlot) {
   ID3D11ShaderResourceView* nullSRV = nullptr;
   m_pDeviceContext->PSSetShaderResources(inSlot, 1, &nullSRV);
+}
+
+
+GraphicsAPI&
+g_graphicsAPI() {
+  return GraphicsAPI::instance();
 }

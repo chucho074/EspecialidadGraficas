@@ -41,12 +41,8 @@ class Texture
   Texture() = default;
   ~Texture();
   
-  
   void 
-  createFromImage(const Image& inImg);
-  
-  void 
-  createFromImage(Image& inImg, const UPtr<GraphicsAPI>& inGAPI);
+  createFromImage(Image& inImg);
 
   FloatColor 
   sampleTexture(Vector2 inUVs, TEXTURE_ADDRESS::E inTexAddress = TEXTURE_ADDRESS::kCLAMP, SAMPLE_FILTER::E inFilter = SAMPLE_FILTER::kPOINT);
@@ -63,7 +59,8 @@ class Texture
 
   
   void
-  clearTexture(float inClearColor[4], const UPtr<GraphicsAPI>& inGAPI);
+  clearTexture(float inClearColor[4]);
+
 
   Image m_image;
 

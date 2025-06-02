@@ -36,7 +36,9 @@ namespace std {
 }
 
 bool 
-Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
+Model::loadFromFile(const Path& inPath) {
+
+  auto& GAPI = g_graphicsAPI();
   
   fstream objFile(inPath, ios::in | ios::ate);
   if (!objFile.is_open()) {
@@ -148,7 +150,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   Vector<char> tmpVertexData;
   tmpVertexData.resize(m_vertices.size() * sizeof(SimpleVertex));
   memcpy(tmpVertexData.data(), m_vertices.data(), m_vertices.size() * sizeof(SimpleVertex));
-  m_pVertexBuffer = inGAPI->createVertexBuffer(tmpVertexData);
+  m_pVertexBuffer = GAPI.createVertexBuffer(tmpVertexData);
 
   if (!m_pVertexBuffer) {
     return false;
@@ -157,7 +159,7 @@ Model::loadFromFile(const Path& inPath, const UPtr<GraphicsAPI>& inGAPI) {
   Vector<char> tmpIndexData;
   tmpIndexData.resize(m_indices.size() * sizeof(uint32));
   memcpy(tmpIndexData.data(), m_indices.data(), m_indices.size() * sizeof(uint32));
-  m_pIndexBuffer = inGAPI->createIndexBuffer(tmpIndexData);
+  m_pIndexBuffer = GAPI.createIndexBuffer(tmpIndexData);
 
   if (!m_pIndexBuffer) {
     return false;
@@ -266,8 +268,10 @@ Model::computeTangentSpace() {
 
 bool 
 Model::loadFromMem(const Vector<SimpleVertex>& inVertexData, 
-                   const Vector<uint32>& inIndexData, 
-                   const UPtr<GraphicsAPI>& inGAPI) {
+                   const Vector<uint32>& inIndexData) {
+
+  auto& GAPI = g_graphicsAPI();
+
 
   m_meshes.resize(1);
   auto& mesh = m_meshes[0];
@@ -284,7 +288,7 @@ Model::loadFromMem(const Vector<SimpleVertex>& inVertexData,
   memcpy(tmpVertexData.data(), 
          inVertexData.data(), 
          inVertexData.size() * sizeof(SimpleVertex));
-  m_pVertexBuffer = inGAPI->createVertexBuffer(tmpVertexData);
+  m_pVertexBuffer = GAPI.createVertexBuffer(tmpVertexData);
 
   if(!m_pVertexBuffer) {
     return false;
@@ -295,7 +299,7 @@ Model::loadFromMem(const Vector<SimpleVertex>& inVertexData,
   memcpy(tmpIndexData.data(), 
          inIndexData.data(), 
          inIndexData.size() * sizeof(uint32));
-  m_pIndexBuffer = inGAPI->createIndexBuffer(tmpIndexData);
+  m_pIndexBuffer = GAPI.createIndexBuffer(tmpIndexData);
 
   if(!m_pIndexBuffer) {
     return false;
@@ -305,26 +309,36 @@ Model::loadFromMem(const Vector<SimpleVertex>& inVertexData,
 }
 
 void 
-Model::setBuffers(const UPtr<GraphicsAPI>& inGAPI) {
+Model::setBuffers() {
+
+  auto& GAPI = g_graphicsAPI();
+
   uint32 stride = sizeof(SimpleVertex);
   uint32 offset = 0;
-  inGAPI->m_pDeviceContext->IASetVertexBuffers(0, 
-                                               1,
-                                               &m_pVertexBuffer->m_pBuffer,
-                                               &stride,
-                                               &offset);
+  GAPI.m_pDeviceContext->IASetVertexBuffers(0, 
+                                            1,
+                                            &m_pVertexBuffer->m_pBuffer,
+                                            &stride,
+                                            &offset);
 
 
-  inGAPI->m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer->m_pBuffer,
-                                             DXGI_FORMAT_R32_UINT,
-                                             0);
+  GAPI.m_pDeviceContext->IASetIndexBuffer(m_pIndexBuffer->m_pBuffer,
+                                          DXGI_FORMAT_R32_UINT,
+                                          0);
 
 }
 
 void 
-Model::draw(const UPtr<GraphicsAPI>& inGAPI) {
-  inGAPI->m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
-                                        m_meshes[0].baseIndex, 
-                                        m_meshes[0].baseVertex);
+Model::draw() {
+  auto& GAPI = g_graphicsAPI();
+  
+  setBuffers();
+
+  GAPI.setTopology(m_meshes[0].topology);
+
+
+  GAPI.m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
+                                     m_meshes[0].baseIndex, 
+                                     m_meshes[0].baseVertex);
 }
 

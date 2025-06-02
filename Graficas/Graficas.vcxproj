@@ -165,10 +165,12 @@
     <ClInclude Include="include\Buffers.h" />
     <ClInclude Include="include\GraphicsAPI.h" />
     <ClInclude Include="include\Image.h" />
+    <ClInclude Include="include\Material.h" />
     <ClInclude Include="include\mathObjects.h" />
     <ClInclude Include="include\Matrix4.h" />
     <ClInclude Include="include\Mesh.h" />
     <ClInclude Include="include\Model.h" />
+    <ClInclude Include="include\Module.h" />
     <ClInclude Include="include\Object.h" />
     <ClInclude Include="include\PrerequisiteGraficas.h" />
     <ClInclude Include="include\Prop.h" />
