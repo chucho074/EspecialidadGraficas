@@ -41,7 +41,9 @@ class Prop : public Actor {
 
     m_material.draw();
 
-    m_model.draw();
+    if(!m_model.m_meshes.empty()) {
+      m_model.draw();
+    }
   }
 
 

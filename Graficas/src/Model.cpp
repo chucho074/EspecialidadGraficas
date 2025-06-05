@@ -317,6 +317,7 @@ Model::setBuffers() {
 
   uint32 stride = sizeof(SimpleVertex);
   uint32 offset = 0;
+
   GAPI.m_pDeviceContext->IASetVertexBuffers(0, 
                                             1,
                                             &m_pVertexBuffer->m_pBuffer,

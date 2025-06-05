@@ -10,10 +10,10 @@
  */
 #pragma once
 #include "PrerequisiteGraficas.h"
+#include <d3d11_2.h>
 #include "Shader.h"
 #include "Buffers.h"
 #include "Texture.h"
-#include <d3d11_2.h>
 #include "Module.h"
 
 class GraphicsAPI : public Module<GraphicsAPI> {
@@ -36,24 +36,24 @@ class GraphicsAPI : public Module<GraphicsAPI> {
                 ID3D11RenderTargetView** inRTV = nullptr,
                 ID3D11DepthStencilView** inDSV = nullptr);
 
-  UPtr<VertexShader>
+  SPtr<VertexShader>
   createVertexShaderFromFile(const Path& inFilePath, 
                              const String& inEntryFunction);
-  UPtr<PixelShader>
+  SPtr<PixelShader>
   createPixelShaderFromFile(const Path& inFilePath, 
                             const String& inEntryFunction);
 
   ID3D11InputLayout* 
   createInputLayout(Vector<D3D11_INPUT_ELEMENT_DESC> inInputElementDescs,
-                    const UPtr<VertexShader>& inVertexShader);
+                    const SPtr<VertexShader>& inVertexShader);
 
-  UPtr<GraphicsBuffers> 
+  SPtr<GraphicsBuffers> 
   createVertexBuffer(const Vector<char>& inData);
 
-  UPtr<GraphicsBuffers> 
+  SPtr<GraphicsBuffers> 
   createIndexBuffer(const Vector<char>& inData);
 
-  UPtr<GraphicsBuffers> 
+  SPtr<GraphicsBuffers> 
   createConstantBuffer(const Vector<char>& inData);
 
   ID3D11RasterizerState1*
@@ -63,17 +63,17 @@ class GraphicsAPI : public Module<GraphicsAPI> {
   createSamplerState(CD3D11_SAMPLER_DESC inDesc);
   
   void
-  writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer, 
+  writeToBuffer(const SPtr<GraphicsBuffers>& inBuffer, 
                 const Vector<char>& inData);
   
   void
   setInputLayout(ID3D11InputLayout* inInputLayout);
 
   void
-  setVertexShader(const UPtr<VertexShader>& inShader);
+  setVertexShader(const SPtr<VertexShader>& inShader);
 
   void
-  setPixelShader(const UPtr<PixelShader>& inShader);
+  setPixelShader(const SPtr<PixelShader>& inShader);
 
   void
   setRenderTargets(SPtr<Texture> inRTV, SPtr<Texture> inDSV);
@@ -91,7 +91,7 @@ class GraphicsAPI : public Module<GraphicsAPI> {
   setSamplers(int32 inSlot, ID3D11SamplerState* inSampler);
 
   void
-  setConstantBuffer(int32 inSlot, const UPtr<GraphicsBuffers>& inBuffer);
+  setConstantBuffer(int32 inSlot, const SPtr<GraphicsBuffers>& inBuffer);
 
   void
   setTopology(int32 inTopologyType);

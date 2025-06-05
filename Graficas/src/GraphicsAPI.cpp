@@ -10,6 +10,7 @@
  */
 #include "GraphicsAPI.h"
 #include <d3dcompiler.h>
+#include "ShaderManager.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -247,10 +248,10 @@ GraphicsAPI::QueryInterces(uint32 inWidth, uint32 inHeight) {
   SAFE_RELEASE(pDepthStencil);
 }
 
-UPtr<VertexShader>
+SPtr<VertexShader>
 GraphicsAPI::createVertexShaderFromFile(const Path& inFilePath, 
                                         const String& inEntryFunction) {
-  UPtr<VertexShader> tmpShader = make_unique<VertexShader>();
+  SPtr<VertexShader> tmpShader = make_unique<VertexShader>();
   if(!tmpShader->compile(inFilePath, inEntryFunction, "vs_5_0")) {
     return nullptr;
   }
@@ -268,10 +269,10 @@ GraphicsAPI::createVertexShaderFromFile(const Path& inFilePath,
   return tmpShader;
 }
 
-UPtr<PixelShader>
+SPtr<PixelShader>
 GraphicsAPI::createPixelShaderFromFile(const Path& inFilePath, 
                                        const String& inEntryFunction) {
-  UPtr<PixelShader> tmpShader = make_unique<PixelShader>();
+  SPtr<PixelShader> tmpShader = make_unique<PixelShader>();
   if (!tmpShader->compile(inFilePath, inEntryFunction, "ps_5_0")) {
     return nullptr;
   }
@@ -291,7 +292,7 @@ GraphicsAPI::createPixelShaderFromFile(const Path& inFilePath,
 
 ID3D11InputLayout* 
 GraphicsAPI::createInputLayout(Vector<D3D11_INPUT_ELEMENT_DESC> inInputElementDescs, 
-                               const UPtr<VertexShader>& inVertexShader) {
+                               const SPtr<VertexShader>& inVertexShader) {
   ID3D11InputLayout* tmpInputLayout = nullptr;
 
   if (inInputElementDescs.empty()) {
@@ -311,9 +312,9 @@ GraphicsAPI::createInputLayout(Vector<D3D11_INPUT_ELEMENT_DESC> inInputElementDe
   return tmpInputLayout;
 }
 
-UPtr<GraphicsBuffers> 
+SPtr<GraphicsBuffers> 
 GraphicsAPI::createVertexBuffer(const Vector<char>& inData) {
-  UPtr<GraphicsBuffers> outData = make_unique<GraphicsBuffers>();
+  SPtr<GraphicsBuffers> outData = make_unique<GraphicsBuffers>();
   
   D3D11_BUFFER_DESC tmpDesc;
   memset(&tmpDesc, 0, sizeof(tmpDesc));
@@ -338,9 +339,9 @@ GraphicsAPI::createVertexBuffer(const Vector<char>& inData) {
   return outData;
 }
 
-UPtr<GraphicsBuffers> 
+SPtr<GraphicsBuffers> 
 GraphicsAPI::createIndexBuffer(const Vector<char>& inData) {
-  UPtr<GraphicsBuffers> outData = make_unique<GraphicsBuffers>();
+  SPtr<GraphicsBuffers> outData = make_unique<GraphicsBuffers>();
 
   D3D11_BUFFER_DESC tmpDesc;
   memset(&tmpDesc, 0, sizeof(tmpDesc));
@@ -365,9 +366,9 @@ GraphicsAPI::createIndexBuffer(const Vector<char>& inData) {
   return outData;
 }
 
-UPtr<GraphicsBuffers> 
+SPtr<GraphicsBuffers> 
 GraphicsAPI::createConstantBuffer(const Vector<char>& inData) {
-  UPtr<GraphicsBuffers> outData = make_unique<GraphicsBuffers>();
+  SPtr<GraphicsBuffers> outData = make_unique<GraphicsBuffers>();
 
   D3D11_BUFFER_DESC tmpDesc;
   memset(&tmpDesc, 0, sizeof(tmpDesc));
@@ -375,16 +376,27 @@ GraphicsAPI::createConstantBuffer(const Vector<char>& inData) {
   tmpDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
   tmpDesc.CPUAccessFlags = 0;
   tmpDesc.MiscFlags = 0;
-
-  tmpDesc.ByteWidth = inData.size();
+  tmpDesc.ByteWidth = sizeof(MatrixCollection);
 
   D3D11_SUBRESOURCE_DATA initData;
-  initData.pSysMem = inData.data();
-  initData.SysMemPitch = 0;
-  initData.SysMemSlicePitch = 0;
 
-  HRESULT hr = m_pDevice->CreateBuffer(&tmpDesc, &initData, &outData->m_pBuffer);
-  if (FAILED(hr)) {
+  if(!inData.empty()) {
+    tmpDesc.ByteWidth = inData.size();
+
+    initData.pSysMem = inData.data();
+    initData.SysMemPitch = 0;
+    initData.SysMemSlicePitch = 0;
+    if (FAILED(m_pDevice->CreateBuffer(&tmpDesc, 
+                                       &initData,
+                                       &outData->m_pBuffer))) {
+      MessageBox(nullptr, L"Failed to create Constant buffer", L"Error", MB_OK);
+      return nullptr;
+    }
+  }
+
+  if (FAILED(m_pDevice->CreateBuffer(&tmpDesc, 
+                                     nullptr,
+                                     &outData->m_pBuffer))) {
     MessageBox(nullptr, L"Failed to create Constant buffer", L"Error", MB_OK);
     return nullptr;
   }
@@ -407,7 +419,7 @@ GraphicsAPI::createSamplerState(CD3D11_SAMPLER_DESC inDesc) {
 }
 
 void 
-GraphicsAPI::writeToBuffer(const UPtr<GraphicsBuffers>& inBuffer, 
+GraphicsAPI::writeToBuffer(const SPtr<GraphicsBuffers>& inBuffer, 
                            const Vector<char>& inData) {
   /*D3D11_MAPPED_SUBRESOURCE mappedResource;
   m_pDeviceContext->Map(inBuffer->m_pBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
@@ -429,12 +441,12 @@ GraphicsAPI::setInputLayout(ID3D11InputLayout* inInputLayout) {
 }
 
 void 
-GraphicsAPI::setVertexShader(const UPtr<VertexShader>& inShader) {
+GraphicsAPI::setVertexShader(const SPtr<VertexShader>& inShader) {
   m_pDeviceContext->VSSetShader(inShader->m_pVertexShader, nullptr, 0);
 }
 
 void 
-GraphicsAPI::setPixelShader(const UPtr<PixelShader>& inShader) {
+GraphicsAPI::setPixelShader(const SPtr<PixelShader>& inShader) {
   m_pDeviceContext->PSSetShader(inShader->m_pPixelShader, nullptr, 0);
 }
 
@@ -489,7 +501,7 @@ GraphicsAPI::setSamplers(int32 inSlot, ID3D11SamplerState* inSampler) {
 }
 
 void 
-GraphicsAPI::setConstantBuffer(int32 inSlot, const UPtr<GraphicsBuffers>& inBuffer) {
+GraphicsAPI::setConstantBuffer(int32 inSlot, const SPtr<GraphicsBuffers>& inBuffer) {
   m_pDeviceContext->VSSetConstantBuffers(inSlot, 1, &inBuffer->m_pBuffer);
   m_pDeviceContext->PSSetConstantBuffers(inSlot, 1, &inBuffer->m_pBuffer);
 

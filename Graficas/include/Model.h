@@ -53,6 +53,6 @@ class Model
   Vector<uint32> m_indices;
 
  protected:
-  UPtr<GraphicsBuffers> m_pVertexBuffer;
-  UPtr<GraphicsBuffers> m_pIndexBuffer;
+  SPtr<GraphicsBuffers> m_pVertexBuffer;
+  SPtr<GraphicsBuffers> m_pIndexBuffer;
 };

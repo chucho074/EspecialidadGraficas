@@ -9,6 +9,7 @@
  * @include
  */
 #include "SceneGraph.h"
+#include "ShaderManager.h"
 
 void 
 SceneGraph::init() {
@@ -26,7 +27,19 @@ SceneGraph::update(float inDT) {
 
 void 
 SceneGraph::draw() {
+  MatrixCollection matrixCollection;
+  matrixCollection.view = m_editorCamera.getViewMatrix();
+  matrixCollection.projection = m_editorCamera.getProjectionMatrix();
+  matrixCollection.viewDir = m_editorCamera.getViewDir();
+
+  matrixCollection.view.transpose();
+  matrixCollection.projection.transpose();
+
   for(auto& actor : m_actors) {
+    
+    matrixCollection.world = m_root->m_transform.getMatrix() * actor->m_transform.getMatrix();
+    matrixCollection.world.transpose();
+
     actor->draw();
   }
 }
