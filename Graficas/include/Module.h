@@ -33,7 +33,7 @@ class Module
     }
 
     if (isDestroyed()) {
-      //GE_EXCEPT(InternalErrorException,
+      //GI_EXCEPT(InternalErrorException,
       //          "Trying to access a destroyed module.");
     }
 
@@ -47,12 +47,12 @@ class Module
   static T*
   instancePtr() {
     if (!isStartedUp()) {
-      //GE_EXCEPT(InternalErrorException,
+      //GI_EXCEPT(InternalErrorException,
       //          "Trying to access a module but it hasn't been started.");
     }
 
     if (isDestroyed()) {
-      //GE_EXCEPT(InternalErrorException,
+      //GI_EXCEPT(InternalErrorException,
       //          "Trying to access a destroyed module.");
     }
 
@@ -66,7 +66,7 @@ class Module
   static void
   startUp(Args&& ...args) {
     if (isStartedUp()) {
-      //GE_EXCEPT(InternalErrorException,
+      //GI_EXCEPT(InternalErrorException,
       //          "Trying to start an already started module.");
     }
 
@@ -187,7 +187,7 @@ class Module
 
  public:
   /**
-   * @brief    Set the object of the Graphics API.
+   * @brief    Set the object of the module.
    * @param    inAPI   The api to set.
    */
   template<typename T>

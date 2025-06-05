@@ -55,10 +55,9 @@ Matrix4::lookAt(const Vector3& inEyePos,
                 const Vector3& inTargetPos, 
                 const Vector3& inUpDir) {
 
-  const Vector3 ZAxis = (inEyePos - inTargetPos).normalize();
-  const Vector3 WAxis = (inTargetPos - inEyePos).normalize();
+  const Vector3 ZAxis = (inTargetPos - inEyePos).normalize();
   const Vector3 XAxis = inUpDir.cross(ZAxis).normalize();
-  const Vector3 YAxis = ZAxis.cross(XAxis);
+  const Vector3 YAxis = ZAxis.cross(XAxis).normalize();
 
   m[0][0] = XAxis.x;
   m[1][0] = XAxis.y;
@@ -78,18 +77,18 @@ Matrix4::lookAt(const Vector3& inEyePos,
 
   Vector3 eyeNeg = -inEyePos;
 
-  m[3][0] = inEyePos | XAxis;
-  m[3][1] = inEyePos | YAxis;
-  m[3][2] = inEyePos | ZAxis;
+  m[3][0] = eyeNeg | XAxis;
+  m[3][1] = eyeNeg | YAxis;
+  m[3][2] = eyeNeg | ZAxis;
   m[3][3] = 1.f;
 
 }
 
 void 
-Matrix4::Perspective(float inHalfFOV, 
-                     Vector2 inScreenSize, 
-                     float inMinZ, 
-                     float inMaxZ) {
+Matrix4::PerspectiveHalfFovLH(float inHalfFOV, 
+                              Vector2 inScreenSize, 
+                              float inMinZ, 
+                              float inMaxZ) {
   float plane0[4] = { 1.f / tanf(inHalfFOV), 0.f, 0.f, 0.f };
   float plane1[4] = { 0.f, inScreenSize.x / tanf(inHalfFOV) / inScreenSize.y, 0.f, 0.f };
   float plane2[4] = { 0.f, 0.f, inMaxZ / (inMaxZ - inMinZ), 1.f };
@@ -114,6 +113,36 @@ Matrix4::Perspective(float inHalfFOV,
   m[3][1] = plane3[1];
   m[3][2] = plane3[2];
   m[3][3] = plane3[3];
+}
+
+void 
+Matrix4::PerspectiveFovLH(float inFov, 
+                          float inAR, 
+                          float inNear, 
+                          float inFar) {
+  float cot = std::cosf((inFov / 2.0f)) / std::sinf((inFov / 2.0f));
+  float yScale = cot;
+  float xScale = yScale / inAR;
+
+  m[0][0] = xScale;
+  m[0][1] = 0.f;
+  m[0][2] = 0.f;
+  m[0][3] = 0.f;
+
+  m[1][0] = 0.f;
+  m[1][1] = yScale;
+  m[1][2] = 0.f;
+  m[1][3] = 0.f;
+
+  m[2][0] = 0.f;
+  m[2][1] = 0.f;
+  m[2][2] = inFar / (inFar - inNear);
+  m[2][3] = 1.f;
+
+  m[3][0] = 0.f;
+  m[3][1] = 0.f;
+  m[3][2] = -inNear * (inFar / (inFar - inNear));
+  m[3][3] = 0.f;
 }
 
 void 

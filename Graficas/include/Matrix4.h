@@ -77,10 +77,22 @@ class Matrix4 {
 
 
   void
-  Perspective(float inHalfFOV, 
-              Vector2 inScreenSize, 
-              float inMinZ, 
-              float inMaxZ);
+  PerspectiveHalfFovLH(float inHalfFOV, 
+                       Vector2 inScreenSize, 
+                       float inMinZ, 
+                       float inMaxZ);
+
+  void
+  PerspectiveFovLH(float inFov, 
+                   float inAR, 
+                   float inNear, 
+                   float inFar);
+
+  void
+  OrthographicLH(float inWidth, 
+                 float inHeight, 
+                 float inNear, 
+                 float inFar) {}
 
   void
   Translate(const Vector3& inTranslation);

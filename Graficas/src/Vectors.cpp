@@ -13,16 +13,9 @@
 const Vector3 Vector3::ZERO = Vector3(0.f, 0.f, 0.f);
 const Vector3 Vector3::UNIT = Vector3(1.f, 1.f, 1.f);
 
-//Vector3 
-//Vector3::operator*(const Matrix3& inMatrix) const {
-//  return { x * inMatrix.m[0][0] + y * inMatrix.m[0][1] + z * inMatrix.m[0][2],
-//             x * inMatrix.m[1][0] + y * inMatrix.m[1][1] + z * inMatrix.m[1][2],
-//             x * inMatrix.m[2][0] + y * inMatrix.m[2][1] + z * inMatrix.m[2][2] };
-//}
-//
-//void 
-//Vector3::operator*=(const Matrix4& inMatrix) {
-//  x = x * inMatrix.m[0][0] + y * inMatrix.m[0][1] + z * inMatrix.m[0][2] + 1 * inMatrix.m[0][3];
-//  y = x * inMatrix.m[1][0] + y * inMatrix.m[1][1] + z * inMatrix.m[1][2] + 1 * inMatrix.m[1][3];  // Si es posicion es 1, si es direccion es 0 en la W
-//  z = x * inMatrix.m[2][0] + y * inMatrix.m[2][1] + z * inMatrix.m[2][2] + 1 * inMatrix.m[2][3];
-//}
+const Vector4 Vector4::ZERO = Vector4(0.f, 0.f, 0.f, 0.f);
+const Vector4 Vector4::UNIT = Vector4(1.f, 1.f, 1.f, 1.f);
+
+const Vector3 Vector3::UP    = Vector3(0.f, 1.f, 0.f);
+const Vector3 Vector3::RIGHT = Vector3(1.f, 0.f, 0.f);
+const Vector3 Vector3::FRONT = Vector3(0.f, 0.f, 1.f);

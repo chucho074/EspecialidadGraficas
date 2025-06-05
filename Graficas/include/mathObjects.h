@@ -265,7 +265,10 @@ struct Mesh {
   }
 };
 
-struct Camera {
+class Camera {
+ public:
+  Camera() = default; 
+  ~Camera() = default;
 
   void
   setLookAt(const Vector3& inEyePos, 
@@ -278,21 +281,57 @@ struct Camera {
   }
 
   void
-  setPerspective(float inHalfFOV, Vector2 inScreenSize, float inMinZ, float inMaxZ) {
-    fov = inHalfFOV;
+  setPerspectiveHalf(float inHalfFOV, 
+                     Vector2 inScreenSize, 
+                     float inMinZ, 
+                     float inMaxZ) {
+    halfFov = inHalfFOV;
     screenSize = inScreenSize;
     minZ = inMinZ;
     maxZ = inMaxZ;
-    projectionMatrix.Perspective(fov, screenSize, minZ, maxZ);
+    projectionMatrix.PerspectiveHalfFovLH(halfFov, screenSize, minZ, maxZ);
   }
 
+  void
+  setPerspective(float inFOV,
+                 Vector2 inScreenSize,
+                 float inNear,
+                 float inFar) {
+    halfFov = inFOV / 2;
+    screenSize = inScreenSize;
+    minZ = inNear;
+    maxZ = inFar;
+    projectionMatrix.PerspectiveFovLH(inFOV, (screenSize.x/screenSize.y), minZ, maxZ);
+  }
+
+  void 
+  setOrthographic(float inLeft, 
+                  float inRight, 
+                  float inBottom, 
+                  float inTop, 
+                  float inNearZ, 
+                  float inFarZ) {
+    projectionMatrix.identity();
+    projectionMatrix.m[0][0] = 2.f / (inRight - inLeft);
+    projectionMatrix.m[1][1] = 2.f / (inTop - inBottom);
+    projectionMatrix.m[2][2] = 1.f / (inFarZ - inNearZ);
+    projectionMatrix.m[3][0] = -(inRight + inLeft) / (inRight - inLeft);
+    projectionMatrix.m[3][1] = -(inTop + inBottom) / (inTop - inBottom);
+    projectionMatrix.m[3][2] = -inNearZ / (inFarZ - inNearZ);
+    projectionMatrix.m[3][3] = 1.f;
+  }
+
+
   Matrix4
-  getViewMatrix() const {
+  getViewMatrix() {
+    //setLookAt(position, (position + Vector3::RIGHT), up);
+    setLookAt(position, target, up);
     return viewMatrix;
   }
 
   Matrix4
-  getProjectionMatrix() const {
+  getProjectionMatrix() {
+    projectionMatrix.PerspectiveHalfFovLH(halfFov, screenSize, minZ, maxZ);
     return projectionMatrix;
   }
 
@@ -306,17 +345,115 @@ struct Camera {
     return (target - position).normalize();
   }
 
- private:
+ protected:
   Vector3 position;
   Vector3 target;
   Vector3 up;
 
   Vector2 screenSize;
-  float fov;
-  float minZ;
-  float maxZ;
+  float halfFov;
+  float minZ = 0.1f;
+  float maxZ = 1000.f;
 
   Matrix4 viewMatrix;
   Matrix4 projectionMatrix;
+
+};
+
+//TODO: Arreglar las rotaciones
+class EditorCamera : public Camera {
+ public:
+  EditorCamera() = default;
+  ~EditorCamera() = default;
+
+
+  void
+  updateRotations() {
+    float yawRad = (m_YPR.x * DEG2RAD);   // Yaw (horizontal)
+    float pitchRad = (m_YPR.y * DEG2RAD); // Pitch (vertical)
+
+    Vector3 forward = (target - position);
+    Vector3 right = (up.cross(forward).normalize());
+
+    // Calculo correcto del vector forward
+    forward.x = cos(yawRad) * cos(pitchRad);
+    forward.y = sin(pitchRad);
+    forward.z = sin(yawRad) * cos(pitchRad);
+    forward.normalize();
+
+    // Recalcular los vectores de cámara
+    up = forward.cross(right);
+    right = up.cross(forward);
+    //m_rightVector = m_forward.cross({0.0f, 1.0f, 0.0f, 0.0f}); // Siempre sobre Y global
+    right.normalize();
+    up = right.cross(forward);
+    up.normalize();
+
+    //Recalculate matrix
+    target = (position + forward);
+    setLookAt(position, target, up);
+  }
+
+  void 
+  move(float inDeltaTime) {
+    Vector3 forward = (target - position);
+    Vector3 right = (up.cross(forward).normalize());
+
+    float velocity = m_speed * inDeltaTime;
+    if(m_front)
+      position += forward * velocity;
+    if(m_back)
+      position -= forward * velocity;
+    if(m_left)
+      position -= right * velocity;
+    if(m_right)
+      position += right * velocity;
+    if(m_up)
+      position += up * velocity;
+    if(m_down)
+      position -= up * velocity;
+    if(m_YawNeg) {
+      m_YPR.x -= m_speed * inDeltaTime;
+      if((m_YPR.x * DEG2RAD) < (0.f * DEG2RAD)) {
+        m_YPR.x = 360.f * DEG2RAD;
+      }
+
+      updateRotations();
+    }
+    if(m_YawPos) {
+      m_YPR.x += m_speed * inDeltaTime;
+      if((m_YPR.x * DEG2RAD) > (360.f * DEG2RAD)) {
+        m_YPR.x = (0.f * DEG2RAD);
+      }
+      updateRotations();
+    }
+
+
+    ConsoleOut << "X: " << getPosition().x
+               << "\nY: " << getPosition().y
+               << "\nZ: " << getPosition().z << "\n" << ConsoleLine;
+
+    ConsoleOut << "Yaw: " << m_YPR.x
+               << "\nPitch: " << m_YPR.y
+               << "\nRoll: "  << m_YPR.z << "\n" << ConsoleLine;
+  }
+
+
+
+  Vector3 m_YPR = Vector3::ZERO; //Yaw Pitch Roll Values
+
+  float m_speed = 0.00001f;
+
+  bool m_front, m_back, m_left, m_right = false;
+  bool m_up, m_down = false;
+  bool m_YawPos = false, m_YawNeg = false;
+ 
+};
+
+class ShadowCamera : public Camera {
+ public:
+  ShadowCamera() = default;
+  ~ShadowCamera() = default;
+
 
 };

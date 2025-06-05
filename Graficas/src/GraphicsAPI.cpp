@@ -446,8 +446,34 @@ GraphicsAPI::setRenderTargets(SPtr<Texture> inRTV, SPtr<Texture> inDSV) {
 }
 
 void 
+GraphicsAPI::setRenderTargets(int32 inSize, Vector<SPtr<Texture>>& inRT, SPtr<Texture> inDSV) {
+  Vector<ID3D11RenderTargetView*> rtvArray;
+  rtvArray.reserve(inSize);
+
+  for(int32 i = 0; i < inSize; ++i) {
+    if(inRT[i] != nullptr) {
+      rtvArray.push_back(inRT[i]->m_pRTV);
+    }
+    else {
+      
+      rtvArray.push_back(nullptr);
+    }
+  }
+  
+  m_pDeviceContext->OMSetRenderTargets(inSize,
+                                       rtvArray.data(),
+                                       inDSV!= nullptr ? inDSV->m_pDSV : nullptr);
+}
+
+void 
 GraphicsAPI::setShaderResource(uint32 inStartSlot, SPtr<Texture> inSRV) {
-  m_pDeviceContext->PSSetShaderResources(inStartSlot, 1, &inSRV->m_pSRV);
+  if(inSRV != nullptr) {
+    m_pDeviceContext->PSSetShaderResources(inStartSlot, 1, &inSRV->m_pSRV);
+  }
+  else {
+    ID3D11ShaderResourceView* nullSRV = nullptr;
+    m_pDeviceContext->PSSetShaderResources(inStartSlot, 1, &nullSRV);
+  }
 
 }
 

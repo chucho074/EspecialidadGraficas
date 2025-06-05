@@ -165,6 +165,8 @@ Model::loadFromFile(const Path& inPath) {
     return false;
   }
   
+  ConsoleOut<< "The model \"" << inPath.string() << "\" is loaded." << ConsoleLine;
+
   //__debugbreak();
   return true;
 }

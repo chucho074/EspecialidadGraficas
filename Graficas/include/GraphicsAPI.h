@@ -77,6 +77,9 @@ class GraphicsAPI : public Module<GraphicsAPI> {
 
   void
   setRenderTargets(SPtr<Texture> inRTV, SPtr<Texture> inDSV);
+  
+  void
+  setRenderTargets(int32 inSize, Vector<SPtr<Texture>>& inRT, SPtr<Texture> inDSV);
 
   void
   setShaderResource(uint32 inStartSlot, SPtr<Texture> inSRV);

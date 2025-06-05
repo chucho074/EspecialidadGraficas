@@ -1,6 +1,7 @@
 Texture2D txColor   : register(t0);
 Texture2D txNormal  : register(t1);
 Texture2D txRough   : register(t2);
+Texture2D txMetal   : register(t3);
 Texture2D txReflect : register(t7);
 
 SamplerState samPoint  : register(s0);
@@ -98,6 +99,7 @@ float GeometrySmith(float NdotL, float NdotV, float alpha) {
 
 PixelInput vertex_main(VertexInput Input) {
   PixelInput output = (PixelInput)0;
+  
   output.position = float4(Input.position, 1.0f);
   output.position = mul(output.position, World);
   output.posWorld = output.position.xyz; // Guardar la posición en el mundo
@@ -173,23 +175,38 @@ float4 pixel_main(PixelInput Input) : SV_Target {
   float4 diffcolor = txColor.Sample(samLinear, Input.texCoord);
   float4 normal = txNormal.Sample(samLinear, Input.texCoord) * 2.f - 1.f;
   float roughness = txRough.Sample(samLinear, Input.texCoord).r;
+  float metallic = txMetal.Sample(samLinear, Input.texCoord).r;
   
   float3x3 TBN = float3x3(Input.tangent, Input.bitangent, Input.normal); //Es el esapcio de tangentes
   normal.xyz = normalize(mul(normal.xyz, TBN));
   
   //incidencia de la luz //Light position
-  float3 lightPos = float3(0.0f, 0.0f, 0.0f);
+  float3 lightPos = float3(-200.0f, 20.0f, 0.0f);
+  
+  //Rotate light position by time
+  float cosTime = cos(time);
+  float sinTime = sin(time);
+
+  float3x3 rotationMatrix = float3x3(cosTime,  0.f, sinTime,
+                                     0.f,      1.f, 0.f,
+                                     -sinTime, 0.f, cosTime);
+
+  float3 rotatedLightPos = mul(lightPos, rotationMatrix);
   
   //Directional Light
-  float3 lightDir = normalize(lightPos - Input.posWorld);
+  float3 lightDir = normalize(rotatedLightPos - Input.posWorld);
+  //float3 lightDir = normalize(lightPos - Input.posWorld);
+  
+  float3 specularColor = lerp(0.04f, diffcolor.rgb, metallic);
+  
   
   float3 finalColor = BRDF_Cook_Torrance(normal.xyz,
-                                    lightDir,
-                                    normalize(ViewDir - Input.posWorld),
-                                    normalize(reflect(-lightDir, normal.xyz)),
-                                    diffcolor.rgb,
-                                    float3(1.f, 1.f, 1.f), 
-                                    roughness);
+                                         lightDir,
+                                         normalize(ViewDir - Input.posWorld),
+                                         normalize(reflect(-lightDir, normal.xyz)),
+                                         diffcolor.rgb,
+                                         specularColor,
+                                         roughness);
   
   //Lo = kD + kS + kA
   return float4(finalColor, 1.0f);

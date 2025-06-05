@@ -16,6 +16,7 @@ class Vector3 {
   Vector3() {
     *this = Vector3::ZERO;
   };
+
   Vector3(float inX, float inY = 0.f, float inZ = 0.f) {
     x = inX;
     y = inY;
@@ -43,6 +44,12 @@ class Vector3 {
    * @brief A unit vector (1,1,1)
    */
   static const Vector3 UNIT;
+
+  static const Vector3 UP;
+
+  static const Vector3 RIGHT;
+
+  static const Vector3 FRONT;
 
   Vector3 
   operator+(const Vector3& inVec) const {
@@ -84,6 +91,14 @@ class Vector3 {
     x += inVec.x;
     y += inVec.y;
     z += inVec.z;
+    return *this;
+  }
+  
+  Vector3&
+  operator-=(const Vector3& inVec) {
+    x -= inVec.x;
+    y -= inVec.y;
+    z -= inVec.z;
     return *this;
   }
 
@@ -387,6 +402,191 @@ class Vector2i {
 
   float
   operator|(const Vector2i& inVect) const { //For easy usage of dot prof
+    return dot(inVect);
+  }
+
+};
+
+class Vector4 {
+ public:
+  Vector4() {
+    *this = Vector4::ZERO;
+  };
+
+  Vector4(float inX, float inY = 0.f, float inZ = 0.f, float inW = 0.f) {
+    x = inX;
+    y = inY;
+    z = inZ;
+    w = inW;
+  }
+
+  Vector4(const Vector4& inVec) {
+    x = inVec.x;
+    y = inVec.y;
+    z = inVec.z;
+    w = inVec.w;
+  }; 
+
+  ~Vector4() = default;
+
+  float x;
+  float y;
+  float z;
+  float w;
+
+  /**
+   * @brief A zero vector (0,0,0)
+   */
+  static const Vector4 ZERO;
+
+  /**
+   * @brief A unit vector (1,1,1)
+   */
+  static const Vector4 UNIT;
+
+  Vector4
+  operator+(const Vector4& inVec) const {
+    return {x + inVec.x, y + inVec.y, z + inVec.z, w + inVec.w};
+  }
+  
+  Vector4
+  operator-(const Vector4& inVec) const {
+    return {x - inVec.x, y - inVec.y, z - inVec.z, w - inVec.w};
+  }
+
+  Vector4
+  operator*(const Vector4& inVec) const {
+    return {x * inVec.x, y * inVec.y, z * inVec.z, w * inVec.w};
+  }
+  
+  const Vector4&
+  operator=(const Vector4& inVec) {
+    x = inVec.x;
+    y = inVec.y;
+    z = inVec.z;
+    w = inVec.w;
+    return *this;
+  }
+  
+  bool
+  operator==(const Vector4& inVec) const {
+    return x == inVec.x && y == inVec.y && z == inVec.z && w == inVec.w;
+  }
+
+  bool
+  operator!=(const Vector4& inVec) const {
+    return !(*this == inVec);
+  }
+
+  
+
+  Vector4&
+  operator+=(const Vector4& inVec) {
+    x += inVec.x;
+    y += inVec.y;
+    z += inVec.z;
+    w += inVec.w;
+    return *this;
+  }
+  
+  Vector4&
+  operator-=(const Vector4& inVec) {
+    x -= inVec.x;
+    y -= inVec.y;
+    z -= inVec.z;
+    w -= inVec.w;
+    return *this;
+  }
+
+  Vector4&
+  operator*=(const Vector4& inVec) {
+    x *= inVec.x;
+    y *= inVec.y;
+    z *= inVec.z;
+    w *= inVec.w;
+    return *this;
+  }
+
+  Vector4
+  operator/(const Vector4& inVec) const {
+    return {x / inVec.x, y / inVec.y, z / inVec.z, w / inVec.w};
+  }
+
+  Vector4
+  operator+(float inVal) const {
+    return {x + inVal, y + inVal, z + inVal, w + inVal};
+  }
+
+  Vector4
+  operator-(float inVal) const {
+    return {x - inVal, y - inVal, z - inVal, w - inVal};
+  }
+  
+  Vector4
+  operator*(float inVal) const {
+    return {x * inVal, y * inVal, z * inVal, w * inVal};
+  }
+
+  Vector4
+  operator/(float inVal) const {
+    return {x / inVal, y / inVal, z / inVal, w / inVal};
+  }
+
+  Vector4
+  operator-() const {
+    return {-x, -y, -z, -w};
+  }
+
+
+  Vector4
+  cross(const Vector4& inVect) const {
+    return {y * inVect.z - z * inVect.y, 
+            z * inVect.x - x * inVect.z, 
+            x * inVect.y - y * inVect.x,
+            0.f};
+  }
+
+  Vector4
+  operator^(const Vector4& inVect) const { //For easy usage of cross prod
+    return cross(inVect);
+  }
+  
+  bool
+  operator!=(const float& inVal) const {
+    return (x != inVal) || (y != inVal) || (z != inVal) || (w != inVal);
+  }
+
+  bool
+  operator>(const float& inVal) const {
+    return (x >inVal) || (y > inVal) || (z > inVal) || (w > inVal);
+  }
+
+  bool
+  operator<(const float& inVal) const {
+    return (x < inVal) || (y < inVal) || (z > inVal) || (w > inVal);
+  }
+
+  float 
+  size() const {
+    return sqrtf(x * x + y * y + z * z + w * w);
+  }
+
+  Vector4
+  normalize() const {
+    float invLenght = 1.f / size();
+    return { x * invLenght,
+             y * invLenght,
+             z * invLenght, 
+             w * invLenght};
+  }
+
+  float 
+  dot(const Vector4& inVect) const {
+    return x * inVect.x + y * inVect.y + z * inVect.z + w * inVect.w;
+  }
+
+  float
+  operator|(const Vector4& inVect) const { //For easy usage of dot prof
     return dot(inVect);
   }
 
