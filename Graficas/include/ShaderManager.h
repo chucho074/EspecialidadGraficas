@@ -326,14 +326,14 @@ class ShaderManager : public Module<ShaderManager> {
   }
 
   void
-  setDataToShader(ShaderRef inShaderRef, MatrixCollection& inConstantBufferData) {
+  setDataToShader(ShaderRef inShaderRef) {
 
     auto& gapi = g_graphicsAPI();
 
     auto it = m_shaders.find(inShaderRef.shaderID);
     if(it != m_shaders.end()) {
       auto& tmpShader = it->second;
-      tmpShader->setShader(inConstantBufferData);
+      tmpShader->setShader(m_matrixCollection);
       //SetSamplers
       if (SAMPLER_USAGE::kAnisotropic == tmpShader->getSamplerUsage()) {
         gapi.setSamplers(0, m_pSS_Anisotropic);

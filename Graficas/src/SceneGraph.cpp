@@ -40,6 +40,8 @@ SceneGraph::draw() {
     matrixCollection.world = m_root->m_transform.getMatrix() * actor->m_transform.getMatrix();
     matrixCollection.world.transpose();
 
+    g_shaderManager().setConstantValues(matrixCollection);
+
     actor->draw();
   }
 }

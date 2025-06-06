@@ -38,8 +38,10 @@ class BaseMaterial {
     auto& GAPI = g_graphicsAPI();
     auto& shadeManager = g_shaderManager();
 
+    
+
     if (m_shader.shaderID != UID::ZERO) {
-      //shadeManager.setDataToShader(m_shader, );
+      shadeManager.setDataToShader(m_shader);
     }
 
     GAPI.setShaderResource(0, m_albedo);

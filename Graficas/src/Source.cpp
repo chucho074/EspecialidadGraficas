@@ -100,24 +100,32 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                            "vertex_main",
                                                            "pixel_main");
 
+  g_shaderManager().setSamplerToShader(g_GBufferShaderRef, SAMPLER_USAGE::kAll);
+  g_shaderManager().setRasterToShader(g_GBufferShaderRef, RASTER_USAGE::kDefault);
+
+  g_shaderManager().setSamplerToShader(g_LightShaderRef, SAMPLER_USAGE::kAll);
+  g_shaderManager().setRasterToShader(g_GBufferShaderRef, RASTER_USAGE::kCullFront);
+
+
   //Load models and textures
   
   ////////////////////////////////////////////////////////////////////////////////////////////  Dino
-  //g_pDinoActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(),
-  //                                                                        Vector3(0, 0, 0), 
-  //                                                                        Vector3(1, 1, 1)));
+  g_pDinoActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(),
+                                                                          Vector3(0, 0, 0), 
+                                                                          Vector3(1, 1, 1)));
 
-  ////Rex model
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
-  //  __debugbreak();
-  //  return SDL_APP_FAILURE;
-  //}
+  //Rex model
+  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
+    __debugbreak();
+    return SDL_APP_FAILURE;
+  }
 
-  //g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
-  //g_pDinoActor->m_material.setNormalTexture("Models/Rex_N.bmp");
-  //g_pDinoActor->m_material.setRoughnessTexture("Models/Rex_R.bmp");
-  //g_pDinoActor->m_material.setMetalicTexture("Models/Rex_M.bmp");
-  //g_pDinoActor->m_material.setShaderRef(g_GBufferShaderRef);
+  g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
+  g_pDinoActor->m_material.setNormalTexture("Models/Rex_N.bmp");
+  g_pDinoActor->m_material.setRoughnessTexture("Models/Rex_R.bmp");
+  g_pDinoActor->m_material.setMetalicTexture("Models/Rex_M.bmp");
+  g_pDinoActor->m_material.setShaderRef(g_GBufferShaderRef);
+  
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Terrain
@@ -357,8 +365,8 @@ SDL_AppIterate(void* appstate) {
     matrices.world = Matrix4::IDENTITY;
     matrices.time = tempo;
 
-
-    g_pShaderManager->setDataToShader(g_LightShaderRef, matrices);
+    g_pShaderManager->setConstantValues(matrices);
+    g_pShaderManager->setDataToShader(g_LightShaderRef);
 
     Vector<SPtr<Texture>> rt = {
       g_pGAPI->m_pBackBufferRTV,
@@ -368,7 +376,7 @@ SDL_AppIterate(void* appstate) {
 
     g_pGAPI->setRenderTargets(3, rt, nullptr);
 
-    g_pShaderManager->setRaster(RASTER_USAGE::kCullFront);
+    //g_pShaderManager->setRaster(RASTER_USAGE::kCullFront);
 
     g_pGAPI->setShaderResource(0, gbuffer[0]);
     g_pGAPI->setShaderResource(1, gbuffer[1]);
