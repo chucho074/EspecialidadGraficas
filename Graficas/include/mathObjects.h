@@ -311,14 +311,7 @@ class Camera {
                   float inTop, 
                   float inNearZ, 
                   float inFarZ) {
-    projectionMatrix.identity();
-    projectionMatrix.m[0][0] = 2.f / (inRight - inLeft);
-    projectionMatrix.m[1][1] = 2.f / (inTop - inBottom);
-    projectionMatrix.m[2][2] = 1.f / (inFarZ - inNearZ);
-    projectionMatrix.m[3][0] = -(inRight + inLeft) / (inRight - inLeft);
-    projectionMatrix.m[3][1] = -(inTop + inBottom) / (inTop - inBottom);
-    projectionMatrix.m[3][2] = -inNearZ / (inFarZ - inNearZ);
-    projectionMatrix.m[3][3] = 1.f;
+    projectionMatrix.OrthographicLH(inLeft, inRight, inBottom, inTop, inNearZ, inFarZ);
   }
 
 

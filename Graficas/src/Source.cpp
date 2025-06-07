@@ -26,8 +26,11 @@ struct MatrixCollection {
   Matrix4 world;
   Matrix4 view;
   Matrix4 projection;
-  Vector3 viewDir;
 
+  Matrix4 lightView;
+  Matrix4 lightProjection;
+
+  Vector3 viewDir;
   float time;
 };
 
@@ -46,6 +49,9 @@ UPtr<PixelShader> g_pGBufferPixelShader;
 
 UPtr<VertexShader> g_pDefferredVertexShader;
 UPtr<PixelShader> g_pDefferredPixelShader;
+
+UPtr<VertexShader> g_pShadowVertexShader;
+UPtr<PixelShader> g_pShadowPixelShader;
 
 UPtr<PixelShader> g_pPixelShader_Reflect;
 
@@ -77,6 +83,7 @@ SPtr<Texture> g_rtReflection;
 SPtr<Texture> g_dsReflection;
 
 Vector<SPtr<Texture>> gbuffer;
+SPtr<Texture> g_dsShadowMap;
 
 Transform g_worldTransform;
 
@@ -106,6 +113,20 @@ void recompileShaders() {
                                                          "gbuffer_pixel_main");
   if(pGBufferPixelShader) {
     g_pGBufferPixelShader = std::move(pGBufferPixelShader);
+  }
+  
+  ////////////////////////////////////////////////////////////////////////////////////////////
+  auto pShadowVertexShader = g_pGAPI->createVertexShaderFromFile("Shaders/GBuffer.hlsl",
+                                                                 "shadow_map_vertex_main");
+  if(pShadowVertexShader) {
+    g_pShadowVertexShader = std::move(pShadowVertexShader);
+  }
+
+
+  auto pShadowPixelShader = g_pGAPI->createPixelShaderFromFile("Shaders/GBuffer.hlsl",
+                                                               "shadow_map_pixel_main");
+  if(pShadowPixelShader) {
+    g_pShadowPixelShader = std::move(pShadowPixelShader);
   }
   
   ////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,9 +225,17 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.viewDir = g_Camera.getViewDir();
   g_WVP.time = 1.f;
 
+  g_WVP.lightView.identity();
+  g_WVP.lightView.lookAt(Vector3(-5, 5, 10), Vector3(0, 0, 0), Vector3(0, 1, 0));
+
+  g_WVP.lightProjection.OrthographicLH(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 100.f);
+  //g_WVP.lightProjection.PerspectiveHalfFovLH(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
+
   g_WVP.world.transpose();
   g_WVP.view.transpose();
   g_WVP.projection.transpose();
+  g_WVP.lightView.transpose();
+  g_WVP.lightProjection;
 
   //Set the reaster and sampler
   CD3D11_RASTERIZER_DESC1 descRD(D3D11_DEFAULT);
@@ -304,6 +333,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_rtReflection = make_shared<Texture>();
   g_dsReflection = make_shared<Texture>();
 
+  g_dsShadowMap = make_shared<Texture>();
+
   ////////////////////////////////////////////////////////////////////////////////////////////  Bunny
   if(false){
     g_pBunnyActor = static_pointer_cast<Prop>(g_sceneGraph->spawnActor<Prop>(g_sceneGraph->getRoot(),
@@ -375,6 +406,18 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                  1,
                                                  &gbuffer[2]->m_pSRV,
                                                  &gbuffer[2]->m_pRTV);
+
+  g_dsShadowMap->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
+                                                     g_windowSize.y,
+                                                     DXGI_FORMAT_D32_FLOAT,
+                                                     D3D11_USAGE_DEFAULT,
+                                                     D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
+                                                     0,
+                                                     1,
+                                                     &g_dsShadowMap->m_pSRV,
+                                                     &g_dsShadowMap->m_pRTV,
+                                                     &g_dsShadowMap->m_pDSV,
+                                                     &g_dsShadowMap->m_pDSV_RO);
 
   return SDL_APP_CONTINUE;
 }
@@ -528,6 +571,7 @@ SDL_AppIterate(void* appstate) {
 
     g_pGAPI->clearRTV(g_pGAPI->m_pBackBufferRTV, clearColor);
     g_pGAPI->clearDSV(g_pGAPI->m_pBackBufferDSV);
+    g_pGAPI->clearDSV(g_dsShadowMap);
 
     for(auto tex : gbuffer) {
       g_pGAPI->clearRTV(tex, blackClearColor);
@@ -538,12 +582,12 @@ SDL_AppIterate(void* appstate) {
   ////////////////////////////////////////////////////////////////////////////////////////////
   
   //Set Shaders info
-  {
+  /*{
     g_pGAPI->setVertexShader(g_pGBufferVertexShader);
     g_pGAPI->setPixelShader(g_pGBufferPixelShader);
 
     g_pGAPI->setInputLayout(g_pInputLayout);
-  }
+  }*/
   
   ////////////////////////////////////////////////////////////////////////////////////////////
   static float rotationAngle = 0.f;
@@ -569,16 +613,45 @@ SDL_AppIterate(void* appstate) {
   //Set Rasterizer and samplers
   {
     g_pGAPI->setRasterState(g_pRS_Default);
-    //g_pGAPI->setRasterState(g_pRS_Wireframe);
 
     //Set the samplers
     g_pGAPI->setSamplers(0, g_pSS_Point);
     g_pGAPI->setSamplers(1, g_pSS_Linear);
     g_pGAPI->setSamplers(2, g_pSS_Anisotropic);
   }
+  ////////////////////////////////////////////////////////////////////////////////////////////  Shadow Pass
+  {
+    g_pGAPI->setVertexShader(g_pShadowVertexShader);
+    g_pGAPI->setPixelShader(g_pShadowPixelShader);
+    g_pGAPI->setInputLayout(g_pInputLayout);
 
+    matrix_data.resize(sizeof(g_WVP));
+    memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+
+    Vector<SPtr<Texture>> rt = {
+      nullptr,
+      nullptr,
+      nullptr
+    };
+
+    g_pGAPI->setRenderTargets(3, rt, g_dsShadowMap);
+
+    g_pDinoActor->draw();
+
+    //g_pTerrainActor->draw();
+
+  }
   ////////////////////////////////////////////////////////////////////////////////////////////  Rex
   {
+
+    //Set Shaders info
+    
+    g_pGAPI->setVertexShader(g_pGBufferVertexShader);
+    g_pGAPI->setPixelShader(g_pGBufferPixelShader);
+
+    g_pGAPI->setInputLayout(g_pInputLayout);
+    
+
     g_pGAPI->setRasterState(g_pRS_Default);
 
     g_WVP.world = g_worldTransform.getMatrix() * g_pDinoActor->m_transform.getMatrix();

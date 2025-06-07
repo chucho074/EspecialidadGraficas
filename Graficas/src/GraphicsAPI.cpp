@@ -146,15 +146,54 @@ GraphicsAPI::createTexture(int32 inWidth,
                            uint32 inMipLevels, 
                            ID3D11ShaderResourceView** inSRV,
                            ID3D11RenderTargetView** inRTV,
-                           ID3D11DepthStencilView** inDSV) {
+                           ID3D11DepthStencilView** inDSV,
+                           ID3D11DepthStencilView** outDSV_RO) { //RO = Read Only
   ID3D11Texture2D* pOutTexture = nullptr;
+
+  DXGI_FORMAT format = inFormat;
+  
+  DXGI_FORMAT texFormat = format;
+  DXGI_FORMAT srvFormat = texFormat;
+  DXGI_FORMAT dsvFormat = texFormat;
+
+  if(inBindFlags & D3D11_BIND_DEPTH_STENCIL) {
+    inBindFlags |= D3D11_BIND_SHADER_RESOURCE;
+
+    switch (inFormat) {
+      case DXGI_FORMAT_D32_FLOAT: {
+        texFormat = DXGI_FORMAT_R32_TYPELESS; //Para que no se haga una traduccion automatica
+        srvFormat = DXGI_FORMAT_R32_FLOAT;
+        dsvFormat = DXGI_FORMAT_D32_FLOAT;
+        break;
+      }
+      
+      case DXGI_FORMAT_D24_UNORM_S8_UINT: {
+        texFormat = DXGI_FORMAT_R24G8_TYPELESS;//Para que no se haga una traduccion automatica
+        srvFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; //Para que no se haga una traduccion automatica
+        dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        break;
+      }
+
+      case DXGI_FORMAT_D16_UNORM: {
+        texFormat = DXGI_FORMAT_R16_TYPELESS; //Para que no se haga una traduccion automatica
+        srvFormat = DXGI_FORMAT_R16_UNORM;
+        dsvFormat = DXGI_FORMAT_D16_UNORM;
+        break;
+      }
+
+      default: {
+        return nullptr;
+        break;
+      }
+    }
+  }
 
   D3D11_TEXTURE2D_DESC desc;
   memset(&desc, 0, sizeof(desc));
   desc.ArraySize = 1;
   desc.BindFlags = inBindFlags;
   desc.CPUAccessFlags = inCpuAccessFlags;
-  desc.Format = inFormat;
+  desc.Format = texFormat;
   desc.Height = inHeight;
   desc.Width = inWidth;
   desc.MiscFlags = 0;
@@ -171,7 +210,7 @@ GraphicsAPI::createTexture(int32 inWidth,
   if(inSRV != nullptr) {
     if (inBindFlags & D3D11_BIND_SHADER_RESOURCE) {
       D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC();
-      srvDesc.Format = inFormat;
+      srvDesc.Format = srvFormat;
       srvDesc.Texture2D.MipLevels =  inMipLevels == 1 ? 1 : -1;
       srvDesc.Texture2D.MostDetailedMip = 0;
       srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
@@ -183,7 +222,7 @@ GraphicsAPI::createTexture(int32 inWidth,
   if(inRTV != nullptr) {
     if (inBindFlags & D3D11_BIND_RENDER_TARGET) {
       D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = CD3D11_RENDER_TARGET_VIEW_DESC();
-      rtvDesc.Format = inFormat;
+      rtvDesc.Format = format;
       rtvDesc.Texture2D.MipSlice = 0;
       rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
       m_pDevice->CreateRenderTargetView(pOutTexture, &rtvDesc, inRTV);
@@ -192,11 +231,20 @@ GraphicsAPI::createTexture(int32 inWidth,
   if (inDSV != nullptr) {
     if(inBindFlags & D3D11_BIND_DEPTH_STENCIL) {
       D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = CD3D11_DEPTH_STENCIL_VIEW_DESC();
-      dsvDesc.Format = inFormat;
+      dsvDesc.Flags = 0;
+      dsvDesc.Format = dsvFormat;
       dsvDesc.Texture2D.MipSlice = 0;
       dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
       m_pDevice->CreateDepthStencilView(pOutTexture, &dsvDesc, inDSV);
+      if(outDSV_RO != nullptr) {
+        dsvDesc.Flags |= D3D11_DSV_READ_ONLY_DEPTH; 
+        if(dsvFormat == DXGI_FORMAT_D24_UNORM_S8_UINT) {
+          dsvDesc.Flags |= D3D11_DSV_READ_ONLY_STENCIL;
+        }
+        m_pDevice->CreateDepthStencilView(pOutTexture, &dsvDesc, outDSV_RO);
+      }
     }
+  
   }
 
   return pOutTexture;
@@ -229,20 +277,29 @@ GraphicsAPI::QueryInterces(uint32 inWidth, uint32 inHeight) {
   SAFE_RELEASE(pBackBuffer);
 
   //Create Depth Stencil
-  D3D11_DEPTH_STENCIL_DESC dsDesc;
+  //D3D11_DEPTH_STENCIL_VIEW_DESC dsDesc;
+  //memset(&dsDesc, 0, sizeof(dsDesc));
+  //dsDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; //Default format
+  //dsDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+  //dsDesc.Texture2D.MipSlice = 0;
 
   ID3D11Texture2D* pDepthStencil = nullptr;
   pDepthStencil = createTexture(inWidth, 
                                 inHeight, 
                                 DXGI_FORMAT_D24_UNORM_S8_UINT,
                                 D3D11_USAGE_DEFAULT,
-                                D3D11_BIND_DEPTH_STENCIL);
+                                D3D11_BIND_DEPTH_STENCIL,
+                                0, 1, nullptr, nullptr, &m_pBackBufferDSV->m_pDSV);
   if(!pDepthStencil) {
     MessageBox(nullptr, L"Failed to create depth stencil buffer", L"Error", MB_OK);
     return;
   }
 
-  m_pDevice->CreateDepthStencilView(pDepthStencil, nullptr, &m_pBackBufferDSV->m_pDSV);
+  /*if(FAILED(m_pDevice->CreateDepthStencilView(pDepthStencil, nullptr, &m_pBackBufferDSV->m_pDSV))) {
+    MessageBox(nullptr, L"Failed to create depth stencil view", L"Error", MB_OK);
+    __debugbreak();
+    return;
+  }*/
 
   SAFE_RELEASE(pDepthStencil);
 }

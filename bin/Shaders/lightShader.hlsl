@@ -21,6 +21,9 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   float4x4 View;
   float4x4 Projection;
   
+  float4x4 lightView;
+  float4x4 lightProjection;
+  
   float3 ViewPos;
   float time;
 }
@@ -191,10 +194,11 @@ pixel_main(PixelInput input) : SV_Target{
                                      0.f,      1.f, 0.f,
                                      -sinTime, 0.f, cosTime);
 
-  float3 rotatedLightPos = mul(lightPos, rotationMatrix);
+  //float3 rotatedLightPos = mul(lightPos, rotationMatrix);
+  float3 rotatedLightPos = lightPos;
 
   //Directional Light
-  float lightDir = normalize(lightPos - position.xyz);
+  float lightDir = normalize(position.xyz - rotatedLightPos);
   
   float specularColor = lerp(0.04f, color.rgb, position.w);
   
@@ -205,7 +209,7 @@ pixel_main(PixelInput input) : SV_Target{
                                          color.rgb,
                                          specularColor,
                                          normal.w);
-  return float4(colorFinal, 1.f);
+  //return float4(colorFinal, 1.f);
   return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
   //return float4(pow(colorFinal * ao.xyz, 1.f / GAMMA), 1.f);
 }

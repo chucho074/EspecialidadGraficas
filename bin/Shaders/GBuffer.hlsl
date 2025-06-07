@@ -26,6 +26,11 @@ struct PixelInput {
   float3 bitangent : TEXCOORD5;
 };
 
+struct ShadowPixel  {
+  float4 position : SV_Position;
+  float3 posW     : TEXCOORD0;
+};
+
 struct GBuffer {
   float4 position : SV_Target0;   // x, y, z, metallic
   float4 normal   : SV_Target1;   // x, y, z, roughness
@@ -36,8 +41,12 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   float4x4 World;
   float4x4 View;
   float4x4 Projection;
-  float3   ViewPos;
-  float    time;
+  
+  float4x4 lightView;
+  float4x4 lightProjection;
+  
+  float3 ViewPos;
+  float time;
 }
 
 PixelInput gbuffer_vertex_main(VertexInput Input) {
@@ -77,4 +86,20 @@ GBuffer gbuffer_pixel_main(PixelInput Input) {
   Output.color = diffColor;
   
   return Output;
+}
+
+ShadowPixel shadow_map_vertex_main(VertexInput Input) {
+  ShadowPixel output = (ShadowPixel) 0;
+  float4 position = float4(Input.position, 1.0f);
+  output.posW = position.xyz;
+  position = mul(position, World);
+  position = mul(position, lightView);
+  position = mul(position, lightProjection);
+  output.position = position;
+  return output;
+}
+
+float4 shadow_map_pixel_main(ShadowPixel Input) : SV_Target0 {
+  
+  return float4(0.f, 0.f, 0.f, 0.f);
 }

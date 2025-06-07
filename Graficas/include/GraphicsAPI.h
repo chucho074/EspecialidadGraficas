@@ -34,7 +34,8 @@ class GraphicsAPI : public Module<GraphicsAPI> {
                 uint32 inMipLevels = 1, 
                 ID3D11ShaderResourceView** inSRV = nullptr,
                 ID3D11RenderTargetView** inRTV = nullptr,
-                ID3D11DepthStencilView** inDSV = nullptr);
+                ID3D11DepthStencilView** inDSV = nullptr,
+                ID3D11DepthStencilView** outDSV_RO = nullptr);
 
   UPtr<VertexShader>
   createVertexShaderFromFile(const Path& inFilePath, 
