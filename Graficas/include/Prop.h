@@ -14,6 +14,7 @@
 #include "Model.h"
 #include "Material.h"
 #include "GraphicsAPI.h"
+#include "ShaderManager.h"
 
 
 class Prop : public Actor {
@@ -32,14 +33,17 @@ class Prop : public Actor {
   void
   update(float inDT) override {
     Actor::update(inDT);
-
   }
 
   void
-  draw() override {
-    auto& GAPI = g_graphicsAPI();
+  draw(bool inWithMaterial) override {
+    auto& shaderManager = g_shaderManager();
 
-    m_material.draw();
+    shaderManager.setTransform(m_transform);
+
+    if(inWithMaterial) {
+      m_material.draw();
+    }
 
     m_model.draw();
   }

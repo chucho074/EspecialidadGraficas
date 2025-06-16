@@ -431,8 +431,6 @@ class EditorCamera : public Camera {
                << "\nRoll: "  << m_YPR.z << "\n" << ConsoleLine;
   }
 
-
-
   Vector3 m_YPR = Vector3::ZERO; //Yaw Pitch Roll Values
 
   float m_speed = 0.00001f;

@@ -12,6 +12,7 @@
 #include "PrerequisiteGraficas.h"
 #include "Texture.h"
 #include "GraphicsAPI.h"
+#include "ShaderManager.h"
 
 class BaseMaterial {
  public:
@@ -35,14 +36,31 @@ class BaseMaterial {
   virtual void 
   draw() {
     auto& GAPI = g_graphicsAPI();
+    auto& shadeManager = g_shaderManager();
+
+    if (m_shader.shaderID != UID::ZERO) {
+      shadeManager.setDataToShader(m_shader);
+    }
+
     GAPI.setShaderResource(0, m_albedo);
   }
 
+  void
+  setShaderRef(const ShaderRef& inShader) {
+    m_shader = inShader;
+  }
+
+  ShaderRef
+  getShaderRef() const {
+    return m_shader;
+  }
 
  protected:
   SPtr<Texture> m_albedo;
 
   Vector3 m_albedoColor = Vector3::ZERO;
+
+  ShaderRef m_shader;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
