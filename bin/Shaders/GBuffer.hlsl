@@ -59,6 +59,7 @@ PixelInput gbuffer_vertex_main(VertexInput Input) {
   output.position = mul(output.position, Projection); //Ahora es posición de clip
   
   output.normal = normalize(mul(Input.normal, (float3x3) World).xyz);
+  output.normal = output.normal * 0.5f + 0.5f;
   output.tangent = normalize(mul(Input.tangent, (float3x3) World).xyz);
   output.bitangent = -cross(output.normal, output.tangent); //para las normales invertidas
   //output.bitangent = cross(output.normal, output.tangent);
@@ -73,12 +74,12 @@ GBuffer gbuffer_pixel_main(PixelInput Input) {
   GBuffer Output = (GBuffer) 0;
   
   float4 diffColor = txColor.Sample(samLinear, Input.texCoord);
-  float4 normal = txNormal.Sample(samLinear, Input.texCoord);
-  float roughness = txRough.Sample(samLinear, Input.texCoord);
-  float metallic = txMetal.Sample(samLinear, Input.texCoord);
+  float4 normal = txNormal.Sample(samLinear, Input.texCoord) * 2.f - 1.f;
+  float roughness = txRough.Sample(samLinear, Input.texCoord).r;
+  float metallic = txMetal.Sample(samLinear, Input.texCoord).r;
   
   float3x3 TBN = float3x3(Input.tangent, Input.bitangent, Input.normal); //Es el esapcio de tangentes
-  normal.xyz = normalize(mul(normal.xyz, TBN) * 2.f - 1.f);
+  normal.xyz = normalize(mul(normal.xyz, TBN));
   
   
   Output.position = float4(Input.posWorld, metallic);
@@ -101,5 +102,5 @@ ShadowPixel shadow_map_vertex_main(VertexInput Input) {
 
 float4 shadow_map_pixel_main(ShadowPixel Input) : SV_Target0 {
   
-  return float4(0.f, 0.f, 0.f, 0.f);
+  return float4(0.f, 0.f, 0.f, 1.f);
 }

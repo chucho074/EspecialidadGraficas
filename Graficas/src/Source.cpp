@@ -33,6 +33,7 @@ ShaderManager* g_pShaderManager = nullptr;
 
 ShaderRef g_GBufferShaderRef;
 ShaderRef g_LightShaderRef;
+ShaderRef g_ShadowShaderRef;
 
 MatrixCollection g_WVP;
 
@@ -89,6 +90,13 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
     recompileShaders();
   }
+  g_ShadowShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
+                                                             "shadow_map_vertex_main",
+                                                             "shadow_map_pixel_main");
+
+  g_shaderManager().setSamplerToShader(g_ShadowShaderRef, SAMPLER_USAGE::kAll);
+  g_shaderManager().setRasterToShader(g_ShadowShaderRef, RASTER_USAGE::kDefault);
+
   g_GBufferShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
                                                              "gbuffer_vertex_main",
                                                              "gbuffer_pixel_main");
@@ -123,9 +131,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.time = 1.f;
 
   g_WVP.lightView.identity();
-  g_WVP.lightView.lookAt(Vector3(-5, 5, 10), Vector3(0, 0, 0), Vector3(0, 1, 0));
-
-  g_WVP.lightProjection.OrthographicLH(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 100.f);
+  g_WVP.lightView.lookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
+  //g_WVP.lightProjection.OrthographicLH(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);
+  g_WVP.lightProjection.OrthographicLH(-5.f, 5.f, -5.f, 5.f, 0.1f, 500.f);
   //g_WVP.lightProjection.PerspectiveHalfFovLH(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
 
   g_WVP.world.transpose();
@@ -144,6 +152,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   //Rex model
   if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
+  //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
@@ -160,16 +169,18 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   
   g_pTerrainActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
                                                                              Vector3(0, 0, 0), 
-                                                                             Vector3(0.08f, 0.08f, 0.08f)));
+                                                                             //Vector3(1.f, 1.f, 1.f)));
+                                                                             Vector3(10.f, 10.f, 10.f)));
 
   //Disc model
-  if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj")) {
+  //if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj")) {
+  if(!g_pTerrainActor->m_model.loadFromFile("Models/Plane.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
 
   g_pTerrainActor->m_material.setAlbedo("Models/Terrain.bmp");
-  g_pDinoActor->m_material.setShaderRef(g_GBufferShaderRef);
+  g_pTerrainActor->m_material.setShaderRef(g_GBufferShaderRef);
 
 
   g_rtReflection = make_shared<Texture>();
@@ -428,9 +439,10 @@ SDL_AppIterate(void* appstate) {
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Shadow Pass
   
-  if(false){
-    /*matrix_data.resize(sizeof(g_WVP));
-    memcpy(matrix_data.data(), &g_WVP, sizeof(g_WVP));
+  {
+
+    g_pShaderManager->setConstantValues(g_WVP);
+    g_pShaderManager->setDataToShader(g_ShadowShaderRef);
 
     Vector<SPtr<Texture>> rt = {
       nullptr,
@@ -440,12 +452,12 @@ SDL_AppIterate(void* appstate) {
 
     g_pGAPI->setRenderTargets(3, rt, g_dsShadowMap);
 
-    g_pDinoActor->draw(false);*/
+    g_pSceneGraph->draw(false);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Draw in GBuffer
 
-  if(true){
+  {
     g_pGAPI->setRenderTargets(gbuffer.size(), gbuffer, g_pGAPI->m_pBackBufferDSV);
 
     g_pSceneGraph->draw(true);
@@ -470,12 +482,15 @@ SDL_AppIterate(void* appstate) {
     g_pGAPI->setShaderResource(1, gbuffer[1]);
     g_pGAPI->setShaderResource(2, gbuffer[2]);
     g_pGAPI->setShaderResource(3, nullptr);
+    g_pGAPI->setShaderResource(4, g_dsShadowMap);
 
     g_pGAPI->m_pDeviceContext->Draw(3, 0);
 
     g_pGAPI->setShaderResource(0, nullptr);
     g_pGAPI->setShaderResource(1, nullptr);
     g_pGAPI->setShaderResource(2, nullptr);
+    g_pGAPI->setShaderResource(3, nullptr);
+    g_pGAPI->setShaderResource(4, nullptr);
 
   }
 

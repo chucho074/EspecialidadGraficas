@@ -3,17 +3,18 @@
 #define GAMMA 2.2f // 1.8 - 2.4
 
 Texture2D gbuffer_Position : register(t0);
-Texture2D gbuffer_Normal   : register(t1);
-Texture2D gbuffer_Color    : register(t2);
-Texture2D gbuffer_AO       : register(t3);
+Texture2D gbuffer_Normal : register(t1);
+Texture2D gbuffer_Color : register(t2);
+Texture2D gbuffer_AO : register(t3);
+Texture2D shadowMap : register(t4);
 
-SamplerState samPoint  : register(s0);
+SamplerState samPoint : register(s0);
 SamplerState samLinear : register(s1);
-SamplerState samAniso  : register(s2);
+SamplerState samAniso : register(s2);
 
 struct PixelInput {
-  float4 position   : SV_POSITION;
-  float2 texCoord   : TEXCOORD0;
+  float4 position : SV_POSITION;
+  float2 texCoord : TEXCOORD0;
 };
 
 cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
@@ -29,12 +30,12 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
 }
 
 PixelInput vertex_main(uint vertexId : SV_VertexID) {
-  PixelInput output = (PixelInput)0;
+  PixelInput output = (PixelInput) 0;
   
   float2 positions[3] = {
     float2(-1.0f, -1.0f),
-    float2( 3.0f, -1.0f),
-    float2(-1.0f,  3.0f)
+    float2(3.0f, -1.0f),
+    float2(-1.0f, 3.0f)
   };
   
   output.position = float4(positions[vertexId], 0.f, 1.f);
@@ -105,7 +106,7 @@ float GeometrySmith(float NdotL, float NdotV, float alpha) {
 
 
 float3
-BRDF_Blinn_Phong(float3 normal, 
+BRDF_Blinn_Phong(float3 normal,
                  float3 lightDir,
                  float3 viewDir,
                  float3 reflectDir,
@@ -116,9 +117,9 @@ BRDF_Blinn_Phong(float3 normal,
   float3 diffuse = diffuseColor * NdotL;
   
   // Blinn-Phong Specular
-  float NdotH = max(dot(normal,     reflectDir), 0.0f);
-  float NdotV = max(dot(normal,     viewDir),    0.0f);
-  float HdotV = max(dot(reflectDir, viewDir),    0.0f);
+  float NdotH = max(dot(normal, reflectDir), 0.0f);
+  float NdotV = max(dot(normal, viewDir), 0.0f);
+  float HdotV = max(dot(reflectDir, viewDir), 0.0f);
   
   float specular = pow(HdotV, 32.0f) * NdotH * NdotV;
   
@@ -127,7 +128,7 @@ BRDF_Blinn_Phong(float3 normal,
 }
 
 float3
-BRDF_Cook_Torrance(float3 normal, 
+BRDF_Cook_Torrance(float3 normal,
                    float3 lightDir,
                    float3 viewDir,
                    float3 reflectDir,
@@ -149,7 +150,7 @@ BRDF_Cook_Torrance(float3 normal,
   
   float3 specular = (D * F * G) / (4.0f * NdotL * NdotV);
 
-  return diffuse;
+  //return diffuse;
   return diffuse + specular;
   
 }
@@ -175,7 +176,7 @@ float2 GetRandom(float2 uv) {
 }
 
 float4
-pixel_main(PixelInput input) : SV_Target{
+pixel_main(PixelInput input) : SV_Target {
   float4 position = GetPosition(input.texCoord);
   float4 normal = GetNormal(input.texCoord);
   float4 color = gbuffer_Color.Sample(samPoint, input.texCoord);
@@ -184,21 +185,30 @@ pixel_main(PixelInput input) : SV_Target{
   clip(color.w < 1.f ? -1 : 1);
 
   //Light position
-  float3 lightPos = float3(5.f, 5.f, -5.f);
+  float3 lightPos = float3(65, 35, 50);
+  
+  
+  float4 lightVP = mul(float4(position.xyz, 1.f), lightView);
+  lightVP = mul(lightVP, lightProjection);
+  lightVP /= lightVP.w;
+  lightVP.xy = lightVP.xy * 0.5f + 0.5f; //Convert to NDC
+  
+  lightVP.y = 1.f - lightVP.y;
 
   //Rotate light position by time
   float cosTime = cos(time);
   float sinTime = sin(time);
 
-  float3x3 rotationMatrix = float3x3(cosTime,  0.f, sinTime,
-                                     0.f,      1.f, 0.f,
+  float3x3 rotationMatrix = float3x3(cosTime, 0.f, sinTime,
+                                     0.f, 1.f, 0.f,
                                      -sinTime, 0.f, cosTime);
 
   //float3 rotatedLightPos = mul(lightPos, rotationMatrix);
   float3 rotatedLightPos = lightPos;
-
+  
   //Directional Light
-  float lightDir = normalize(position.xyz - rotatedLightPos);
+  //float lightDir = normalize(position.xyz - rotatedLightPos);
+  float lightDir = normalize(rotatedLightPos - position.xyz);
   
   float specularColor = lerp(0.04f, color.rgb, position.w);
   
@@ -209,6 +219,31 @@ pixel_main(PixelInput input) : SV_Target{
                                          color.rgb,
                                          specularColor,
                                          normal.w);
+  
+  
+  
+  float4 shadowSample = shadowMap.Sample(samPoint, lightVP.xy);
+  float shadowDepth = shadowSample.x;
+  float lightDepth = lightVP.z - 0.005; //BIAS HERE
+  float shadowFactor = 0.f;
+  
+  if (lightDepth > shadowDepth) {
+    shadowFactor = 0.f;
+  }
+  else {
+    shadowFactor = 1.f;
+  }
+  
+  if (lightVP.x < 0.01f || lightVP.x > 0.99f ||
+      lightVP.y < 0.01f || lightVP.y > 0.99f) {
+    shadowFactor = 1.f;
+  }
+  
+  colorFinal *= shadowFactor;
+  
+  //return float4(shadowSample.xxx, 1.f);
+  
+  
   //return float4(colorFinal, 1.f);
   return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
   //return float4(pow(colorFinal * ao.xyz, 1.f / GAMMA), 1.f);
@@ -216,7 +251,7 @@ pixel_main(PixelInput input) : SV_Target{
 
 
 
-float 
+float
 DoAmbienOcclussion(in float2 tcoord, in float2 uv, in float3 p, in float3 ncoord) {
   float AOScale = 1.0f;
   float AOIntensity = 2.0f;
@@ -227,6 +262,6 @@ DoAmbienOcclussion(in float2 tcoord, in float2 uv, in float3 p, in float3 ncoord
   return max(0.0f, dot(ncoord, v)) * (1.f / (1.f + d)) * AOIntensity;
 }
 
-float4 ao_main (PixelInput input) : SV_Target{
+float4 ao_main(PixelInput input) : SV_Target {
   return float4(1.f, 1.f, 1.f, 1.f);
 }
