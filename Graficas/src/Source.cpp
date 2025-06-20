@@ -22,6 +22,12 @@
 #include "SceneGraph.h"
 #include "Prop.h"
 #include "ShaderManager.h"
+#include "giTime.h"
+
+
+#include <imgui.h>
+#include <imgui_impl_win32.cpp>
+#include <imgui_impl_dx11.cpp>
 
 Vector2 g_windowSize = {1280 , 720};
 
@@ -36,6 +42,10 @@ ShaderRef g_LightShaderRef;
 ShaderRef g_ShadowShaderRef;
 
 MatrixCollection g_WVP;
+
+giTime g_appTime;
+
+SPtr<Camera> g_shadowCamera;
 
 SPtr<Prop> g_pDinoActor;
 SPtr<Prop> g_pTerrainActor;
@@ -52,6 +62,87 @@ void recompileShaders() {
   g_pShaderManager->compileAllShaders();
 }
 
+void renderUI() {
+  auto& gapi = g_graphicsAPI();
+  auto& shadMan = g_shaderManager();
+
+  if(ImGui::Begin("Menu")) {
+    
+    //Cameras
+    {
+      auto tmpMainCamera = g_pSceneGraph->m_editorCamera;
+      
+      String tmpX = toString(tmpMainCamera->getPosition().x);
+      String tmpY = toString(tmpMainCamera->getPosition().y);
+      String tmpZ = toString(tmpMainCamera->getPosition().z);
+
+      ImGui::Text("Camera position");
+      ImGui::SameLine();
+      ImGui::TextColored({0.91f, 0.07f, 0.14f, 1.f}, tmpX.substr(0, tmpX.find(".") + 3).c_str());
+      ImGui::SameLine();
+      ImGui::TextColored({0.05f, 0.76f, 0.26f, 1.f}, tmpY.substr(0, tmpY.find(".") + 3).c_str());
+      ImGui::SameLine();
+      ImGui::TextColored({0.f,   0.48f, 0.8f,  1.f}, tmpZ.substr(0, tmpZ.find(".") + 3).c_str());
+
+      tmpX = toString(tmpMainCamera->m_YPR.x);
+      tmpY = toString(tmpMainCamera->m_YPR.y);
+      tmpZ = toString(tmpMainCamera->m_YPR.z);
+
+      ImGui::Text("Camera rotation");
+      ImGui::SameLine();
+      ImGui::TextColored({0.91f, 0.07f, 0.14f, 1.f}, tmpX.substr(0, tmpX.find(".") + 3).c_str());
+      ImGui::SameLine();
+      ImGui::TextColored({0.05f, 0.76f, 0.26f, 1.f}, tmpY.substr(0, tmpY.find(".") + 3).c_str());
+      ImGui::SameLine();
+      ImGui::TextColored({0.f,   0.48f, 0.8f,  1.f}, tmpZ.substr(0, tmpZ.find(".") + 3).c_str());
+
+      ImGui::SliderFloat("Camera speed", &tmpMainCamera->m_speed, 0.f, 250.f);
+      ImGui::Separator();
+      
+      ImGui::Text("Shadow Camera position");
+      ImGui::SameLine();
+      ImGui::DragFloat3("Position", &g_shadowCamera->position.x);
+    }
+    ImGui::Separator(); // Textures
+    {
+      ImGui::Separator();
+      void* tmpImage;
+      
+      //Positions
+      tmpImage = gbuffer[0]->m_pSRV;
+      ImGui::Text("Position Map");
+      ImGui::SameLine();
+      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Separator();
+      //Normals
+      tmpImage = gbuffer[1]->m_pSRV;
+      ImGui::Text("Normals Map");
+      ImGui::SameLine();
+      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Separator();
+      //Albedos
+      tmpImage = gbuffer[2]->m_pSRV;
+      ImGui::Text("Albedo Map");
+      ImGui::SameLine();
+      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Separator();
+      //Shadow map
+      tmpImage = g_dsShadowMap->m_pSRV;
+      ImGui::Text("Shadow Map");
+      ImGui::SameLine();
+      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Separator();
+      //
+    }
+    
+    ImGui::Separator(); // Delta Time
+    {
+      ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
+    }
+
+    ImGui::End();
+  }
+}
 
 /* This function runs once at startup. */
 SDL_AppResult
@@ -124,24 +215,27 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   
   //Set world info
   g_WVP.world.identity();
-  g_WVP.view = cameraRef.getViewMatrix();
-  g_WVP.projection = cameraRef.getProjectionMatrix();
+  g_WVP.view = cameraRef->getViewMatrix();
+  g_WVP.projection = cameraRef->getProjectionMatrix();
 
-  g_WVP.viewDir = cameraRef.getViewDir();
+  g_WVP.viewDir = cameraRef->getViewDir();
   g_WVP.time = 1.f;
 
-  g_WVP.lightView.identity();
-  g_WVP.lightView.lookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
-  //g_WVP.lightProjection.OrthographicLH(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);
-  g_WVP.lightProjection.OrthographicLH(-5.f, 5.f, -5.f, 5.f, 0.1f, 500.f);
-  //g_WVP.lightProjection.PerspectiveHalfFovLH(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
+  g_shadowCamera = make_shared<Camera>();
+
+  g_shadowCamera->setLookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
+  //g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
+  g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
+  //g_shadowCamera->setPerspectiveHalf(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
+
+  g_WVP.lightView = g_shadowCamera->getViewMatrix();
 
   g_WVP.world.transpose();
   g_WVP.view.transpose();
   g_WVP.projection.transpose();
-  g_WVP.lightView.transpose();
-  g_WVP.lightProjection;
 
+  g_WVP.lightProjection.OrthographicLH(-5.f, 5.f, -5.f, 5.f, 0.1f, 500.f);
+  g_WVP.lightView.transpose();
 
   //Load models and textures
   
@@ -261,6 +355,34 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                      &g_dsShadowMap->m_pDSV,
                                                      &g_dsShadowMap->m_pDSV_RO);
 
+  ////////////////////////////////////////////////////////////////////////////////////////////  ImGui
+
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.DisplaySize = ImVec2(g_windowSize.x, g_windowSize.y);
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+  ImGuiStyle& style = ImGui::GetStyle();
+  if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+    style.WindowRounding = 0.0f;
+    style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+  }
+
+  ImGui::StyleColorsDark();
+
+  ImGui_ImplWin32_Init(pHandle);
+  ImGui_ImplDX11_Init((ID3D11Device*)g_pGAPI->getDevice(),
+                      (ID3D11DeviceContext*)g_pGAPI->getDeviceContext());
+
+  //Change font path to engine settings
+  io.Fonts->AddFontFromFileTTF("Fonts/Inter-Regular.ttf", 15.0f);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
+
+  g_appTime.startTimer();
+
   return SDL_APP_CONTINUE;
 }
 
@@ -283,89 +405,127 @@ SDL_AppEvent(void* appstate, SDL_Event* event) {
   //Get forward input
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_W) {
-      cameraRef.m_front = true;
+      cameraRef->m_front = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_W) {
-      cameraRef.m_front = false;
+      cameraRef->m_front = false;
     }
   }
   //Get backard input
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_S) {
-      cameraRef.m_back = true;
+      cameraRef->m_back = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_S) {
-      cameraRef.m_back = false;
+      cameraRef->m_back = false;
     }
   }
   //Get left input
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_A) {
-      cameraRef.m_left = true;
+      cameraRef->m_left = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_A) {
-      cameraRef.m_left = false;
+      cameraRef->m_left = false;
     }
   }
   //Get right input
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_D) {
-      cameraRef.m_right = true;
+      cameraRef->m_right = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_D) {
-      cameraRef.m_right = false;
+      cameraRef->m_right = false;
     }
   }
   //Get up input
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_E) {
-      cameraRef.m_up = true;
+      cameraRef->m_up = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_E) {
-      cameraRef.m_up = false;
+      cameraRef->m_up = false;
     }
   }
   //Get down input
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_Q) {
-      cameraRef.m_down = true;
+      cameraRef->m_down = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_Q) {
-      cameraRef.m_down = false;
+      cameraRef->m_down = false;
     }
   }
 
   //Rotate
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_Z) {
-      cameraRef.m_YawNeg = true;
+      cameraRef->m_YawNeg = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_Z) {
-      cameraRef.m_YawNeg = false;
+      cameraRef->m_YawNeg = false;
     }
   }
   if(event->type == SDL_EVENT_KEY_DOWN) {
     if(event->key.key == SDLK_C) {
-      cameraRef.m_YawPos = true;
+      cameraRef->m_YawPos = true;
     }
   }
   else if(event->type == SDL_EVENT_KEY_UP) {
     if(event->key.key == SDLK_C) {
-      cameraRef.m_YawPos = false;
+      cameraRef->m_YawPos = false;
+    }
+  }
+
+  ImGuiIO& io = ImGui::GetIO();
+  //Mouse Pressed case
+  {
+    int32 button = -1;
+    if(event->type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+      button = event->button.button == SDL_BUTTON_LEFT ? 0 : button;
+
+      button = event->button.button == SDL_BUTTON_RIGHT ? 1 : button;
+
+      button = event->button.button == SDL_BUTTON_MIDDLE ? 2 : button;
+
+      button = event->button.button == SDL_BUTTON_X1 ? 3 : button;
+
+      button = event->button.button == SDL_BUTTON_X2 ? 4 : button;
+      if(button > -1) {
+        io.MouseDown[button] = true;
+      }
+    }
+  }
+  //Mouse released case
+  {
+    int32 button = -1;
+    if(event->type == SDL_EVENT_MOUSE_BUTTON_UP) {
+      button = event->button.button == SDL_BUTTON_LEFT ? 0 : button;
+
+      button = event->button.button == SDL_BUTTON_RIGHT ? 1 : button;
+
+      button = event->button.button == SDL_BUTTON_MIDDLE ? 2 : button;
+
+      button = event->button.button == SDL_BUTTON_X1 ? 3 : button;
+
+      button = event->button.button == SDL_BUTTON_X2 ? 4 : button;
+      if(button > -1) {
+        io.MouseDown[button] = false;
+      }
     }
   }
 
@@ -376,13 +536,10 @@ SDL_AppEvent(void* appstate, SDL_Event* event) {
 SDL_AppResult
 SDL_AppIterate(void* appstate) {
   auto& cameraRef = g_pSceneGraph->m_editorCamera;
-
-  static Uint64 past = 0;
-  Uint64 now = SDL_GetTicksNS();
-  float deltaTime = (now - past) / 999999999.0f * 1000.0f;
   
-  cameraRef.move(deltaTime);
-  g_pSceneGraph->update(deltaTime);
+  g_appTime.update();
+  cameraRef->move(g_appTime.getTime());
+  g_pSceneGraph->update(g_appTime.getTime());
 
   //Rellenar el input assembly
   //IA > Input Assambly
@@ -431,10 +588,13 @@ SDL_AppIterate(void* appstate) {
   g_WVP.time = tempo;
 
   g_WVP.world.identity();
-  g_WVP.view = cameraRef.getViewMatrix();
-  g_WVP.projection = cameraRef.getProjectionMatrix();
+  g_WVP.view = cameraRef->getViewMatrix();
+  g_WVP.projection = cameraRef->getProjectionMatrix();
   g_WVP.view.transpose();
   g_WVP.projection.transpose();
+  
+  g_WVP.lightView = g_shadowCamera->getViewMatrix();
+  g_WVP.lightView.transpose();
   g_pShaderManager->setConstantValues(g_WVP);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Shadow Pass
@@ -494,6 +654,29 @@ SDL_AppIterate(void* appstate) {
 
   }
 
+  //////////////////////////////////////////////////////////////////////////////////////////////  ImGui
+
+  {
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    //ImGui::ShowDemoWindow();
+
+    renderUI();
+
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+    // Update and Render additional Platform Windows
+    if(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+      ImGui::UpdatePlatformWindows();
+      ImGui::RenderPlatformWindowsDefault();
+    }
+  }
+
   ////////////////////////////////////////////////////////////////////////////////////////////  Present
 
   g_pGAPI->m_pSwapChain->Present(1, 0);
@@ -505,13 +688,15 @@ SDL_AppIterate(void* appstate) {
 void
 SDL_AppQuit(void* appstate, SDL_AppResult result) {
 
-
-
   /* SDL will clean up the window/renderer for us. */
   if(g_pWindow) {
     SDL_DestroyWindow(g_pWindow);
     g_pWindow = nullptr;
   }
+
+  ImGui_ImplDX11_Shutdown();
+  ImGui_ImplWin32_Shutdown();
+  ImGui::DestroyContext();
 
   GraphicsAPI::shutDown();
 

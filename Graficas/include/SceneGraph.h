@@ -114,7 +114,7 @@ class SceneGraph {
    */
   uint32 m_numActors;
 
-  EditorCamera m_editorCamera;
+  SPtr<EditorCamera> m_editorCamera;
 
 
 };

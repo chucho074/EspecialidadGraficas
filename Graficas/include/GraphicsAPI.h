@@ -109,6 +109,12 @@ class GraphicsAPI : public Module<GraphicsAPI> {
   void
   clearSRV(int32 inSlot);
 
+  ID3D11Device1*
+  getDevice() { return m_pDevice; }
+
+  ID3D11DeviceContext1*
+  getDeviceContext() { return m_pDeviceContext; }
+
  private:
 
   void

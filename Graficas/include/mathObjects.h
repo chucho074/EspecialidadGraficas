@@ -311,7 +311,15 @@ class Camera {
                   float inTop, 
                   float inNearZ, 
                   float inFarZ) {
-    projectionMatrix.OrthographicLH(inLeft, inRight, inBottom, inTop, inNearZ, inFarZ);
+
+    
+    
+    projectionMatrix.OrthographicLH(inLeft, 
+                                    inRight, 
+                                    inBottom, 
+                                    inTop, 
+                                    inNearZ, 
+                                    inFarZ);
   }
 
 
@@ -338,7 +346,7 @@ class Camera {
     return (target - position).normalize();
   }
 
- protected:
+ public:
   Vector3 position;
   Vector3 target;
   Vector3 up;
@@ -421,19 +429,11 @@ class EditorCamera : public Camera {
       updateRotations();
     }
 
-
-    ConsoleOut << "X: " << getPosition().x
-               << "\nY: " << getPosition().y
-               << "\nZ: " << getPosition().z << "\n" << ConsoleLine;
-
-    ConsoleOut << "Yaw: " << m_YPR.x
-               << "\nPitch: " << m_YPR.y
-               << "\nRoll: "  << m_YPR.z << "\n" << ConsoleLine;
   }
 
   Vector3 m_YPR = Vector3::ZERO; //Yaw Pitch Roll Values
 
-  float m_speed = 0.00001f;
+  float m_speed = 1.f;
 
   bool m_front, m_back, m_left, m_right = false;
   bool m_up, m_down = false;
@@ -445,6 +445,7 @@ class ShadowCamera : public Camera {
  public:
   ShadowCamera() = default;
   ~ShadowCamera() = default;
+
 
 
 };

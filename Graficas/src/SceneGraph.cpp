@@ -15,13 +15,14 @@ SceneGraph::init() {
   m_root = SceneNode::createSceneObject<Actor>();
   m_root->setName("Root");
   m_root->init({0.f, 0.f}, {1.f, 1.f}, 0.f);
-  m_editorCamera.setLookAt(Vector3(-5, 5, 10), Vector3(0, 0, 0), Vector3(0, 1, 0));
-  m_editorCamera.setPerspectiveHalf(3.1415926353f / 4.f, Vector2(1280, 720), 0.1f, 1000.f);
+  m_editorCamera = make_shared<EditorCamera>();
+  m_editorCamera->setLookAt(Vector3(-5, 5, 10), Vector3(0, 0, 0), Vector3(0, 1, 0));
+  m_editorCamera->setPerspectiveHalf(3.1415926353f / 4.f, Vector2(1280, 720), 0.1f, 1000.f);
 }
 
 void 
 SceneGraph::update(float inDT) {
-  m_editorCamera.move(inDT);
+  m_editorCamera->move(inDT);
 
   for(auto& actor : m_actors) {
     actor->update(inDT);
