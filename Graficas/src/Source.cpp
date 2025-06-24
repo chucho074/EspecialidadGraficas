@@ -104,8 +104,7 @@ void renderUI() {
       ImGui::DragFloat3("Position", &g_shadowCamera->position.x);
     }
     ImGui::Separator(); // Textures
-    {
-      ImGui::Separator();
+    if(ImGui::CollapsingHeader("Textures")) {
       void* tmpImage;
       
       //Positions
