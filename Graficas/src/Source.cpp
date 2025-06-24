@@ -96,7 +96,7 @@ void renderUI() {
       ImGui::SameLine();
       ImGui::TextColored({0.f,   0.48f, 0.8f,  1.f}, tmpZ.substr(0, tmpZ.find(".") + 3).c_str());
 
-      ImGui::SliderFloat("Camera speed", &tmpMainCamera->m_speed, 0.f, 250.f);
+      ImGui::SliderFloat("Camera speed", &tmpMainCamera->m_speed, 1.f, 250.f);
       ImGui::Separator();
       
       ImGui::Text("Shadow Camera position");
@@ -140,8 +140,8 @@ void renderUI() {
       ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
     }
 
-    ImGui::End();
   }
+  ImGui::End();
 }
 
 /* This function runs once at startup. */
