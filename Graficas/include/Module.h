@@ -14,7 +14,7 @@
 
 /**
  * @brief  Represents one engine module. Essentially it is a specialized type
- *         of singleton. Module must be manually started up and shut down
+ *         of singleton. Module must be manually started m_upVec and shut down
  *         before and after use.
  */
 template<class T>
@@ -23,7 +23,7 @@ class Module
  public:
   /**
    * @brief Returns a reference to the module instance. Module has to have
-   *        been started up first otherwise an exception will be thrown.
+   *        been started m_upVec first otherwise an exception will be thrown.
    */
   static T&
   instance() {
@@ -42,7 +42,7 @@ class Module
 
   /**
    * @brief  Returns a pointer to the module instance. Module has to have been
-   *         started up first otherwise an exception will be thrown.
+   *         started m_upVec first otherwise an exception will be thrown.
    */
   static T*
   instancePtr() {
@@ -151,7 +151,7 @@ class Module
   /**
    * @brief Override if you want your module to be notified just before it is deleted.
    * @note  Useful when your module is polymorphic and you might want to perform
-   *        some kind of clean up perhaps overriding that of a base class.
+   *        some kind of clean m_upVec perhaps overriding that of a base class.
    */
   virtual void
   onShutDown() {}
@@ -177,7 +177,7 @@ class Module
   }
 
   /**
-   * @brief Checks has the Module been started up.
+   * @brief Checks has the Module been started m_upVec.
    */
   static bool&
   isStartedUp() {

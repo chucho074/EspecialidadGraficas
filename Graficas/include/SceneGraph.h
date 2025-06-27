@@ -14,6 +14,7 @@
 #include "Actor.h"
 #include "UUID.h"
 #include "mathObjects.h"
+#include "Camera.h"
 
 class SceneGraph {
  public:

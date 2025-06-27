@@ -14,6 +14,7 @@
 
 #include <iostream>
 
+#include "Camera.h"
 #include "PrerequisiteGraficas.h"
 #include "GraphicsAPI.h"
 #include "Model.h"
@@ -101,7 +102,7 @@ void renderUI() {
       
       ImGui::Text("Shadow Camera position");
       ImGui::SameLine();
-      ImGui::DragFloat3("Position", &g_shadowCamera->position.x);
+      ImGui::DragFloat3("Position", &g_shadowCamera->m_position.x);
     }
     ImGui::Separator(); // Textures
     if(ImGui::CollapsingHeader("Textures")) {
@@ -217,7 +218,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.view = cameraRef->getViewMatrix();
   g_WVP.projection = cameraRef->getProjectionMatrix();
 
-  g_WVP.viewDir = cameraRef->getViewDir();
+  g_WVP.viewDir = cameraRef->getCameraDir();
   g_WVP.time = 1.f;
 
   g_shadowCamera = make_shared<Camera>();
@@ -233,7 +234,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.view.transpose();
   g_WVP.projection.transpose();
 
-  g_WVP.lightProjection.OrthographicLH(-5.f, 5.f, -5.f, 5.f, 0.1f, 500.f);
+  //g_WVP.lightProjection.OrthographicLH(-5.f, 5.f, -5.f, 5.f, 0.1f, 500.f);
+  g_WVP.lightProjection = g_shadowCamera->getOrthoMatrix();
   g_WVP.lightView.transpose();
 
   //Load models and textures
