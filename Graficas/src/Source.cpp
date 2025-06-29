@@ -85,9 +85,9 @@ void renderUI() {
       ImGui::SameLine();
       ImGui::TextColored({0.f,   0.48f, 0.8f,  1.f}, tmpZ.substr(0, tmpZ.find(".") + 3).c_str());
 
-      tmpX = toString(tmpMainCamera->m_YPR.x);
-      tmpY = toString(tmpMainCamera->m_YPR.y);
-      tmpZ = toString(tmpMainCamera->m_YPR.z);
+      tmpX = toString(Radians(tmpMainCamera->m_YPR.x).getDegrees());
+      tmpY = toString(Radians(tmpMainCamera->m_YPR.y).getDegrees());
+      tmpZ = toString(Radians(tmpMainCamera->m_YPR.z).getDegrees());
 
       ImGui::Text("Camera rotation");
       ImGui::SameLine();
@@ -103,6 +103,14 @@ void renderUI() {
       ImGui::Text("Shadow Camera position");
       ImGui::SameLine();
       ImGui::DragFloat3("Position", &g_shadowCamera->m_position.x);
+
+      tmpX = toString(Radians(g_shadowCamera->m_YPR.x).getDegrees());
+      tmpY = toString(Radians(g_shadowCamera->m_YPR.y).getDegrees());
+      tmpZ = toString(Radians(g_shadowCamera->m_YPR.z).getDegrees());
+
+      ImGui::Text("Shadow Camera rotation");
+      ImGui::SameLine();
+      ImGui::DragFloat3("YawPitchRoll", &g_shadowCamera->m_YPR.x);
     }
     ImGui::Separator(); // Textures
     if(ImGui::CollapsingHeader("Textures")) {
@@ -246,7 +254,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                                           Vector3(1, 1, 1)));
 
   //Rex model
-  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
+  //if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/Bistro.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;

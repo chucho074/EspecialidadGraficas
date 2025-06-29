@@ -138,11 +138,8 @@ class Camera {
   Matrix4 projectionMatrix;
 
   Vector3 m_YPR = Vector3::ZERO; //Yaw Pitch Roll Values
-
-
 };
 
-//TODO: Arreglar las rotaciones
 class EditorCamera : public Camera {
  public:
   EditorCamera() = default;
@@ -157,23 +154,23 @@ class EditorCamera : public Camera {
     if(m_back)
       m_position -= m_cameraFront * velocity;
     if(m_left)
-      m_position -= m_right * velocity;
+      m_position += m_cameraRight * velocity;
     if(m_right)
-      m_position += m_right * velocity;
+      m_position -= m_cameraRight * velocity;
     if(m_up)
       m_position += m_upVec * velocity;
     if(m_down)
       m_position -= m_upVec * velocity;
     if(m_YawNeg) {
-      m_YPR.x -= m_speed * inDeltaTime;
-      if((Radians(m_YPR.x)) < (Degrees(0.f))) {
+      m_YPR.x -= velocity;
+      if((Radians(m_YPR.x)) < (Radians(0.f))) {
         m_YPR.x = Degrees(360.f).getRadians();
       }
     }
     if(m_YawPos) {
-      m_YPR.x += m_speed * inDeltaTime;
-      if((Radians(m_YPR.x)) > (Radians(360.f))) {
-        m_YPR.x = Degrees(0.f).getRadians();
+      m_YPR.x += velocity;
+      if((Radians(m_YPR.x)) > (Degrees(360.f).getRadians())) {
+        m_YPR.x = 0.f;
       }
     }
     recalculateValues();
