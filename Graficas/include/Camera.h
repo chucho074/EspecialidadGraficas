@@ -21,7 +21,7 @@ class Camera {
   ~Camera() = default;
 
   void
-  recalculateValues() {
+  recalculateValues() { //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!move after rotate
     float yawRad = Radians(m_YPR.x).getRadians();   // Yaw (horizontal)
     float pitchRad = Radians(m_YPR.y).getRadians(); // Pitch (vertical)
 
@@ -149,6 +149,16 @@ class EditorCamera : public Camera {
   move(float inDeltaTime) {
 
     float velocity = m_speed * inDeltaTime;
+
+    if(m_YawPos) {
+      m_YPR.x += velocity;
+      if((Radians(m_YPR.x)) > (Degrees(360.f).getRadians())) {
+        m_YPR.x = 0.f;
+      }
+    }
+
+    recalculateValues();
+
     if(m_front)
       m_position += m_cameraFront * velocity;
     if(m_back)
@@ -167,13 +177,7 @@ class EditorCamera : public Camera {
         m_YPR.x = Degrees(360.f).getRadians();
       }
     }
-    if(m_YawPos) {
-      m_YPR.x += velocity;
-      if((Radians(m_YPR.x)) > (Degrees(360.f).getRadians())) {
-        m_YPR.x = 0.f;
-      }
-    }
-    recalculateValues();
+    
   }
 
 

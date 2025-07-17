@@ -243,6 +243,7 @@ pixel_main(PixelInput input) : SV_Target {
   
   //return float4(shadowSample.xxx, 1.f);
   
+  //return normal;
   
   //return float4(colorFinal, 1.f);
   return float4(pow(colorFinal, 1.f / GAMMA), 1.f);

@@ -314,6 +314,10 @@ void
 Model::setBuffers() {
 
   auto& GAPI = g_graphicsAPI();
+  
+  if (!m_pVertexBuffer || !m_pIndexBuffer) {
+    return;
+  }
 
   uint32 stride = sizeof(SimpleVertex);
   uint32 offset = 0;
@@ -334,6 +338,10 @@ void
 Model::draw() {
   auto& GAPI = g_graphicsAPI();
   
+  if (!m_pVertexBuffer || !m_pIndexBuffer) {
+    return;
+  }
+
   setBuffers();
 
   GAPI.setTopology(m_meshes[0].topology);

@@ -70,7 +70,7 @@ void renderUI() {
   if(ImGui::Begin("Menu")) {
     
     //Cameras
-    {
+    if(ImGui::CollapsingHeader("CameraSettings")) {
       auto tmpMainCamera = g_pSceneGraph->m_editorCamera;
       
       String tmpX = toString(tmpMainCamera->getPosition().x);
@@ -99,7 +99,12 @@ void renderUI() {
 
       ImGui::SliderFloat("Camera speed", &tmpMainCamera->m_speed, 1.f, 250.f);
       ImGui::Separator();
-      
+
+      ImGui::SliderFloat("Camera Near", &tmpMainCamera->minZ, 0.001, 0.9);
+      ImGui::SliderFloat("Camera Far", &tmpMainCamera->maxZ, 100, 10000);
+      //ImGui::SliderFloat("Camera FOV");
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
       ImGui::Text("Shadow Camera position");
       ImGui::SameLine();
       ImGui::DragFloat3("Position", &g_shadowCamera->m_position.x);
@@ -189,6 +194,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
     recompileShaders();
   }
+
   g_ShadowShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
                                                              "shadow_map_vertex_main",
                                                              "shadow_map_pixel_main");
@@ -231,9 +237,10 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   g_shadowCamera = make_shared<Camera>();
 
-  g_shadowCamera->setLookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
-  //g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
-  g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
+  g_shadowCamera->setLookAt(Vector3(-10, 5, 0), Vector3(0, 0, 0), Vector3(0, 1, 0));
+  //g_shadowCamera->setLookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
+  g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
+  //g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
   //g_shadowCamera->setPerspectiveHalf(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
 
   g_WVP.lightView = g_shadowCamera->getViewMatrix();
@@ -254,8 +261,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                                           Vector3(1, 1, 1)));
 
   //Rex model
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
-  if(!g_pDinoActor->m_model.loadFromFile("Models/Bistro.obj")) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
+  //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
@@ -322,6 +329,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   for(int i = 0; i < gbuffer.size(); ++i) {
     gbuffer[i] = make_shared<Texture>();
   }
+
   //Pos
   gbuffer[0]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
                                                  g_windowSize.y,
