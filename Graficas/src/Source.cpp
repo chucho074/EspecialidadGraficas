@@ -277,10 +277,10 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                                           Vector3(1, 1, 1)));
 
   //Rex model
-  //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
-  //if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
+  if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
+  //if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
   //if(!g_pDinoActor->m_model.loadFromBin("Models/R8_chico.bin")) {
-  if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
+  //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
   
   //if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {

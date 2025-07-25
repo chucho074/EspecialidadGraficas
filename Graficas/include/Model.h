@@ -46,6 +46,9 @@ class Model
   loadFromMem(const Vector<SimpleVertex>& inVertexData,
               const Vector<uint32>& inIndexData);
 
+  bool
+  createBuffers();
+
   void
   setBuffers();
 
