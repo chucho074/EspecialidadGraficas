@@ -44,6 +44,7 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   
   float4x4 lightView;
   float4x4 lightProjection;
+  float3   lightPos;
   
   float3 ViewPos;
   float time;

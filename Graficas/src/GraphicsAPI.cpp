@@ -448,6 +448,7 @@ GraphicsAPI::createConstantBuffer(const Vector<char>& inData) {
                                        &initData,
                                        &outData->m_pBuffer))) {
       MessageBox(nullptr, L"Failed to create Constant buffer", L"Error", MB_OK);
+      __debugbreak();
       return nullptr;
     }
   }
@@ -456,6 +457,7 @@ GraphicsAPI::createConstantBuffer(const Vector<char>& inData) {
                                      nullptr,
                                      &outData->m_pBuffer))) {
     MessageBox(nullptr, L"Failed to create Constant buffer", L"Error", MB_OK);
+    __debugbreak();
     return nullptr;
   }
 

@@ -84,8 +84,6 @@ class Vector3 {
     return !(*this == inVec);
   }
 
-  
-
   Vector3&
   operator+=(const Vector3& inVec) {
     x += inVec.x;
@@ -140,7 +138,6 @@ class Vector3 {
     return {-x, -y, -z};
   }
 
-
   Vector3 
   cross(const Vector3& inVect) const {
     return {y * inVect.z - z * inVect.y, 
@@ -190,6 +187,20 @@ class Vector3 {
   operator|(const Vector3& inVect) const { //For easy usage of dot prof
     return dot(inVect);
   }
+
+  void
+  serialize(fstream& out) const {
+    out.write(reinterpret_cast<const char*>(&x), sizeof(float));
+    out.write(reinterpret_cast<const char*>(&y), sizeof(float));
+    out.write(reinterpret_cast<const char*>(&z), sizeof(float));
+  };
+
+  void
+  deserialize(fstream& in) {
+    in.read(reinterpret_cast<char*>(&x), sizeof(float));
+    in.read(reinterpret_cast<char*>(&y), sizeof(float));
+    in.read(reinterpret_cast<char*>(&z), sizeof(float));
+  };
 
 };
 

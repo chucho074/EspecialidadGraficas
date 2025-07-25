@@ -24,6 +24,7 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   
   float4x4 lightView;
   float4x4 lightProjection;
+  float3 lightPos;
   
   float3 ViewPos;
   float time;
@@ -150,8 +151,8 @@ BRDF_Cook_Torrance(float3 normal,
   
   float3 specular = (D * F * G) / (4.0f * NdotL * NdotV);
 
-  //return diffuse;
-  return diffuse + specular;
+  return diffuse;
+  //return diffuse + specular;
   
 }
 
@@ -243,7 +244,7 @@ pixel_main(PixelInput input) : SV_Target {
   
   //return float4(shadowSample.xxx, 1.f);
   
-  //return normal;
+  //return color;
   
   //return float4(colorFinal, 1.f);
   return float4(pow(colorFinal, 1.f / GAMMA), 1.f);

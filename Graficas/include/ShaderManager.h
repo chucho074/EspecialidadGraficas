@@ -32,6 +32,7 @@ struct MatrixCollection {
 
   Matrix4 lightView;
   Matrix4 lightProjection;
+  //Vector3 lightPosition;
 
   Vector3 viewDir;
   float time;

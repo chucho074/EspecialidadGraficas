@@ -30,7 +30,7 @@ public:
   }
 
   static const UID
-    ZERO;
+  ZERO;
 
 private:
 

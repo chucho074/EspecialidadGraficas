@@ -69,6 +69,16 @@ void renderUI() {
 
   if(ImGui::Begin("Menu")) {
     
+    if(ImGui::CollapsingHeader("IO")) {
+      if(ImGui::Button("Write model bin")) {
+        g_pDinoActor->m_model.exportToFile("Models/rex_norm.bin");
+      }
+      //ImGui::SameLine();
+      if(ImGui::Button("Load model from Bin")) {
+        
+      }
+    }
+    
     //Cameras
     if(ImGui::CollapsingHeader("CameraSettings")) {
       auto tmpMainCamera = g_pSceneGraph->m_editorCamera;
@@ -125,29 +135,35 @@ void renderUI() {
       tmpImage = gbuffer[0]->m_pSRV;
       ImGui::Text("Position Map");
       ImGui::SameLine();
-      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Image(tmpImage, ImVec2(192, 108));
       ImGui::Separator();
       //Normals
       tmpImage = gbuffer[1]->m_pSRV;
       ImGui::Text("Normals Map");
       ImGui::SameLine();
-      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Image(tmpImage, ImVec2(192, 108));
       ImGui::Separator();
       //Albedos
       tmpImage = gbuffer[2]->m_pSRV;
       ImGui::Text("Albedo Map");
       ImGui::SameLine();
-      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Image(tmpImage, ImVec2(192, 108));
       ImGui::Separator();
       //Shadow map
       tmpImage = g_dsShadowMap->m_pSRV;
       ImGui::Text("Shadow Map");
       ImGui::SameLine();
-      ImGui::Image(tmpImage, ImVec2(128, 128));
+      ImGui::Image(tmpImage, ImVec2(192, 108));
       ImGui::Separator();
       //
     }
-    
+    ImGui::Separator(); // Light
+    if(ImGui::CollapsingHeader("Lights")) {
+      ImGui::Text("Light Direction: %.2f, %.2f, %.2f", 
+                  g_WVP.viewDir.x, 
+                  g_WVP.viewDir.y, 
+                  g_WVP.viewDir.z);
+    }
     ImGui::Separator(); // Delta Time
     {
       ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
@@ -261,8 +277,14 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                                           Vector3(1, 1, 1)));
 
   //Rex model
-  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
+  //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
+  //if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
+  //if(!g_pDinoActor->m_model.loadFromBin("Models/R8_chico.bin")) {
+  if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
+  
+  //if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
+  //if(!g_pDinoActor->m_model.loadFromFile("Models/R8_chico.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
