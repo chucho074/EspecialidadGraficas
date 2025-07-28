@@ -151,7 +151,7 @@ class EditorCamera : public Camera {
     float velocity = m_speed * inDeltaTime;
 
     if(m_YawPos) {
-      m_YPR.x += velocity;
+      m_YPR.x += 1.f * inDeltaTime;
       if((Radians(m_YPR.x)) > (Degrees(360.f).getRadians())) {
         m_YPR.x = 0.f;
       }
@@ -172,7 +172,7 @@ class EditorCamera : public Camera {
     if(m_down)
       m_position -= m_upVec * velocity;
     if(m_YawNeg) {
-      m_YPR.x -= velocity;
+      m_YPR.x -= 1.f * inDeltaTime;
       if((Radians(m_YPR.x)) < (Radians(0.f))) {
         m_YPR.x = Degrees(360.f).getRadians();
       }

@@ -12,9 +12,6 @@
 #include "stdHeaders.h"
 #include "Vectors.h"
 
-
-
-
 class Matrix3 {
  public:
   Matrix3()  = default;

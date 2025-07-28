@@ -24,7 +24,12 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   
   float4x4 lightView;
   float4x4 lightProjection;
-  float3 lightPos;
+  
+  float3 lightPosition;
+  float  lightIntensity;
+  
+  float3 lightColor;
+  float  lightRadius;
   
   float3 ViewPos;
   float time;
@@ -181,13 +186,12 @@ pixel_main(PixelInput input) : SV_Target {
   float4 position = GetPosition(input.texCoord);
   float4 normal = GetNormal(input.texCoord);
   float4 color = gbuffer_Color.Sample(samPoint, input.texCoord);
-  //float4 ao = gbuffer_AO.Sample(samPoint, input.texCoord
+  //float4 ao = gbuffer_AO.Sample(samPoint, input.texCoord);
   //normal = normal * 0.5f + 0.5f;
   clip(color.w < 1.f ? -1 : 1);
 
   //Light position
-  float3 lightPos = float3(65, 35, 50);
-  
+  //float3 lightPos = float3(65, 35, 5000);
   
   float4 lightVP = mul(float4(position.xyz, 1.f), lightView);
   lightVP = mul(lightVP, lightProjection);
@@ -205,11 +209,21 @@ pixel_main(PixelInput input) : SV_Target {
                                      -sinTime, 0.f, cosTime);
 
   //float3 rotatedLightPos = mul(lightPos, rotationMatrix);
-  float3 rotatedLightPos = lightPos;
+  float3 rotatedLightPos = lightPosition;
   
   //Directional Light
-  //float lightDir = normalize(position.xyz - rotatedLightPos);
   float lightDir = normalize(rotatedLightPos - position.xyz);
+  
+  //float lightDir = normalize(rotatedLightPos - posWorld.xyz);
+  
+  //Testing
+  float distance = length(rotatedLightPos - position.xyz);
+  //float attenuation = saturate(1.0 - distance / lightRadius);
+  //float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
+  float d = distance / lightRadius; // normalizar por radio
+  float attenuation = 1.0 / (1.0 + 0.1 * d + 0.01 * d * d);
+  attenuation *= saturate(1.0 - d); // corta fuera del radio
+  
   
   float specularColor = lerp(0.04f, color.rgb, position.w);
   
@@ -220,7 +234,6 @@ pixel_main(PixelInput input) : SV_Target {
                                          color.rgb,
                                          specularColor,
                                          normal.w);
-  
   
   
   float4 shadowSample = shadowMap.Sample(samPoint, lightVP.xy);
@@ -240,6 +253,8 @@ pixel_main(PixelInput input) : SV_Target {
     shadowFactor = 1.f;
   }
   
+  colorFinal *= lightColor * lightIntensity * attenuation;
+  
   colorFinal *= shadowFactor;
   
   //return float4(shadowSample.xxx, 1.f);
@@ -247,6 +262,7 @@ pixel_main(PixelInput input) : SV_Target {
   //return color;
   
   //return float4(colorFinal, 1.f);
+  //return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
   return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
   //return float4(pow(colorFinal * ao.xyz, 1.f / GAMMA), 1.f);
 }

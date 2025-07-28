@@ -107,25 +107,13 @@ void renderUI() {
       ImGui::SameLine();
       ImGui::TextColored({0.f,   0.48f, 0.8f,  1.f}, tmpZ.substr(0, tmpZ.find(".") + 3).c_str());
 
-      ImGui::SliderFloat("Camera speed", &tmpMainCamera->m_speed, 1.f, 250.f);
+      ImGui::SliderFloat("Camera speed", &tmpMainCamera->m_speed, 1.f, 400.f);
       ImGui::Separator();
 
       ImGui::SliderFloat("Camera Near", &tmpMainCamera->minZ, 0.001, 0.9);
       ImGui::SliderFloat("Camera Far", &tmpMainCamera->maxZ, 100, 10000);
-      //ImGui::SliderFloat("Camera FOV");
+      ImGui::SliderFloat("Camera FOV", &tmpMainCamera->halfFov, 0.1, 1.54);
 
-      ////////////////////////////////////////////////////////////////////////////////////////////
-      ImGui::Text("Shadow Camera position");
-      ImGui::SameLine();
-      ImGui::DragFloat3("Position", &g_shadowCamera->m_position.x);
-
-      tmpX = toString(Radians(g_shadowCamera->m_YPR.x).getDegrees());
-      tmpY = toString(Radians(g_shadowCamera->m_YPR.y).getDegrees());
-      tmpZ = toString(Radians(g_shadowCamera->m_YPR.z).getDegrees());
-
-      ImGui::Text("Shadow Camera rotation");
-      ImGui::SameLine();
-      ImGui::DragFloat3("YawPitchRoll", &g_shadowCamera->m_YPR.x);
     }
     ImGui::Separator(); // Textures
     if(ImGui::CollapsingHeader("Textures")) {
@@ -159,14 +147,34 @@ void renderUI() {
     }
     ImGui::Separator(); // Light
     if(ImGui::CollapsingHeader("Lights")) {
+      //ImGui::DragFloat3("Light Direction", &g_WVP.viewDir.x);
+      ImGui::ColorEdit3("Light Color", &g_WVP.lightColor.x);
+      g_shaderManager().setConstantValues(g_WVP);
       ImGui::Text("Light Direction: %.2f, %.2f, %.2f", 
                   g_WVP.viewDir.x, 
                   g_WVP.viewDir.y, 
                   g_WVP.viewDir.z);
-    }
-    ImGui::Separator(); // Delta Time
-    {
-      ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
+
+      ////////////////////////////////////////////////////////////////////////////////////////////
+      ImGui::Text("Shadow Camera position");
+      ImGui::SameLine();
+      ImGui::DragFloat3("Position", &g_shadowCamera->m_position.x);
+
+      ImGui::DragFloat("Light intensity", &g_WVP.lightIntensity);
+      ImGui::DragFloat("Light Radius", &g_WVP.lightRadius);
+
+      String tmpX = toString(Radians(g_shadowCamera->m_YPR.x).getDegrees());
+      String tmpY = toString(Radians(g_shadowCamera->m_YPR.y).getDegrees());
+      String tmpZ = toString(Radians(g_shadowCamera->m_YPR.z).getDegrees());
+
+      ImGui::Text("Shadow Camera rotation");
+      ImGui::SameLine();
+      ImGui::DragFloat3("YawPitchRoll", &g_shadowCamera->m_YPR.x);
+
+      ImGui::Separator(); // Delta Time
+      {
+        ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
+      }
     }
 
   }
@@ -255,8 +263,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   g_shadowCamera->setLookAt(Vector3(-10, 5, 0), Vector3(0, 0, 0), Vector3(0, 1, 0));
   //g_shadowCamera->setLookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
-  g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
-  //g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
+  //g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
+  g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
   //g_shadowCamera->setPerspectiveHalf(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
 
   g_WVP.lightView = g_shadowCamera->getViewMatrix();
@@ -277,8 +285,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                                           Vector3(1, 1, 1)));
 
   //Rex model
-  if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
-  //if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
+  //if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
+  if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
   //if(!g_pDinoActor->m_model.loadFromBin("Models/R8_chico.bin")) {
   //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
   
@@ -669,6 +677,9 @@ SDL_AppIterate(void* appstate) {
     
     g_pShaderManager->setConstantValues(g_WVP);
     g_pShaderManager->setDataToShader(g_LightShaderRef);
+    g_WVP.lightPosition = g_shadowCamera->getPosition();
+    g_WVP.viewDir = g_shadowCamera->getCameraDir();
+    g_pShaderManager->setConstantValues(g_WVP);
 
     Vector<SPtr<Texture>> rt = {
       g_pGAPI->m_pBackBufferRTV,

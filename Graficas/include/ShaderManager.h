@@ -32,7 +32,12 @@ struct MatrixCollection {
 
   Matrix4 lightView;
   Matrix4 lightProjection;
-  //Vector3 lightPosition;
+
+  Vector3 lightPosition;
+  float lightIntensity;
+
+  Vector3 lightColor;
+  float lightRadius;  
 
   Vector3 viewDir;
   float time;
