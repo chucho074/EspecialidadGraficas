@@ -13,6 +13,8 @@
 #include "SceneNode.h"
 #include "Actor.h"
 #include "UUID.h"
+#include "mathObjects.h"
+#include "Camera.h"
 
 class SceneGraph {
  public:
@@ -26,7 +28,7 @@ class SceneGraph {
   update(float inDT);
 
   void 
-  draw();
+  draw(bool inWithMaterial = false);
 
   /**
    * @brief      .
@@ -113,7 +115,8 @@ class SceneGraph {
    */
   uint32 m_numActors;
 
-  EditorCamera m_editorCamera;
+  SPtr<EditorCamera> m_editorCamera;
+
 
 };
 

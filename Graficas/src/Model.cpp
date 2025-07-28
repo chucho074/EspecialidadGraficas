@@ -132,7 +132,7 @@ Model::loadFromFile(const Path& inPath) {
       m_indices.push_back(faceIndex[2]);
     }
   }
-
+  objFile.close();
   m_meshes.resize(1);
   auto& mesh = m_meshes[0];
   mesh.baseVertex = 0;
@@ -146,22 +146,8 @@ Model::loadFromFile(const Path& inPath) {
   //Compute tangents
   computeTangentSpace();
 
-  //Create the information of the buffers.
-  Vector<char> tmpVertexData;
-  tmpVertexData.resize(m_vertices.size() * sizeof(SimpleVertex));
-  memcpy(tmpVertexData.data(), m_vertices.data(), m_vertices.size() * sizeof(SimpleVertex));
-  m_pVertexBuffer = GAPI.createVertexBuffer(tmpVertexData);
-
-  if (!m_pVertexBuffer) {
-    return false;
-  }
-
-  Vector<char> tmpIndexData;
-  tmpIndexData.resize(m_indices.size() * sizeof(uint32));
-  memcpy(tmpIndexData.data(), m_indices.data(), m_indices.size() * sizeof(uint32));
-  m_pIndexBuffer = GAPI.createIndexBuffer(tmpIndexData);
-
-  if (!m_pIndexBuffer) {
+  //Create the buffers
+  if(!createBuffers()) {
     return false;
   }
   
@@ -169,6 +155,44 @@ Model::loadFromFile(const Path& inPath) {
 
   //__debugbreak();
   return true;
+}
+
+bool 
+Model::loadFromBin(const Path& inPath) {
+  fstream objFile(inPath, ios::in | ios::beg | ios::binary);
+  if(!objFile.is_open()) {
+    return false;
+  }
+
+  // Read the mesh data
+  int32 meshCount;
+  objFile.read(reinterpret_cast<char*>(&meshCount), sizeof(int32));
+  m_meshes.resize(meshCount);
+  objFile.read(reinterpret_cast<char*>(m_meshes.data()), sizeof(MeshData) * meshCount);
+
+  // Read the vertices
+  int32 vertexCount;
+  objFile.read(reinterpret_cast<char*>(&vertexCount), sizeof(int32));
+  m_vertices.resize(vertexCount);
+  objFile.read(reinterpret_cast<char*>(m_vertices.data()), sizeof(SimpleVertex) * vertexCount);
+
+  // Read the indices
+  int32 indexCount;
+  objFile.read(reinterpret_cast<char*>(&indexCount), sizeof(int32));
+  m_indices.resize(indexCount);
+  objFile.read(reinterpret_cast<char*>(m_indices.data()), sizeof(uint32) * indexCount);
+  
+  // Close the file
+  objFile.close();
+
+  //Create the buffers
+  if(!createBuffers()) {
+    return false;
+  }
+
+  ConsoleOut << "The model \"" << inPath.string() << "\" is loaded." << ConsoleLine;
+  return true;
+
 }
 
 void 
@@ -310,10 +334,40 @@ Model::loadFromMem(const Vector<SimpleVertex>& inVertexData,
   return true;
 }
 
+bool
+Model::createBuffers() {
+  auto& GAPI = g_graphicsAPI();
+
+  // Create the information of the buffers.
+  Vector<char> tmpVertexData;
+  tmpVertexData.resize(m_vertices.size() * sizeof(SimpleVertex));
+  memcpy(tmpVertexData.data(), m_vertices.data(), m_vertices.size() * sizeof(SimpleVertex));
+  m_pVertexBuffer = GAPI.createVertexBuffer(tmpVertexData);
+
+  if(!m_pVertexBuffer) {
+    __debugbreak();
+    return false;
+  }
+
+  Vector<char> tmpIndexData;
+  tmpIndexData.resize(m_indices.size() * sizeof(uint32));
+  memcpy(tmpIndexData.data(), m_indices.data(), m_indices.size() * sizeof(uint32));
+  m_pIndexBuffer = GAPI.createIndexBuffer(tmpIndexData);
+
+  if(!m_pIndexBuffer) {
+    __debugbreak();
+    return false;
+  }
+}
+
 void 
 Model::setBuffers() {
 
   auto& GAPI = g_graphicsAPI();
+  
+  if (!m_pVertexBuffer || !m_pIndexBuffer) {
+    return;
+  }
 
   uint32 stride = sizeof(SimpleVertex);
   uint32 offset = 0;
@@ -335,6 +389,10 @@ void
 Model::draw() {
   auto& GAPI = g_graphicsAPI();
   
+  if (!m_pVertexBuffer || !m_pIndexBuffer) {
+    return;
+  }
+
   setBuffers();
 
   GAPI.setTopology(m_meshes[0].topology);
@@ -345,3 +403,26 @@ Model::draw() {
                                      m_meshes[0].baseVertex);
 }
 
+void 
+Model::exportToFile(Path inExportPath) {
+  ofstream outputFile(inExportPath, std::ios::binary);
+  if(outputFile.is_open()) {
+    // Mesh data
+    // Write the number of meshes
+    int32 meshCount = m_meshes.size();
+    outputFile.write(reinterpret_cast<char*>(&meshCount), sizeof(int32));
+    outputFile.write(reinterpret_cast<const char*>(m_meshes.data()), sizeof(MeshData) * meshCount);
+
+    // Vertex
+    // Write the size of the vertices vector
+    int32 vertexCount = m_vertices.size();
+    outputFile.write(reinterpret_cast<char*>(&vertexCount), sizeof(int32));
+    outputFile.write(reinterpret_cast<char*>(m_vertices.data()), sizeof(SimpleVertex) * vertexCount);
+
+    // Index
+    // Write the size of the indices vector
+    int32 indexCount = m_indices.size();
+    outputFile.write(reinterpret_cast<char*>(&indexCount), sizeof(int32));
+    outputFile.write(reinterpret_cast<const char*>(m_indices.data()), sizeof(uint32) * indexCount);
+  }
+}

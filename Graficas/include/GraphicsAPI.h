@@ -34,7 +34,8 @@ class GraphicsAPI : public Module<GraphicsAPI> {
                 uint32 inMipLevels = 1, 
                 ID3D11ShaderResourceView** inSRV = nullptr,
                 ID3D11RenderTargetView** inRTV = nullptr,
-                ID3D11DepthStencilView** inDSV = nullptr);
+                ID3D11DepthStencilView** inDSV = nullptr,
+                ID3D11DepthStencilView** outDSV_RO = nullptr);
 
   SPtr<VertexShader>
   createVertexShaderFromFile(const Path& inFilePath, 
@@ -107,6 +108,12 @@ class GraphicsAPI : public Module<GraphicsAPI> {
 
   void
   clearSRV(int32 inSlot);
+
+  ID3D11Device1*
+  getDevice() { return m_pDevice; }
+
+  ID3D11DeviceContext1*
+  getDeviceContext() { return m_pDeviceContext; }
 
  private:
 

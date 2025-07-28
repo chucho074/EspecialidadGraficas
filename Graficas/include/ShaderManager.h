@@ -15,6 +15,7 @@
 #include "UUID.h"
 #include "Module.h"
 #include "GraphicsAPI.h"
+#include "Transform.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -28,6 +29,15 @@ struct MatrixCollection {
   Matrix4 world;
   Matrix4 view;
   Matrix4 projection;
+
+  Matrix4 lightView;
+  Matrix4 lightProjection;
+
+  Vector3 lightPosition;
+  float lightIntensity;
+
+  Vector3 lightColor;
+  float lightRadius;  
 
   Vector3 viewDir;
   float time;
@@ -73,6 +83,13 @@ class ShaderProgram {
     SAFE_RELEASE(m_inputLayout);
   }
 
+  /**
+   * @brief      Saves the information for the creation of the shader.
+   * @param      inShaderPath  The path to the shader file.
+   * @param      inVertexEntry (optional, Default: vs_main) The entry point to the vertex shader.
+   * @param      inPixelEntry  (optional, Default: ps_main) The entry point to the pixel shader.
+   * @param      inPixelPath   (optional, Default: inShaderPath) The path to the pixel shader file.
+   */
   void
   setShaderData(Path inShaderPath, 
                 String inVertexEntry = "", 
@@ -85,6 +102,9 @@ class ShaderProgram {
     m_pixelEntry = inPixelEntry;
   }
 
+  /**
+   * @brief      Compiles the shader information.
+   */
   void
   compileShaders() {
     auto& GAPI = g_graphicsAPI();
@@ -107,37 +127,58 @@ class ShaderProgram {
     m_pCB_WVP = GAPI.createConstantBuffer(emtyData); //Verify if works correctly.
   }
 
+  /**
+   * @brief      Sets the shader information.
+   * @param      inCBufferData The information of the cBuffer to set.
+   */
   void
-  setShader(MatrixCollection& inConstantBufferData) {
+  setShader(MatrixCollection& inCBufferData) {
     auto& gapi = g_graphicsAPI();
     
     Vector<char> matrix_data;
-    matrix_data.resize(sizeof(inConstantBufferData));
+    matrix_data.resize(sizeof(inCBufferData));
 
     gapi.setVertexShader(m_vertexShader);
     gapi.setPixelShader(m_pixelShader);
     gapi.setInputLayout(m_inputLayout);
 
-    memcpy(matrix_data.data(), &inConstantBufferData, sizeof(inConstantBufferData));
-    gapi.writeToBuffer(m_pCB_WVP, matrix_data);
+    //Verify if it can be send with the shader manager
+    //memcpy(matrix_data.data(), &inCBufferData, sizeof(inCBufferData));
+    //gapi.writeToBuffer(m_pCB_WVP, matrix_data);
 
   }
 
+  /**
+   * @brief      Sets a sampler in the shader.
+   * @param      inSamplerType The sampler to set.
+   */
   void
   setSamplerUsage(SAMPLER_USAGE::E inSamplerType) {
     m_samplerUsage = inSamplerType;
   }
 
+  /**
+   * @brief      Set a raster in the shader.
+   * @param      inRasterType  The raster to set.
+   */
   void
   setRasterUsage(RASTER_USAGE::E inRasterType) {
     m_rasterUsage = inRasterType;
   }
 
+  /**
+   * @brief      Gets the sampler setted in the shader.
+   * @return     Returns the sampler setted.
+   */
   SAMPLER_USAGE::E 
   getSamplerUsage() const {
     return m_samplerUsage;
   }
 
+  /**
+   * @brief      Gets the raster setted in the shader.
+   * @return     Returns the raster setted.
+   */
   RASTER_USAGE::E
   getRasterUsage() const {
     return m_rasterUsage;
@@ -145,6 +186,9 @@ class ShaderProgram {
 
  protected:
   
+  /**
+   * @brief      Creates the input layout automatically.
+   */
   void
   reflectInputLayout() {
     ID3D11ShaderReflection* pVertexShaderReflection = nullptr;
@@ -171,7 +215,7 @@ class ShaderProgram {
         inputElementDesc.SemanticName = paramDesc.SemanticName;
         inputElementDesc.SemanticIndex = paramDesc.SemanticIndex;
         inputElementDesc.InputSlot = 0;
-        inputElementDesc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+        inputElementDesc.AlignedByteOffset = 0xffffffff;
         inputElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
         inputElementDesc.InstanceDataStepRate = 0;
 
@@ -222,9 +266,10 @@ class ShaderProgram {
 
         inputElementDescs.push_back(inputElementDesc);
       }
-
+      //Save the input layout
       if(!inputElementDescs.empty()) {
         auto& GAPI = g_graphicsAPI();
+        if(inputElementDescs.size() == 1) inputElementDescs.clear();
         m_inputLayout = GAPI.createInputLayout(inputElementDescs, m_vertexShader);
       }
       else {
@@ -287,11 +332,28 @@ class ShaderManager : public Module<ShaderManager> {
     descSS.MaxAnisotropy = 16; //Esto es lo que cambiamos en las opciones de los juegos
     m_pSS_Anisotropic = gapi.createSamplerState(descSS);
 
+    m_pCB_WVP = make_shared<GraphicsBuffers>();
 
   }
 
-  ~ShaderManager() = default;
+  ~ShaderManager() {
+    SAFE_RELEASE(m_pRS_Default);
+    SAFE_RELEASE(m_pRS_Wireframe);
+    SAFE_RELEASE(m_pRS_Wireframe_NoCull);
+    SAFE_RELEASE(m_pRS_CullFront);
+    SAFE_RELEASE(m_pSS_Point);
+    SAFE_RELEASE(m_pSS_Linear);
+    SAFE_RELEASE(m_pSS_Anisotropic);
+  }
   
+  /**
+   * @brief      Creates a shader and gets a reference.
+   * @param      inShaderPath  The path to the shader file.
+   * @param      inVertexEntry (optional, Default: vs_main) The entry point to the vertex shader.
+   * @param      inPixelEntry  (optional, Default: ps_main) The entry point to the pixel shader.
+   * @param      inPixelPath   (optional, Default: inShaderPath) The path to the pixel shader file.
+   * @return     Returns a reference to the created shader.
+   */
   ShaderRef
   createShaderProgram(Path inShaderPath,
                       String inVertexEntry = "",
@@ -309,6 +371,11 @@ class ShaderManager : public Module<ShaderManager> {
     return outRef;
   }
 
+  /**
+   * @brief      Sets a sampler to an specific Shader.
+   * @param      inShaderRef   The reference of the shader.
+   * @param      inSamplerType The sampler to set.
+   */
   void
   setSamplerToShader(ShaderRef inShaderRef, SAMPLER_USAGE::E inSamplerType) {
     auto it = m_shaders.find(inShaderRef.shaderID);
@@ -317,6 +384,11 @@ class ShaderManager : public Module<ShaderManager> {
     }
   }
 
+  /**
+   * @brief      Sets a raster to an specific Shader.
+   * @param      inShaderRef   The reference of the shader .
+   * @param      inRasterType  The reaster to set.
+   */
   void
   setRasterToShader(ShaderRef inShaderRef, RASTER_USAGE::E inRasterType) {
     auto it = m_shaders.find(inShaderRef.shaderID);
@@ -325,6 +397,10 @@ class ShaderManager : public Module<ShaderManager> {
     }
   }
 
+  /**
+   * @brief      Sets the information of the given shader.
+   * @param      inShaderRef   The reference of the shader to set.
+   */
   void
   setDataToShader(ShaderRef inShaderRef) {
 
@@ -333,7 +409,10 @@ class ShaderManager : public Module<ShaderManager> {
     auto it = m_shaders.find(inShaderRef.shaderID);
     if(it != m_shaders.end()) {
       auto& tmpShader = it->second;
+
+      //Set the shaders and constant buffer
       tmpShader->setShader(m_matrixCollection);
+
       //SetSamplers
       if (SAMPLER_USAGE::kAnisotropic == tmpShader->getSamplerUsage()) {
         gapi.setSamplers(0, m_pSS_Anisotropic);
@@ -366,11 +445,18 @@ class ShaderManager : public Module<ShaderManager> {
     }
   }
 
+  /**
+   * @brief      Sets the values of the matrix Collection cbuffer.
+   * @param      inConstant    The values to set.
+   */
   void
   setConstantValues(MatrixCollection& inConstant) {
     m_matrixCollection = inConstant;
   }
 
+  /**
+   * @brief      Compile all shadders saved.
+   */
   void
   compileAllShaders() {
     for(auto& shaderPair : m_shaders) {
@@ -378,6 +464,10 @@ class ShaderManager : public Module<ShaderManager> {
     }
   }
 
+  /**
+   * @brief      Sets an specific raster state.
+   * @param      inRaster      The raster state to set.
+   */
   void
   setRaster(RASTER_USAGE::E inRaster) {
     auto& gapi = g_graphicsAPI();
@@ -395,9 +485,37 @@ class ShaderManager : public Module<ShaderManager> {
     }
   }
 
+  /**
+   * @brief      Set a transform to the cbuffer and sets the cbuffer.
+   * @param      inTransform   The transformation to set.
+   */
+  void
+  setTransform(Transform& inTransform) {
+    auto& gapi = g_graphicsAPI();
+    
+    Vector<char> matrix_data;
+    matrix_data.resize(sizeof(m_matrixCollection));
+
+    m_matrixCollection.world = m_worldTransform.getMatrix() * inTransform.getMatrix();
+    m_matrixCollection.world.transpose();
+    
+    memcpy(matrix_data.data(), &m_matrixCollection, sizeof(m_matrixCollection));
+    if(!m_pCB_WVP->m_pBuffer) {
+      m_pCB_WVP = gapi.createConstantBuffer(matrix_data);
+    }
+    else {
+      gapi.writeToBuffer(m_pCB_WVP, matrix_data);
+    }
+    gapi.setConstantBuffer(0, m_pCB_WVP);
+  }
+
  protected:
   
   MatrixCollection m_matrixCollection;
+
+  Transform m_worldTransform;
+
+  SPtr<GraphicsBuffers> m_pCB_WVP;
 
   ID3D11RasterizerState1* m_pRS_Default = nullptr;
   ID3D11RasterizerState1* m_pRS_Wireframe = nullptr;

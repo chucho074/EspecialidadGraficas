@@ -13,5 +13,4 @@
 
 ShaderManager& g_shaderManager() {
   return ShaderManager::instance();
-
 }

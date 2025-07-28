@@ -61,7 +61,7 @@ class Image {
   /**
    * @brief       Set the bit information of a given img.
    * @param       src               The image to copy. 
-   * @param       inPos             The position to set the image. 
+   * @param       inPos             The m_position to set the image. 
    * @param       inRect            The rect to take of the image (src).
    * @param       inColorKey        The color to omit (transparency).
    */

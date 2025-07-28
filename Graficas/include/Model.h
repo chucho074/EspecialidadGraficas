@@ -22,6 +22,8 @@ struct SimpleVertex {
   Vector3 normal;
   Vector3 tangent;
   float u, v;
+  float padding = 0.f;
+
 };
 
 class Model
@@ -33,6 +35,9 @@ class Model
   bool
   loadFromFile(const Path& inPath);
 
+  bool
+  loadFromBin(const Path& inPath);
+
   void
   computeTangentSpace();
 
@@ -41,11 +46,17 @@ class Model
   loadFromMem(const Vector<SimpleVertex>& inVertexData,
               const Vector<uint32>& inIndexData);
 
+  bool
+  createBuffers();
+
   void
   setBuffers();
 
   void
   draw();
+
+  void
+  exportToFile(Path inExportPath);
 
   Vector<MeshData> m_meshes;
 

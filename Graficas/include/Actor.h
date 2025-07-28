@@ -34,7 +34,9 @@ class Actor : public SceneNode {
   }
 
   virtual void
-  draw() {}
+  draw(bool inWithMaterial) {
+    UNREFERENCED_PARAMETER(inWithMaterial);
+  }
 
   void
   setPosition(Vector3 inPosition) {

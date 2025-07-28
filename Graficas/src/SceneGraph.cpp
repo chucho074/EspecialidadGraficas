@@ -16,33 +16,24 @@ SceneGraph::init() {
   m_root = SceneNode::createSceneObject<Actor>();
   m_root->setName("Root");
   m_root->init({0.f, 0.f}, {1.f, 1.f}, 0.f);
+  m_editorCamera = make_shared<EditorCamera>();
+  m_editorCamera->setLookAt(Vector3(-5, 5, 10), Vector3(0, 0, 0), Vector3(0, 1, 0));
+  m_editorCamera->setPerspectiveHalf(3.1415926353f / 4.f, Vector2(1280, 720), 0.1f, 1000.f);
 }
 
 void 
 SceneGraph::update(float inDT) {
+  m_editorCamera->move(inDT);
+
   for(auto& actor : m_actors) {
     actor->update(inDT);
   }
 }
 
 void 
-SceneGraph::draw() {
-  MatrixCollection matrixCollection;
-  matrixCollection.view = m_editorCamera.getViewMatrix();
-  matrixCollection.projection = m_editorCamera.getProjectionMatrix();
-  matrixCollection.viewDir = m_editorCamera.getViewDir();
-
-  matrixCollection.view.transpose();
-  matrixCollection.projection.transpose();
-
+SceneGraph::draw(bool inWithMaterial) {
   for(auto& actor : m_actors) {
-    
-    matrixCollection.world = m_root->m_transform.getMatrix() * actor->m_transform.getMatrix();
-    matrixCollection.world.transpose();
-
-    g_shaderManager().setConstantValues(matrixCollection);
-
-    actor->draw();
+    actor->draw(inWithMaterial);
   }
 }
 

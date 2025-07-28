@@ -146,6 +146,23 @@ Matrix4::PerspectiveFovLH(float inFov,
 }
 
 void 
+Matrix4::OrthographicLH(float inLeft,
+                        float inRight,
+                        float inBottom,
+                        float inTop,
+                        float inNearZ,
+                        float inFarZ) {
+  identity();
+  m[0][0] = 2.f / (inRight - inLeft);
+  m[1][1] = 2.f / (inTop - inBottom);
+  m[2][2] = 1.f / (inFarZ - inNearZ);
+  m[3][0] = -(inRight + inLeft) / (inRight - inLeft);
+  m[3][1] = -(inTop + inBottom) / (inTop - inBottom);
+  m[3][2] = -inNearZ / (inFarZ - inNearZ);
+  m[3][3] = 1.f;
+}
+
+void 
 Matrix4::Translate(const Vector3& inTranslation) {
   m[3][0] += inTranslation.x;
   m[3][1] += inTranslation.y;

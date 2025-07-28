@@ -12,9 +12,6 @@
 #include "stdHeaders.h"
 #include "Vectors.h"
 
-
-
-
 class Matrix3 {
  public:
   Matrix3()  = default;
@@ -89,10 +86,12 @@ class Matrix4 {
                    float inFar);
 
   void
-  OrthographicLH(float inWidth, 
-                 float inHeight, 
-                 float inNear, 
-                 float inFar) {}
+  OrthographicLH(float inLeft,
+                 float inRight,
+                 float inBottom,
+                 float inTop,
+                 float inNearZ,
+                 float inFarZ);
 
   void
   Translate(const Vector3& inTranslation);

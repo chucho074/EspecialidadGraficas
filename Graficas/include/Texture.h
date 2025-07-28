@@ -68,6 +68,7 @@ class Texture
   ID3D11ShaderResourceView* m_pSRV = nullptr;
   ID3D11RenderTargetView* m_pRTV = nullptr;
   ID3D11DepthStencilView* m_pDSV = nullptr;
+  ID3D11DepthStencilView* m_pDSV_RO = nullptr;
 
   Vector<Image> m_mips;
 

@@ -22,6 +22,12 @@
     <Filter Include="Header Files\GAPI">
       <UniqueIdentifier>{b3b4a2ed-e595-4697-b0e9-89f77d29ba3e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\ImGui">
+      <UniqueIdentifier>{18a7e40e-40ab-4ae4-9be5-d6d30436ebb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Clock">
+      <UniqueIdentifier>{c78b070c-8935-4ed8-87c0-a075f6a826ce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Source.cpp">
@@ -70,6 +76,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ShaderManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui_demo.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui_draw.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui_tables.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\imgui_widgets.cpp">
+      <Filter>Source Files\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\giTime.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -142,6 +169,15 @@
     </ClInclude>
     <ClInclude Include="include\ShaderManager.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Timer.h">
+      <Filter>Header Files\Clock</Filter>
+    </ClInclude>
+    <ClInclude Include="include\giTime.h">
+      <Filter>Header Files\Clock</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
