@@ -14,6 +14,8 @@
 #include "GraphicsAPI.h"
 #include "ShaderManager.h"
 
+
+
 class BaseMaterial {
  public:
   BaseMaterial();
@@ -129,6 +131,7 @@ class PBRMaterial : public BaseMaterial {
   SPtr<Texture> m_metalicTexture;
 
   Vector3 m_emissiveColor    = Vector3::ZERO;
+  float   m_diffuse          = 0.f;
   float   m_metalic          = 0.f;
   float   m_roughness        = 0.f;
   float   m_ambientOclussion = 0.f;

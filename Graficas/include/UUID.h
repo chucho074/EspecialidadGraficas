@@ -32,6 +32,11 @@ public:
   static const UID
   ZERO;
 
+  uint64 
+  getUID() const {
+    return m_uuid;
+  }
+
 private:
 
   uint64 m_uuid;

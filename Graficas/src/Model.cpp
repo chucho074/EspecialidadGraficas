@@ -144,6 +144,7 @@ Model::loadFromFile(const Path& inPath) {
   mesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
   //Compute tangents
+  computeNormals();
   computeTangentSpace();
 
   //Create the buffers
@@ -184,6 +185,8 @@ Model::loadFromBin(const Path& inPath) {
   
   // Close the file
   objFile.close();
+
+  computeNormals();
 
   //Create the buffers
   if(!createBuffers()) {
@@ -290,6 +293,43 @@ Model::computeTangentSpace() {
     }
   }
 
+}
+
+void 
+Model::computeNormals() {
+  Vector<SimpleVertex>& vertices = m_vertices;
+  Vector<uint32>& indices = m_indices;
+
+  for (auto& mesh : m_meshes) {
+    for(int32 i = 0; i < mesh.numIndices; i+=3) {
+
+      auto& v0 = vertices[indices[i]].position;
+      auto& v1 = vertices[indices[i+1]].position;
+      auto& v2 = vertices[indices[i+2]].position;
+
+      auto A = v1 - v0;
+      auto B = v2 - v0;
+
+      Vector3 normal = A.cross(B).normalize();
+      
+      vertices[indices[i+0]].normal += normal;
+      vertices[indices[i+1]].normal += normal;
+      vertices[indices[i+2]].normal += normal;
+
+      //vertices[indices[i]].normal = vertices[indices[i]].position 
+      //                              + vertices[indices[i+1]].position 
+      //                              + vertices[indices[i+2]].position;
+      //vertices[indices[i]].normal.normalize();
+    }
+
+    for (auto& vertex : vertices) {
+      vertex.normal.normalize();
+    }
+
+    /*for(int32 i = 0; i < vertices.size(); ++i) {
+      vertices[i].normal = normals[i];
+    }*/
+  }
 }
 
 bool 

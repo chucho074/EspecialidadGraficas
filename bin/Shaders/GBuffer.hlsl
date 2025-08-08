@@ -65,7 +65,6 @@ PixelInput gbuffer_vertex_main(VertexInput Input) {
   output.position = mul(output.position, Projection); //Ahora es posición de clip
   
   output.normal = normalize(mul(Input.normal, (float3x3) World).xyz);
-  output.normal = output.normal * 0.5f + 0.5f;
   output.tangent = normalize(mul(Input.tangent, (float3x3) World).xyz);
   output.bitangent = -cross(output.normal, output.tangent); //para las normales invertidas
   //output.bitangent = cross(output.normal, output.tangent);
@@ -81,15 +80,20 @@ GBuffer gbuffer_pixel_main(PixelInput Input) {
   
   float4 diffColor = txColor.Sample(samLinear, Input.texCoord);
   float4 normal = txNormal.Sample(samLinear, Input.texCoord) * 2.f - 1.f;
+  //normal.rgb = normalize(normal.rgb);
   float roughness = txRough.Sample(samLinear, Input.texCoord).r;
   float metallic = txMetal.Sample(samLinear, Input.texCoord).r;
   
   float3x3 TBN = float3x3(Input.tangent, Input.bitangent, Input.normal); //Es el esapcio de tangentes
   normal.xyz = normalize(mul(normal.xyz, TBN));
   
-  
   Output.position = float4(Input.posWorld, metallic);
   Output.normal = float4(normalize(normal.xyz * 0.5f + 0.5f), roughness);
+  
+  
+  //Output.position = float4(Input.posWorld, 1.f);
+  //Output.normal = float4(normal.xyz * 0.5f + 0.5f, 1.f);
+  //Output.normal = float4(Input.normal.xyz * 0.5f + 0.5f, 0.04f);
   Output.color = diffColor;
   
   return Output;

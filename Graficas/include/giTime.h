@@ -28,7 +28,7 @@ class giTime : public Module<giTime>
   ~giTime() = default;
   
   /**
-   * @brief 
+   * @brief      .
    */
   void
   update();
@@ -43,8 +43,8 @@ class giTime : public Module<giTime>
   restartTimer();
 
   /**
-   * @brief    Gets the time elapsed since application start.
-   * @return   Returns .
+   * @brief      Gets the time elapsed since application start.
+   * @return     Returns .
    */
   float
   getTime() const;

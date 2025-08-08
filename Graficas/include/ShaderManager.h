@@ -39,7 +39,7 @@ struct MatrixCollection {
   Vector3 lightColor;
   float lightRadius;  
 
-  Vector3 viewDir;
+  Vector3 viewPos;
   float time;
 };
 

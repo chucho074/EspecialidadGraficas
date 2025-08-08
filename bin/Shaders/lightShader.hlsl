@@ -91,11 +91,11 @@ float ndf_GGX(float NdotH, float alpha) {
   return e / M_PI * a2 * cosThetaHSqr * NdotH;
 }
 
-float3 FresnelSchlick(float F0, float cosTheta, float F90) {
+float3 FresnelSchlick(float3 F0, float cosTheta, float F90) {
   return F0 + (F90 - F0) * pow(1.0f - cosTheta, 5.0f);
 }
 
-float3 FresnelSchlick(float F0, float cosTheta) {
+float3 FresnelSchlick(float3 F0, float cosTheta) {
   return F0 + (1.f - F0) * pow(1.0f - cosTheta, 5.0f);
 }
 
@@ -110,6 +110,16 @@ float GeometrySmith(float NdotL, float NdotV, float alpha) {
          * GeometrySchlickGGX(NdotV, alpha);
 }
 
+float3 LambertianDiffuse(float3 normal, float3 lightDir, float3 diffuseColor) {
+  //Lambertian Diffuse
+  float NdotL = max(dot(normal, lightDir), 0.0f);
+  //float NdotL = dot(normal, lightDir);
+
+  
+  return diffuseColor * NdotL;
+  return NdotL;
+  return normal;
+}
 
 float3
 BRDF_Blinn_Phong(float3 normal,
@@ -118,19 +128,17 @@ BRDF_Blinn_Phong(float3 normal,
                  float3 reflectDir,
                  float3 diffuseColor,
                  float3 specularColor) {
-  //Lambertian Diffuse
-  float NdotL = max(dot(normal, lightDir), 0.0f);
-  float3 diffuse = diffuseColor * NdotL;
+  float3 diffuse = LambertianDiffuse(normal, lightDir, diffuseColor);
   
   // Blinn-Phong Specular
   float NdotH = max(dot(normal, reflectDir), 0.0f);
   float NdotV = max(dot(normal, viewDir), 0.0f);
   float HdotV = max(dot(reflectDir, viewDir), 0.0f);
   
-  float specular = pow(HdotV, 32.0f) * NdotH * NdotV;
+  float specular = pow(HdotV, 32.0f); // El 32 es el specular power
   
-  return diffuse + specular;
-  
+  return diffuse;
+  return diffuse + specular * specularColor;
 }
 
 float3
@@ -139,25 +147,31 @@ BRDF_Cook_Torrance(float3 normal,
                    float3 viewDir,
                    float3 reflectDir,
                    float3 diffuseColor,
-                   float specularColor,
+                   float3 specularColor,
                    float roughness) {
+  
+  float3 diffuse = LambertianDiffuse(normal, lightDir, diffuseColor);
+  
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
-  float3 diffuse = diffuseColor * NdotL;
   
   //Cook-Torrance Specular
-  float NdotV = max(dot(normal, viewDir), 0.0f);
-  float NdotH = max(dot(normal, reflectDir), 0.0f);
+  //float NdotV = max(dot(normal, viewDir), 0.0f);
+  //float NdotH = max(dot(normal, reflectDir), 0.0f);
+  
+  float NdotV = dot(normal, viewDir);
+  float NdotH = dot(normal, reflectDir);
   
   //specular = D * F * G / (4 * NdotL * NdotV)
   float D = ndf_GGX(NdotH, roughness);
   float3 F = FresnelSchlick(specularColor, NdotV);
   float G = GeometrySmith(NdotL, NdotV, roughness);
   
-  float3 specular = (D * F * G) / (4.0f * NdotL * NdotV);
+  //float3 specular = (D * F * G) / (4.0f * NdotL * NdotV);
+  float3 specular = (D * F * G) / min(0.00001, (NdotL * NdotV * 4.0f));
+  //float3 specular = min(0.00001, (D * F * G) / (NdotL * NdotV * 4.0f));
 
-  return diffuse;
-  //return diffuse + specular;
+  return diffuse + specular;
   
 }
 
@@ -167,9 +181,8 @@ float4 GetPosition(float2 uv) {
 
 float4 GetNormal(float2 uv) {
   float4 normal = gbuffer_Normal.Sample(samPoint, uv);
-  normal.xyz = normalize(normal.xyz * 2.f - 1.f);
+  normal.xyz = normal.xyz * 2.f - 1.f;
   return normal;
-
 }
 
 float2 GetRandom(float2 uv) {
@@ -178,88 +191,109 @@ float2 GetRandom(float2 uv) {
   float noiseZ = frac(sin(dot(uv.xy, float2(13.3232f, 63.123f) * 3.f)) * 59998.5736f);
   
   return normalize(float3(noiseX, noiseY, noiseZ));
-
 }
 
 float4
 pixel_main(PixelInput input) : SV_Target {
-  float4 position = GetPosition(input.texCoord);
-  float4 normal = GetNormal(input.texCoord);
-  float4 color = gbuffer_Color.Sample(samPoint, input.texCoord);
+  //Position
+  float4 gBuffer0 = GetPosition(input.texCoord);
+  float3 position = gBuffer0.xyz;
+  float  metallic = gBuffer0.a;
+  //Normals
+  float4 gBuffer1 = GetNormal(input.texCoord);
+  float3 normal = gBuffer1.xyz;
+  float  roughness = gBuffer1.a;
+  //Albedo
+  float4 gBuffer2 = gbuffer_Color.Sample(samPoint, input.texCoord);
+  float3 color = gBuffer2.rgb;
+  float  stencil = gBuffer2.a;
+  clip(stencil < 1.f ? -1 : 1); // Stencil
+  //AO
   //float4 ao = gbuffer_AO.Sample(samPoint, input.texCoord);
   //normal = normal * 0.5f + 0.5f;
-  clip(color.w < 1.f ? -1 : 1);
-
+  
   //Light position
   //float3 lightPos = float3(65, 35, 5000);
   
-  float4 lightVP = mul(float4(position.xyz, 1.f), lightView);
+  //Shadows
+  float4 lightVP = mul(float4(position, 1.f), lightView);
   lightVP = mul(lightVP, lightProjection);
   lightVP /= lightVP.w;
   lightVP.xy = lightVP.xy * 0.5f + 0.5f; //Convert to NDC
   
   lightVP.y = 1.f - lightVP.y;
-
+  /////////////////////////////////////////////////////////////////////////////
+  
   //Rotate light position by time
-  float cosTime = cos(time);
-  float sinTime = sin(time);
+  //float cosTime = cos(time);
+  //float sinTime = sin(time);
 
-  float3x3 rotationMatrix = float3x3(cosTime, 0.f, sinTime,
-                                     0.f, 1.f, 0.f,
-                                     -sinTime, 0.f, cosTime);
+  //float3x3 rotationMatrix = float3x3(cosTime, 0.f, sinTime,
+  //                                   0.f, 1.f, 0.f,
+  //                                   -sinTime, 0.f, cosTime);
 
   //float3 rotatedLightPos = mul(lightPos, rotationMatrix);
   float3 rotatedLightPos = lightPosition;
+  //float3 rotatedLightPos = float3(-600, 5, 0);
   
   //Directional Light
-  float lightDir = normalize(rotatedLightPos - position.xyz);
-  
-  //float lightDir = normalize(rotatedLightPos - posWorld.xyz);
+  float3 lightDir = rotatedLightPos - position;
   
   //Testing
-  float distance = length(rotatedLightPos - position.xyz);
+  //Sacar la magnitud
+  float distance = length(lightDir); 
+  lightDir /= distance;
+  
   //float attenuation = saturate(1.0 - distance / lightRadius);
   //float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
+  
   float d = distance / lightRadius; // normalizar por radio
-  float attenuation = 1.0 / (1.0 + 0.1 * d + 0.01 * d * d);
-  attenuation *= saturate(1.0 - d); // corta fuera del radio
+  float attenuation = 1.0f;
+  //float attenuation = 1.0 / (1.0 + 0.1 * d + 0.01 * d * d);
+  //attenuation *= saturate(1.0 - d); // corta fuera del radio
   
+  float3 specularColor = lerp(0.04f, color, metallic);
   
-  float specularColor = lerp(0.04f, color.rgb, position.w);
+  float3 viewDir = normalize(ViewPos - position);
+  float3 halfVec = normalize(lightDir + viewDir);
+  float3 reflectDir = reflect(-lightDir, normal);
   
-  float3 colorFinal = BRDF_Cook_Torrance(normal.xyz,
+  float3 colorFinal = BRDF_Cook_Torrance(normal,
                                          lightDir,
-                                         normalize(position.xyz - ViewPos),
-                                         normalize(reflect(lightDir, normal.xyz)),
-                                         color.rgb,
+                                         viewDir,
+                                         reflectDir,
+                                         color,
                                          specularColor,
-                                         normal.w);
+                                         roughness);
   
+  /*
+  float3 colorFinal = BRDF_Blinn_Phong(normal,
+                                       lightDir,
+                                       viewDir,
+                                       halfVec,
+                                       //normalize(reflect(-lightDir, normal.xyz)),
+                                       color,
+                                       specularColor);
+  */
   
-  float4 shadowSample = shadowMap.Sample(samPoint, lightVP.xy);
-  float shadowDepth = shadowSample.x;
-  float lightDepth = lightVP.z - 0.005; //BIAS HERE
-  float shadowFactor = 0.f;
+  //float4 shadowSample = shadowMap.Sample(samPoint, lightVP.xy);
+  //float shadowDepth = shadowSample.x;
+  //float lightDepth = lightVP.z - 0.005; //BIAS HERE
+  //float shadowFactor = 0.f;
   
-  if (lightDepth > shadowDepth) {
-    shadowFactor = 0.f;
-  }
-  else {
-    shadowFactor = 1.f;
-  }
+  //if (lightDepth > shadowDepth) {
+  //  shadowFactor = 0.f;
+  //}
+  //else {
+  //  shadowFactor = 1.f;
+  //}
   
-  if (lightVP.x < 0.01f || lightVP.x > 0.99f ||
-      lightVP.y < 0.01f || lightVP.y > 0.99f) {
-    shadowFactor = 1.f;
-  }
+  //if (lightVP.x < 0.01f || lightVP.x > 0.99f ||
+  //    lightVP.y < 0.01f || lightVP.y > 0.99f) {
+  //  shadowFactor = 1.f;
+  //}
   
-  colorFinal *= lightColor * lightIntensity * attenuation;
-  
-  colorFinal *= shadowFactor;
-  
-  //return float4(shadowSample.xxx, 1.f);
-  
-  //return color;
+  //colorFinal *= lightColor * lightIntensity * attenuation;
   
   //return float4(colorFinal, 1.f);
   //return float4(pow(colorFinal, 1.f / GAMMA), 1.f);

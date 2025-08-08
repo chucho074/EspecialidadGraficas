@@ -63,6 +63,40 @@ void recompileShaders() {
   g_pShaderManager->compileAllShaders();
 }
 
+void renderNode(SPtr<Actor> inNode) {
+  auto& sg = g_pSceneGraph;
+
+  ImGui::TableNextRow();
+  ImGui::TableNextColumn();
+
+  bool tmpOpenNode = false;
+
+  if(0 < inNode->m_children.size()) {  //It has a child
+    //tmpOpenNode = ImGui::TreeNodeEx(inNode->m_actor->m_actorName.c_str(), m_rootFlags);
+  }
+  else {  //It hasn't childs
+    ImGui::TreeNodeEx(inNode->m_name.c_str());
+  }
+
+  if(ImGui::IsItemClicked()) {
+    sg->setSelectedActor(inNode);
+  }
+
+  ImGui::TableNextColumn();
+  ImGui::TextDisabled("Actor");
+
+  ImGui::TableNextColumn();
+  //TODO: Fix the functionality of the checkbox.
+  ImGui::Checkbox("", &inNode->isActive);
+
+  if(0 < inNode->m_children.size() && tmpOpenNode) {
+    for(auto& nodes : inNode->m_children) {
+      //renderNode(reinterpret_cast<Actor>(nodes));
+    }
+    ImGui::TreePop();
+  }
+}
+
 void renderUI() {
   auto& gapi = g_graphicsAPI();
   auto& shadMan = g_shaderManager();
@@ -147,13 +181,13 @@ void renderUI() {
     }
     ImGui::Separator(); // Light
     if(ImGui::CollapsingHeader("Lights")) {
-      //ImGui::DragFloat3("Light Direction", &g_WVP.viewDir.x);
+      //ImGui::DragFloat3("Light Direction", &g_WVP.viewPos.x);
       ImGui::ColorEdit3("Light Color", &g_WVP.lightColor.x);
       g_shaderManager().setConstantValues(g_WVP);
       ImGui::Text("Light Direction: %.2f, %.2f, %.2f", 
-                  g_WVP.viewDir.x, 
-                  g_WVP.viewDir.y, 
-                  g_WVP.viewDir.z);
+                  g_WVP.viewPos.x, 
+                  g_WVP.viewPos.y, 
+                  g_WVP.viewPos.z);
 
       ////////////////////////////////////////////////////////////////////////////////////////////
       ImGui::Text("Shadow Camera position");
@@ -170,11 +204,49 @@ void renderUI() {
       ImGui::Text("Shadow Camera rotation");
       ImGui::SameLine();
       ImGui::DragFloat3("YawPitchRoll", &g_shadowCamera->m_YPR.x);
+    }
+    ImGui::Separator(); // Scene Graph
+    if(ImGui::CollapsingHeader("Scene Graph")) {
+      ImGui::Text("Scene ID: %s", toString(g_pSceneGraph->m_sceneID.getUID()).c_str());
+      ImGui::Text("Scene Name: %s", g_pSceneGraph->m_sceneName.c_str());
+      ImGui::Text("Scene Graph Actors: %d", g_pSceneGraph->m_numActors);
 
-      ImGui::Separator(); // Delta Time
-      {
-        ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
+      //Hierarchy list
+      if(ImGui::BeginTable("Hierarchy List", 3, ImGuiTableFlags_Resizable | 
+                                                ImGuiTableFlags_NoBordersInBody |
+                                                ImGuiTableFlags_BordersV)) {
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_NoHide);
+        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_NoHide);
+        ImGui::TableSetupColumn("Active", ImGuiTableColumnFlags_NoHide);
+        ImGui::TableHeadersRow();
+
+        ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+
+        //renderNode();
+
+        ImGui::EndTable();
       }
+      /*if(ImGui::Button("Spawn Prop")) {
+        g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
+                                        Vector3(0, 0, 0), 
+                                        Vector3(1, 1, 1));
+      }
+      if(ImGui::Button("Spawn Light")) {
+        g_pSceneGraph->spawnActor<Light>(g_pSceneGraph->getRoot(), 
+                                         Vector3(0, 0, 0), 
+                                         Vector3(1, 1, 1));
+      }*/
+
+    }
+
+
+    ImGui::Separator(); // Delta Time
+    {
+      ImGui::Text("Delta Time: %.3f ms/frame", g_appTime.getTime());
+      ImGui::Text("FPS: %.1f", 1.f / g_appTime.getTime());
+
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 
+                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
 
   }
@@ -256,7 +328,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.view = cameraRef->getViewMatrix();
   g_WVP.projection = cameraRef->getProjectionMatrix();
 
-  g_WVP.viewDir = cameraRef->getCameraDir();
+  g_WVP.viewPos = cameraRef->getPosition();
   g_WVP.time = 1.f;
 
   g_shadowCamera = make_shared<Camera>();
@@ -277,21 +349,27 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_WVP.lightProjection = g_shadowCamera->getOrthoMatrix();
   g_WVP.lightView.transpose();
 
+  g_WVP.lightColor = {1.f, 1.f, 1.f};
+  g_WVP.lightIntensity = 1.f;
+  g_WVP.lightRadius = 250.f;
+  g_WVP.lightPosition = g_shadowCamera->getPosition();
+
+
   //Load models and textures
   
   ////////////////////////////////////////////////////////////////////////////////////////////  Dino
   g_pDinoActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
-                                                                          Vector3(0, 0, 0), 
-                                                                          Vector3(1, 1, 1)));
+                                                                           Vector3(0, 0, 0), 
+                                                                           Vector3(1, 1, 1)));
 
   //Rex model
   //if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
-  if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
+  //if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
   //if(!g_pDinoActor->m_model.loadFromBin("Models/R8_chico.bin")) {
   //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
   
   //if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/R8_chico.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {
     __debugbreak();
@@ -309,9 +387,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   ////////////////////////////////////////////////////////////////////////////////////////////  Terrain
   
   g_pTerrainActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
-                                                                             Vector3(0, 0, 0), 
-                                                                             //Vector3(1.f, 1.f, 1.f)));
-                                                                             Vector3(10.f, 10.f, 10.f)));
+                                                                              Vector3(0, 0, 0), 
+                                                                              //Vector3(1.f, 1.f, 1.f)));
+                                                                              Vector3(10.f, 10.f, 10.f)));
 
   //Disc model
   //if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj")) {
@@ -326,7 +404,6 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   g_rtReflection = make_shared<Texture>();
   g_dsReflection = make_shared<Texture>();
-
   g_dsShadowMap = make_shared<Texture>();
 
 
@@ -362,34 +439,34 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   //Pos
   gbuffer[0]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                 g_windowSize.y,
-                                                 DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                                 D3D11_USAGE_DEFAULT,
-                                                 D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                 0,
-                                                 1,
-                                                 &gbuffer[0]->m_pSRV,
-                                                 &gbuffer[0]->m_pRTV);
+                                                  g_windowSize.y,
+                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[0]->m_pSRV,
+                                                  &gbuffer[0]->m_pRTV);
   //Normals
   gbuffer[1]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                 g_windowSize.y,
-                                                 DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                 D3D11_USAGE_DEFAULT,
-                                                 D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                 0,
-                                                 1,
-                                                 &gbuffer[1]->m_pSRV,
-                                                 &gbuffer[1]->m_pRTV);
+                                                  g_windowSize.y,
+                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[1]->m_pSRV,
+                                                  &gbuffer[1]->m_pRTV);
   //Color
   gbuffer[2]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                 g_windowSize.y,
-                                                 DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                 D3D11_USAGE_DEFAULT,
-                                                 D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                 0,
-                                                 1,
-                                                 &gbuffer[2]->m_pSRV,
-                                                 &gbuffer[2]->m_pRTV);
+                                                  g_windowSize.y,
+                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[2]->m_pSRV,
+                                                  &gbuffer[2]->m_pRTV);
 
   g_dsShadowMap->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
                                                      g_windowSize.y,
@@ -678,7 +755,8 @@ SDL_AppIterate(void* appstate) {
     g_pShaderManager->setConstantValues(g_WVP);
     g_pShaderManager->setDataToShader(g_LightShaderRef);
     g_WVP.lightPosition = g_shadowCamera->getPosition();
-    g_WVP.viewDir = g_shadowCamera->getCameraDir();
+    //g_WVP.viewPos = g_shadowCamera->getCameraDir();
+    g_WVP.viewPos = cameraRef->getPosition();
     g_pShaderManager->setConstantValues(g_WVP);
 
     Vector<SPtr<Texture>> rt = {

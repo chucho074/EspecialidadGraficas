@@ -12,6 +12,8 @@
 
 BaseMaterial::BaseMaterial() {
   m_albedo = make_shared<Texture>();
+  setAlbedo("Models/DefaultTexture.bmp");
+  m_albedoColor = {1.f, 1.f, 1.f};
 }
 
 void
@@ -25,6 +27,7 @@ BaseMaterial::setAlbedo(const Path& inPath) {
 
 
 PBRMaterial::PBRMaterial() {
+  m_albedo = make_shared<Texture>();
   m_normalTexture = make_shared<Texture>();
   m_roughnessTexture = make_shared<Texture>();
   m_metalicTexture = make_shared<Texture>();
@@ -36,6 +39,7 @@ PBRMaterial::PBRMaterial() {
 
   m_albedoColor = {1.f, 1.f, 1.f};
   m_emissiveColor = {0.f, 0.f, 0.f};
+  m_diffuse = 0.5f;
   m_metalic = 0.5f;
   m_roughness = 0.5f;
   m_ambientOclussion = 0.5f;
