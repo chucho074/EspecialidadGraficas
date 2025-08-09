@@ -235,7 +235,6 @@ pixel_main(PixelInput input) : SV_Target {
                                          specularColor,
                                          normal.w);
   
-  
   float4 shadowSample = shadowMap.Sample(samPoint, lightVP.xy);
   float shadowDepth = shadowSample.x;
   float lightDepth = lightVP.z - 0.005; //BIAS HERE
@@ -266,8 +265,6 @@ pixel_main(PixelInput input) : SV_Target {
   return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
   //return float4(pow(colorFinal * ao.xyz, 1.f / GAMMA), 1.f);
 }
-
-
 
 float
 DoAmbienOcclussion(in float2 tcoord, in float2 uv, in float3 p, in float3 ncoord) {

@@ -8,8 +8,14 @@
 /**
  * @include
  */
+
+#include <assimp/Importer.hpp>      // C++ importer interface
+#include <assimp/scene.h>           // Output data structure
+#include <assimp/postprocess.h>     // Post processing flags
+
 #include "Model.h"
 #include "GraphicsAPI.h"
+
 
 struct FaceVertex {
   int32 vertex_index = -1;
@@ -35,8 +41,28 @@ namespace std {
   };
 }
 
-bool 
+
+
+void
+processNode(Model& inModel,
+            aiNode* node,
+            const aiScene* inScene,
+            bool saveMat = true);
+
+MeshData
+processMesh(Model& inModel,
+            aiMesh* mesh,
+            const aiScene* scene,
+            bool saveMat);
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+bool
 Model::loadFromFile(const Path& inPath) {
+  
+  loadFromAssimp(inPath);
+  return true;
+
 
   auto& GAPI = g_graphicsAPI();
   
@@ -155,6 +181,47 @@ Model::loadFromFile(const Path& inPath) {
 
   //__debugbreak();
   return true;
+}
+
+void 
+Model::loadFromAssimp(const Path& inPath) {
+  if(!fsys::exists(inPath)) {
+    return;
+  }
+
+  Assimp::Importer importer;
+
+  importer.ReadFile(inPath.string(),
+                    aiProcessPreset_TargetRealtime_MaxQuality |
+                    aiProcess_TransformUVCoords |
+                    aiProcess_ConvertToLeftHanded |
+                    aiProcess_Triangulate);
+
+  const aiScene* tmpScene = importer.GetOrphanedScene();
+
+  if(!tmpScene
+     || tmpScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE
+     || !tmpScene->mRootNode) {
+    
+    __debugbreak();
+    return;
+  }
+
+  processNode(*this, tmpScene->mRootNode, tmpScene, false);
+
+
+  //Compute tangents
+  computeTangentSpace();
+
+  //Create the buffers
+  if(!createBuffers()) {
+    return;
+  }
+
+  ConsoleOut << "The model \"" << inPath.string() << "\" is loaded." << ConsoleLine;
+
+  //__debugbreak();
+  return;
 }
 
 bool 
@@ -394,12 +461,16 @@ Model::draw() {
 
   setBuffers();
 
-  GAPI.setTopology(m_meshes[0].topology);
+  for (auto& mesh : m_meshes) {
+    GAPI.setTopology(mesh.topology);
 
-
-  GAPI.m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
+    GAPI.m_pDeviceContext->DrawIndexed(mesh.numIndices, 
+                                       mesh.baseIndex,
+                                       mesh.baseVertex);
+  }
+  /*GAPI.m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
                                      m_meshes[0].baseIndex, 
-                                     m_meshes[0].baseVertex);
+                                     m_meshes[0].baseVertex);*/
 }
 
 void 
@@ -425,3 +496,146 @@ Model::exportToFile(Path inExportPath) {
     outputFile.write(reinterpret_cast<const char*>(m_indices.data()), sizeof(uint32) * indexCount);
   }
 }
+
+void 
+processNode(Model& inModel, 
+            aiNode* node, 
+            const aiScene* inScene, 
+            bool saveMat) {
+  // process all the node's meshes (if any)
+  for (uint32 i = 0; i < node->mNumMeshes; i++) {
+    aiMesh* mesh = inScene->mMeshes[node->mMeshes[i]];
+    inModel.m_meshes.push_back(processMesh(inModel, mesh, inScene, saveMat));
+  }
+  // then do the same for each of its children
+  for (uint32 i = 0; i < node->mNumChildren; i++) {
+    processNode(inModel, node->mChildren[i], inScene, saveMat);
+  }
+}
+
+
+MeshData
+processMesh(Model& inModel, 
+              aiMesh* mesh, 
+              const aiScene* scene, 
+              bool saveMat) {
+
+    MeshData outMesh;
+    outMesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    outMesh.baseVertex = inModel.m_vertices.size();
+    outMesh.numVertices = mesh->mNumVertices;
+    outMesh.baseIndex = inModel.m_indices.size();
+    //outMesh.baseIndex = 0;
+    outMesh.numIndices = mesh->mNumFaces * 3; //Assuming all faces are triangles
+
+
+    for(uint32 i = 0; i < mesh->mNumVertices; i++) {
+      SimpleVertex vertex;
+      // process vertex positions, normals and texture coordinates
+      //Pos
+      vertex.position.x = mesh->mVertices[i].x;
+      vertex.position.y = mesh->mVertices[i].y;
+      vertex.position.z = mesh->mVertices[i].z;
+      //Normals
+      if(mesh->mNormals) {
+        vertex.normal.x = mesh->mNormals[i].x;
+        vertex.normal.y = mesh->mNormals[i].y;
+        vertex.normal.z = mesh->mNormals[i].z;
+      }
+      else {
+        vertex.normal.x = 0.0f;
+        vertex.normal.y = 0.0f;
+        vertex.normal.z = 0.0f;
+      }
+      //Texture / UVs
+      if (mesh->mTextureCoords[0]) {
+        vertex.u = mesh->mTextureCoords[0][i].x;
+        vertex.v = mesh->mTextureCoords[0][i].y;
+      }
+      else {
+        vertex.u = 0.f;
+        vertex.v = 0.f;
+      }
+
+      //Tangentes
+      if(mesh->mTangents) {
+        vertex.tangent.x = mesh->mTangents[i].x;
+        vertex.tangent.y = mesh->mTangents[i].y;
+        vertex.tangent.z = mesh->mTangents[i].z;
+      }
+      else {
+        vertex.tangent.x = 0.0f;
+        vertex.tangent.y = 0.0f;
+        vertex.tangent.z = 0.0f;
+      }
+      //Bitangentes
+      /*if (mesh->mBitangents) {
+        vertex.binormals.x = mesh->mBitangents[i].x;
+        vertex.binormals.y = mesh->mBitangents[i].y;
+        vertex.binormals.z = mesh->mBitangents[i].z;
+      }
+      else {
+        vertex.BiNor.x = 0.0f;
+        vertex.BiNor.y = 0.0f;
+        vertex.BiNor.z = 0.0f;
+      }*/
+
+      inModel.m_vertices.push_back(vertex);
+    }
+    // Process indices
+    for (uint32 i = 0; i < mesh->mNumFaces; ++i) {
+      aiFace face = mesh->mFaces[i];
+      for (uint32 j = 0; j < face.mNumIndices; ++j) {
+        inModel.m_indices.push_back(face.mIndices[j]);
+      }
+    }
+
+    //Vector<ResourceRef> textures;
+    
+    //if (saveMat) {
+
+    //  // Process material
+    //  if(mesh->mMaterialIndex >= 0) {
+    //    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+    //    //To change for the creation of the textures in the resource Manager.
+    //    textures.push_back(loadMaterialTextures(inModel,
+    //                                            material,
+    //                                            aiTextureType_DIFFUSE, 
+    //                                            TEXTURE_TYPE::kAlbedo));
+
+    //    //For assimp, evaluates if the information is on normals or heights variables.
+    //   
+    //    //To change for the creation of the textures in the resource Manager.
+    //    textures.push_back(loadMaterialTextures(inModel,
+    //                                            material,
+    //                                            aiTextureType_NORMALS,
+    //                                            //aiTextureType_HEIGHT, 
+    //                                            TEXTURE_TYPE::kNormal));
+    //      
+    //    
+
+
+    //    //To change for the creation of the textures in the resource Manager.
+    //    textures.push_back(loadMaterialTextures(inModel,
+    //                                            material,
+    //                                            aiTextureType_SPECULAR, 
+    //                                            TEXTURE_TYPE::kSpecular)); //Metalic (?)
+
+
+    //    //To change for the creation of the textures in the resource Manager.
+    //    textures.push_back(loadMaterialTextures(inModel,
+    //                                            material,
+    //                                            aiTextureType_SHININESS, 
+    //                                            TEXTURE_TYPE::kGloss)); //Roughness
+
+    //  }
+    //  else {
+    //    
+    //    textures.push_back(RM.m_missingTextureRef);
+    //    
+    //  }
+    //}
+
+
+    return outMesh;
+  }

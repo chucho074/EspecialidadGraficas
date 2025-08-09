@@ -19,7 +19,7 @@ class Object {
 
   virtual void
   update(float inDT) {
-    UNREFERENCED_PARAMETER(inDT);
+    MY_UNREFERENCED_PARAMETER(inDT);
   }
 
   void

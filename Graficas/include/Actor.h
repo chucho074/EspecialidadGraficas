@@ -29,13 +29,13 @@ class Actor : public SceneNode {
 
   virtual void 
   update(float inDT) override {
-    UNREFERENCED_PARAMETER(inDT);
+    MY_UNREFERENCED_PARAMETER(inDT);
     updateTransforms();
   }
 
   virtual void
   draw(bool inWithMaterial) {
-    UNREFERENCED_PARAMETER(inWithMaterial);
+    MY_UNREFERENCED_PARAMETER(inWithMaterial);
   }
 
   void

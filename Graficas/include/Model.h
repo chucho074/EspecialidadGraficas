@@ -35,12 +35,14 @@ class Model
   bool
   loadFromFile(const Path& inPath);
 
+  void
+  loadFromAssimp(const Path& inPath);
+  
   bool
   loadFromBin(const Path& inPath);
 
   void
   computeTangentSpace();
-
 
   bool 
   loadFromMem(const Vector<SimpleVertex>& inVertexData,
@@ -57,6 +59,7 @@ class Model
 
   void
   exportToFile(Path inExportPath);
+
 
   Vector<MeshData> m_meshes;
 

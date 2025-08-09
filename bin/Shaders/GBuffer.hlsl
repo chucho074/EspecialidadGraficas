@@ -87,7 +87,6 @@ GBuffer gbuffer_pixel_main(PixelInput Input) {
   float3x3 TBN = float3x3(Input.tangent, Input.bitangent, Input.normal); //Es el esapcio de tangentes
   normal.xyz = normalize(mul(normal.xyz, TBN));
   
-  
   Output.position = float4(Input.posWorld, metallic);
   Output.normal = float4(normalize(normal.xyz * 0.5f + 0.5f), roughness);
   Output.color = diffColor;

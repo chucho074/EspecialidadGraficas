@@ -194,6 +194,4 @@ class ShadowCamera : public Camera {
   ShadowCamera() = default;
   ~ShadowCamera() = default;
 
-
-
 };
