@@ -28,7 +28,8 @@ Texture::createFromImage(Image& inImg) {
 
   m_pTexture = gapi.createTexture(inImg.getWidth(),
                                   inImg.getHeight(), 
-                                  DXGI_FORMAT_B8G8R8A8_UNORM, 
+                                  (inImg.m_brga) ? DXGI_FORMAT_B8G8R8A8_UNORM 
+                                                   : DXGI_FORMAT_R8G8B8A8_UNORM,
                                   D3D11_USAGE_DEFAULT, 
                                   D3D11_BIND_SHADER_RESOURCE,
                                   0, 

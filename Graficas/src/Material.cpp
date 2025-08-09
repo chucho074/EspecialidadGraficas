@@ -32,10 +32,10 @@ PBRMaterial::PBRMaterial() {
   m_roughnessTexture = make_shared<Texture>();
   m_metalicTexture = make_shared<Texture>();
 
-  setAlbedo("Models/DefaultTexture.bmp");
-  setRoughnessTexture("Models/DefaultTexture.bmp");
-  setMetalicTexture("Models/DefaultTexture.bmp");
-  setNormalTexture("Models/DefaultNormal.bmp");
+  setAlbedo("Models/DefaultTexture.png");
+  setRoughnessTexture("Models/DefaultTexture.png");
+  setMetalicTexture("Models/DefaultTexture.png");
+  setNormalTexture("Models/DefaultNormal.png");
 
   m_albedoColor = {1.f, 1.f, 1.f};
   m_emissiveColor = {0.f, 0.f, 0.f};

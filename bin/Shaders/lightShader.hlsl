@@ -189,7 +189,7 @@ pixel_main(PixelInput input) : SV_Target {
   //float4 ao = gbuffer_AO.Sample(samPoint, input.texCoord);
   //normal = normal * 0.5f + 0.5f;
   clip(color.w < 1.f ? -1 : 1);
-
+  
   //Light position
   //float3 lightPos = float3(65, 35, 5000);
   

@@ -5,6 +5,10 @@
  * @date    04/01/25
  */
 #include "Image.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "PrerequisiteGraficas.h"
 
 #pragma pack(push, 2)
@@ -38,9 +42,35 @@ struct MY_BITMAPSAVEHEADER {
 
 void 
 Image::decode(Path inFilePath) {
+
+  int32 w = 0, h = 0, comp = 0;
+
+  comp = 4;
+
+  //Save the information of the readed data.
+  //uint8 tmpData = (uint8)inFileData.m_data.c_str();
+
+  //Get the information of the image loadead.
+  m_pixels = stbi_load(inFilePath.string().c_str(),
+                            &w,
+                            &h,
+                            &comp, 4);
+  m_width = w;
+  m_height = h;
+  m_bpp = comp << 3;
+  //m_pixels = tmpImg;
+
+  //Unload Data
+  //stbi_image_free(tmpImg);
+
+}
+
+void 
+Image::decodeOld(Path inFilePath) {
+  m_brga = true;
   fstream imgFile(inFilePath, ios::in | ios::binary | ios::ate);
   if(!imgFile.is_open()) {
-    decode("Models/missingTextureV2.bmp");
+    decode("Models/missingTextureV2.png");
     __debugbreak();
     return;
   }
@@ -52,7 +82,7 @@ Image::decode(Path inFilePath) {
   imgFile.read(reinterpret_cast<char*>(&fileHeader), sizeof(MY_BITMAPFILEHEADER));
 
   if(fileHeader.bfType != 0x4D42) {
-    decode("Models/missingTextureV2.bmp");
+    decode("Models/missingTextureV2.png");
     __debugbreak();
     return; //Not a BMP
   }

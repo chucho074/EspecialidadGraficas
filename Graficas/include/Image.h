@@ -51,6 +51,10 @@ class Image {
   
   void
   decode(Path inFilePath);
+  
+
+  void
+  decodeOld(Path inFilePath);
 
   void
   encode(Path inFilePath);
@@ -133,6 +137,8 @@ class Image {
   int32 m_width;
   int32 m_height;
   int32 m_bpp; //Bits per pixel
+
+  bool m_brga = false;
 
   unsigned char * m_pixels = nullptr; //in bytes
 };
