@@ -55,7 +55,7 @@ class Model
   setBuffers();
 
   void
-  draw();
+  draw(bool inWithMaterial);
 
   void
   exportToFile(Path inExportPath);
@@ -66,6 +66,7 @@ class Model
   Vector<SimpleVertex> m_vertices;
   Vector<uint32> m_indices;
 
+  Path m_path;
  protected:
   SPtr<GraphicsBuffers> m_pVertexBuffer;
   SPtr<GraphicsBuffers> m_pIndexBuffer;

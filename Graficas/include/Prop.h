@@ -42,15 +42,15 @@ class Prop : public Actor {
     shaderManager.setTransform(m_transform);
 
     if(inWithMaterial) {
-      m_material.draw();
+      //m_material.draw();
     }
 
-    m_model.draw();
+    m_model.draw(inWithMaterial);
   }
 
 
 
   Model m_model;
 
-  PBRMaterial m_material;
+  //sPBRMaterial m_material;
 };

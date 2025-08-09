@@ -88,7 +88,6 @@ class Camera {
     return (m_target - m_position).normalize();
   }
 
-
   Matrix4
   getViewMatrix() {
     viewMatrix.lookAt(m_position, (m_position + m_cameraFront), m_upVec);

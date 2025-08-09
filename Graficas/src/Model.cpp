@@ -15,6 +15,7 @@
 
 #include "Model.h"
 #include "GraphicsAPI.h"
+#include "ShaderManager.h"
 
 
 struct FaceVertex {
@@ -41,8 +42,6 @@ namespace std {
   };
 }
 
-
-
 void
 processNode(Model& inModel,
             aiNode* node,
@@ -54,6 +53,11 @@ processMesh(Model& inModel,
             aiMesh* mesh,
             const aiScene* scene,
             bool saveMat);
+
+Path
+loadMaterialTextures(Model& inModel,
+                     aiMaterial* mat,
+                     aiTextureType type);
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -207,7 +211,9 @@ Model::loadFromAssimp(const Path& inPath) {
     return;
   }
 
-  processNode(*this, tmpScene->mRootNode, tmpScene, false);
+  m_path = inPath;
+
+  processNode(*this, tmpScene->mRootNode, tmpScene, true);
 
 
   //Compute tangents
@@ -452,7 +458,7 @@ Model::setBuffers() {
 }
 
 void 
-Model::draw() {
+Model::draw(bool inWithMaterial) {
   auto& GAPI = g_graphicsAPI();
   
   if (!m_pVertexBuffer || !m_pIndexBuffer) {
@@ -463,6 +469,10 @@ Model::draw() {
 
   for (auto& mesh : m_meshes) {
     GAPI.setTopology(mesh.topology);
+    
+    if(inWithMaterial) {
+      mesh.meshMaterial.draw();
+    }
 
     GAPI.m_pDeviceContext->DrawIndexed(mesh.numIndices, 
                                        mesh.baseIndex,
@@ -516,9 +526,9 @@ processNode(Model& inModel,
 
 MeshData
 processMesh(Model& inModel, 
-              aiMesh* mesh, 
-              const aiScene* scene, 
-              bool saveMat) {
+            aiMesh* mesh, 
+            const aiScene* scene, 
+            bool saveMat) {
 
     MeshData outMesh;
     outMesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -527,7 +537,7 @@ processMesh(Model& inModel,
     outMesh.baseIndex = inModel.m_indices.size();
     //outMesh.baseIndex = 0;
     outMesh.numIndices = mesh->mNumFaces * 3; //Assuming all faces are triangles
-
+    outMesh.meshMaterial.setShaderRef(g_shaderManager().getDefaultShader());
 
     for(uint32 i = 0; i < mesh->mNumVertices; i++) {
       SimpleVertex vertex;
@@ -537,7 +547,7 @@ processMesh(Model& inModel,
       vertex.position.y = mesh->mVertices[i].y;
       vertex.position.z = mesh->mVertices[i].z;
       //Normals
-      if(mesh->mNormals) {
+      if(mesh->HasNormals()) {
         vertex.normal.x = mesh->mNormals[i].x;
         vertex.normal.y = mesh->mNormals[i].y;
         vertex.normal.z = mesh->mNormals[i].z;
@@ -548,7 +558,7 @@ processMesh(Model& inModel,
         vertex.normal.z = 0.0f;
       }
       //Texture / UVs
-      if (mesh->mTextureCoords[0]) {
+      if (mesh->HasTextureCoords(0)) {
         vertex.u = mesh->mTextureCoords[0][i].x;
         vertex.v = mesh->mTextureCoords[0][i].y;
       }
@@ -558,7 +568,7 @@ processMesh(Model& inModel,
       }
 
       //Tangentes
-      if(mesh->mTangents) {
+      if(mesh->HasTangentsAndBitangents()) {
         vertex.tangent.x = mesh->mTangents[i].x;
         vertex.tangent.y = mesh->mTangents[i].y;
         vertex.tangent.z = mesh->mTangents[i].z;
@@ -590,52 +600,124 @@ processMesh(Model& inModel,
       }
     }
 
-    //Vector<ResourceRef> textures;
-    
-    //if (saveMat) {
+    if (saveMat) {
 
-    //  // Process material
-    //  if(mesh->mMaterialIndex >= 0) {
-    //    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-    //    //To change for the creation of the textures in the resource Manager.
-    //    textures.push_back(loadMaterialTextures(inModel,
-    //                                            material,
-    //                                            aiTextureType_DIFFUSE, 
-    //                                            TEXTURE_TYPE::kAlbedo));
+      // Process material
+      if(mesh->mMaterialIndex >= 0) {
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        //To change for the creation of the textures in the resource Manager.
+        outMesh.meshMaterial.setAlbedo(loadMaterialTextures(inModel,
+                                                            material,
+                                                            aiTextureType_DIFFUSE));
 
-    //    //For assimp, evaluates if the information is on normals or heights variables.
-    //   
-    //    //To change for the creation of the textures in the resource Manager.
-    //    textures.push_back(loadMaterialTextures(inModel,
-    //                                            material,
-    //                                            aiTextureType_NORMALS,
-    //                                            //aiTextureType_HEIGHT, 
-    //                                            TEXTURE_TYPE::kNormal));
-    //      
-    //    
+        //For assimp, evaluates if the information is on normals or heights variables.
+       
+        //To change for the creation of the textures in the resource Manager.
+        outMesh.meshMaterial.setNormalTexture(loadMaterialTextures(inModel,
+                                                                   material,
+                                                                   aiTextureType_NORMALS));
+                                                                   //aiTextureType_HEIGHT, 
+                                              
 
-
-    //    //To change for the creation of the textures in the resource Manager.
-    //    textures.push_back(loadMaterialTextures(inModel,
-    //                                            material,
-    //                                            aiTextureType_SPECULAR, 
-    //                                            TEXTURE_TYPE::kSpecular)); //Metalic (?)
+        //To change for the creation of the textures in the resource Manager.
+        outMesh.meshMaterial.setMetalicTexture(loadMaterialTextures(inModel,
+                                                                    material,
+                                                                    aiTextureType_SPECULAR));
 
 
-    //    //To change for the creation of the textures in the resource Manager.
-    //    textures.push_back(loadMaterialTextures(inModel,
-    //                                            material,
-    //                                            aiTextureType_SHININESS, 
-    //                                            TEXTURE_TYPE::kGloss)); //Roughness
+        //To change for the creation of the textures in the resource Manager.
+        outMesh.meshMaterial.setRoughnessTexture(loadMaterialTextures(inModel,
+                                                                      material,
+                                                                      aiTextureType_SHININESS));
 
-    //  }
-    //  else {
-    //    
-    //    textures.push_back(RM.m_missingTextureRef);
-    //    
-    //  }
-    //}
+      }
+    }
 
 
     return outMesh;
   }
+
+
+String 
+getPathCorrectly(String inFile) {
+  size_T realPos = 0;
+  size_T posInvSlash = inFile.rfind('\\');
+  size_T posSlash = inFile.rfind('/');
+
+  if(posInvSlash == String::npos) {
+    if(posSlash != String::npos) {
+      realPos = posSlash;
+    }
+  }
+  else {
+    realPos = posInvSlash;
+    if (posSlash == String::npos) {
+      if (posSlash > realPos) {
+        posSlash = realPos;
+      }
+    }
+  }
+  if (realPos == 0) {
+    return "/" + inFile;
+  }
+  return "/" + inFile.substr(realPos + 1, inFile.length() - realPos);
+}
+
+Path
+loadMaterialTextures(Model& inModel,
+                     aiMaterial* mat,
+                     aiTextureType type) {
+
+  Path outPath;
+
+  bool noTexture = true;
+  //Get the number of textures in assimp in the material.
+  //Evaluate if is searching for normals and try heights if there is no normals available.
+  int32 tmp = mat->GetTextureCount(type);
+
+  if(type == aiTextureType_NORMALS && 0 == mat->GetTextureCount(type)) {
+    type = aiTextureType_HEIGHT;
+  }
+
+  for(uint32 i = 0; i < mat->GetTextureCount(type); i++) {
+    noTexture = false;
+    aiString str;
+    mat->GetTexture(type, i, &str);
+
+    String tmpTextureName = str.C_Str();
+    //Get just the name of the texture.
+    tmpTextureName = getPathCorrectly(tmpTextureName);
+    bool skip = false;
+
+    //for(uint32 j = 0; j < inModel.lock()->m_materialsLoaded.size(); j++) {
+    //  //Get the list of names of textures in the material.
+    //  auto tmpNames = RM.getTextureNameFromMaterial(inModel.lock()->m_materialsLoaded[j]);
+    //  //Compare if the texture is already in any material by it name.
+    //  auto tmpIterNames = find(tmpNames.begin(), tmpNames.end(), tmpTextureName);
+    //  //If the Texture exist, get the reference of that texture.
+    //  if(tmpIterNames != tmpNames.end()) {
+    //    //Get the reference of the texture.
+    //    tmpTextureRef = RM.getReferenceByNameInMaterial(inModel.lock()->m_materialsLoaded[j],
+    //                                                    tmpIterNames->data());
+    //    skip = true;
+    //    break;
+    //  }
+    //}
+
+    if(!skip) {   // if texture hasn't been loaded already, load it.
+
+      //Get the path without the name of the model name.
+
+      outPath = inModel.m_path.parent_path().string() + tmpTextureName;
+
+    }
+  }
+
+  if(noTexture) {
+    return "";
+  }
+
+
+//  __debugbreak();
+  return outPath;
+}

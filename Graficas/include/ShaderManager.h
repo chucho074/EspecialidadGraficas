@@ -509,6 +509,16 @@ class ShaderManager : public Module<ShaderManager> {
     gapi.setConstantBuffer(0, m_pCB_WVP);
   }
 
+  void
+  setDefaultShader(ShaderRef inDefault) {
+    m_defaultShader = inDefault;
+  }
+
+  ShaderRef
+  getDefaultShader() const {
+    return m_defaultShader;
+  }
+
  protected:
   
   MatrixCollection m_matrixCollection;
@@ -525,6 +535,8 @@ class ShaderManager : public Module<ShaderManager> {
   ID3D11SamplerState* m_pSS_Point = nullptr;
   ID3D11SamplerState* m_pSS_Linear = nullptr;
   ID3D11SamplerState* m_pSS_Anisotropic = nullptr;
+
+  ShaderRef m_defaultShader;
 
   Map<UID, SPtr<ShaderProgram>> m_shaders;
 };

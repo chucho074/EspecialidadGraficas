@@ -232,6 +232,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   g_shaderManager().setSamplerToShader(g_GBufferShaderRef, SAMPLER_USAGE::kAll);
   g_shaderManager().setRasterToShader(g_GBufferShaderRef, RASTER_USAGE::kDefault);
+  
+  g_shaderManager().setDefaultShader(g_GBufferShaderRef);
 
   g_LightShaderRef = g_pShaderManager->createShaderProgram("Shaders/lightShader.hlsl",
                                                            "vertex_main",
@@ -293,7 +295,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
   
   
-  if(!g_pDinoActor->m_model.loadFromFile("Models/rex_norm.obj")) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/Rex_mat.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/R8_chico.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {
@@ -301,11 +303,11 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
+  /*g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
   g_pDinoActor->m_material.setNormalTexture("Models/Rex_N.bmp");
   g_pDinoActor->m_material.setRoughnessTexture("Models/Rex_R.bmp");
   g_pDinoActor->m_material.setMetalicTexture("Models/Rex_M.bmp");
-  g_pDinoActor->m_material.setShaderRef(g_GBufferShaderRef);
+  g_pDinoActor->m_material.setShaderRef(g_GBufferShaderRef);*/
 
 
 
@@ -323,8 +325,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  g_pTerrainActor->m_material.setAlbedo("Models/Terrain.bmp");
-  g_pTerrainActor->m_material.setShaderRef(g_GBufferShaderRef);
+  //g_pTerrainActor->m_material.setAlbedo("Models/Terrain.bmp");
+  //g_pTerrainActor->m_material.setShaderRef(g_GBufferShaderRef);
 
 
   g_rtReflection = make_shared<Texture>();
@@ -629,7 +631,6 @@ SDL_AppIterate(void* appstate) {
     for(auto tex : gbuffer) {
       g_pGAPI->clearRTV(tex, blackClearColor);
     }
-
   }
   
   ////////////////////////////////////////////////////////////////////////////////////////////  Values for cbuffer

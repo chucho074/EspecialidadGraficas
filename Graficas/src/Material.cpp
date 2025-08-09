@@ -16,6 +16,9 @@ BaseMaterial::BaseMaterial() {
 
 void
 BaseMaterial::setAlbedo(const Path& inPath) {
+  if(inPath.empty()) {
+    return;
+  }
   Image tmpAlbedo;
   tmpAlbedo.decode(inPath);
   m_albedo->createFromImage(tmpAlbedo);
@@ -47,6 +50,9 @@ PBRMaterial::PBRMaterial() {
 
 void
 PBRMaterial::setNormalTexture(const Path& inPath) {
+  if(inPath.empty()) {
+    return;
+  }
   Image tmpNormal;
   tmpNormal.decode(inPath);
   m_normalTexture->createFromImage(tmpNormal);
@@ -54,6 +60,9 @@ PBRMaterial::setNormalTexture(const Path& inPath) {
 
 void
 PBRMaterial::setRoughnessTexture(const Path& inPath) {
+  if(inPath.empty()) {
+    return;
+  }
   Image tmpRoughness;
   tmpRoughness.decode(inPath);
   m_roughnessTexture->createFromImage(tmpRoughness);
@@ -61,6 +70,9 @@ PBRMaterial::setRoughnessTexture(const Path& inPath) {
 
 void
 PBRMaterial::setMetalicTexture(const Path& inPath) {
+  if(inPath.empty()) {
+    return;
+  }
   Image tmpMetalic;
   tmpMetalic.decode(inPath);
   m_metalicTexture->createFromImage(tmpMetalic);

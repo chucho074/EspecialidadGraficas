@@ -22,5 +22,5 @@ struct MeshData
   int32 baseIndex;
   int32 numIndices;
 
-  //PBRMaterial meshMaterial;
+  PBRMaterial meshMaterial;
 };
