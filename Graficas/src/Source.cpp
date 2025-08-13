@@ -23,6 +23,7 @@
 #include "SceneGraph.h"
 #include "Prop.h"
 #include "ShaderManager.h"
+#include "TextureManager.h"
 #include "giTime.h"
 
 
@@ -37,6 +38,7 @@ SPtr<SceneGraph> g_pSceneGraph;
 SDL_Window* g_pWindow = nullptr;
 GraphicsAPI* g_pGAPI = nullptr;
 ShaderManager* g_pShaderManager = nullptr;
+TextureManager* g_pTextureManager = nullptr;
 
 ShaderRef g_GBufferShaderRef;
 ShaderRef g_LightShaderRef;
@@ -66,6 +68,8 @@ void recompileShaders() {
 void renderUI() {
   auto& gapi = g_graphicsAPI();
   auto& shadMan = g_shaderManager();
+
+  //ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
   if(ImGui::Begin("Menu")) {
     
@@ -216,68 +220,87 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     g_shaderManager().setObject(shMan);
     g_pShaderManager = &g_shaderManager();
 
+    TextureManager::startUp();
+    TextureManager* texMan = new TextureManager();
+    g_textureManager().setObject(texMan);
+    g_pTextureManager = &g_textureManager();
+    g_pTextureManager->init();
+
     recompileShaders();
   }
-
-  g_ShadowShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
-                                                             "shadow_map_vertex_main",
-                                                             "shadow_map_pixel_main");
-
-  g_shaderManager().setSamplerToShader(g_ShadowShaderRef, SAMPLER_USAGE::kAll);
-  g_shaderManager().setRasterToShader(g_ShadowShaderRef, RASTER_USAGE::kDefault);
-
-  g_GBufferShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
-                                                             "gbuffer_vertex_main",
-                                                             "gbuffer_pixel_main");
-
-  g_shaderManager().setSamplerToShader(g_GBufferShaderRef, SAMPLER_USAGE::kAll);
-  g_shaderManager().setRasterToShader(g_GBufferShaderRef, RASTER_USAGE::kDefault);
   
-  g_shaderManager().setDefaultShader(g_GBufferShaderRef);
+  // Create the shaders
 
-  g_LightShaderRef = g_pShaderManager->createShaderProgram("Shaders/lightShader.hlsl",
-                                                           "vertex_main",
-                                                           "pixel_main");
+  {
+    g_ShadowShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
+                                                               "shadow_map_vertex_main",
+                                                               "shadow_map_pixel_main");
 
-  g_shaderManager().setSamplerToShader(g_LightShaderRef, SAMPLER_USAGE::kAll);
-  g_shaderManager().setRasterToShader(g_LightShaderRef, RASTER_USAGE::kCullFront);
-  
+    g_shaderManager().setSamplerToShader(g_ShadowShaderRef, SAMPLER_USAGE::kAll);
+    g_shaderManager().setRasterToShader(g_ShadowShaderRef, RASTER_USAGE::kDefault);
 
+    g_GBufferShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
+                                                               "gbuffer_vertex_main",
+                                                               "gbuffer_pixel_main");
+
+    g_shaderManager().setSamplerToShader(g_GBufferShaderRef, SAMPLER_USAGE::kAll);
+    g_shaderManager().setRasterToShader(g_GBufferShaderRef, RASTER_USAGE::kDefault);
+    
+    g_shaderManager().setDefaultShader(g_GBufferShaderRef);
+
+    g_LightShaderRef = g_pShaderManager->createShaderProgram("Shaders/lightShader.hlsl",
+                                                             "vertex_main",
+                                                             "pixel_main");
+
+    g_shaderManager().setSamplerToShader(g_LightShaderRef, SAMPLER_USAGE::kAll);
+    g_shaderManager().setRasterToShader(g_LightShaderRef, RASTER_USAGE::kCullFront);
+  }
+
+  //Create the window and renderer
   if(!g_pWindow) {
     SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
+   
+  // Create systems & Initialize Values
 
-  g_pSceneGraph = make_shared<SceneGraph>();
-  g_pSceneGraph->init();
-  auto& cameraRef = g_pSceneGraph->m_editorCamera;
+  {
+    g_pSceneGraph = make_shared<SceneGraph>();
+    g_pSceneGraph->init();
+    auto& cameraRef = g_pSceneGraph->m_editorCamera;
 
-  
-  //Set world info
-  g_WVP.world.identity();
-  g_WVP.view = cameraRef->getViewMatrix();
-  g_WVP.projection = cameraRef->getProjectionMatrix();
+    
+    //Set world info
+    g_WVP.world.identity();
+    g_WVP.view = cameraRef->getViewMatrix();
+    g_WVP.projection = cameraRef->getProjectionMatrix();
 
-  g_WVP.viewDir = cameraRef->getCameraDir();
-  g_WVP.time = 1.f;
+    g_WVP.viewDir = cameraRef->getCameraDir();
+    g_WVP.time = 1.f;
 
-  g_shadowCamera = make_shared<Camera>();
+    g_WVP.lightIntensity = 1.f;
+    g_WVP.lightRadius = 250.f;
 
-  g_shadowCamera->setLookAt(Vector3(-10, 5, 0), Vector3(0, 0, 0), Vector3(0, 1, 0));
-  //g_shadowCamera->setLookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
-  //g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
-  g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
-  //g_shadowCamera->setPerspectiveHalf(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
+    g_shadowCamera = make_shared<Camera>();
 
-  g_WVP.lightView = g_shadowCamera->getViewMatrix();
+    g_shadowCamera->setLookAt(Vector3(-10, 5, 0), Vector3(0, 0, 0), Vector3(0, 1, 0));
+    //g_shadowCamera->setLookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
+    //g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
+    g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
+    //g_shadowCamera->setPerspectiveHalf(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
 
-  g_WVP.world.transpose();
-  g_WVP.view.transpose();
-  g_WVP.projection.transpose();
+    g_WVP.lightView = g_shadowCamera->getViewMatrix();
 
-  //g_WVP.lightProjection.OrthographicLH(-5.f, 5.f, -5.f, 5.f, 0.1f, 500.f);
-  g_WVP.lightProjection = g_shadowCamera->getOrthoMatrix();
-  g_WVP.lightView.transpose();
+    g_WVP.world.transpose();
+    g_WVP.view.transpose();
+    g_WVP.projection.transpose();
+
+    //g_WVP.lightProjection.OrthographicLH(-5.f, 5.f, -5.f, 5.f, 0.1f, 500.f);
+    g_WVP.lightProjection = g_shadowCamera->getOrthoMatrix();
+    g_WVP.lightView.transpose();
+    g_WVP.lightColor = Vector3(1.f, 1.f, 1.f);
+  }
+
 
   //Load models and textures
   
@@ -295,7 +318,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
   
   
-  if(!g_pDinoActor->m_model.loadFromFile("Models/Rex_mat.obj")) {
+  if(!g_pDinoActor->m_model.loadFromFile("Models/Rex/Rex_mat.obj")) {
+  //if(!g_pDinoActor->m_model.loadFromFile("Models/bistro/Exterior/exterior.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/R8_chico.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {

@@ -36,9 +36,7 @@ class Image {
   Image() = default;
 
   ~Image() {
-    if (m_pixels) {
-      //delete[] m_pixels;
-    }
+    
   };
 
   void
@@ -46,7 +44,7 @@ class Image {
     m_width = inWidth;
     m_height = inHeight;
     m_bpp = inbpp;
-    m_pixels = reinterpret_cast<unsigned char*>(new char[getPitch() * getHeight()]);
+    m_pixels.resize(getPitch() * getHeight());
   }
   
   void
@@ -105,9 +103,9 @@ class Image {
     return m_width * getBpp(); //Densidad de informacion por linea
   }
 
-  uint8*
-  getPixels() {
-    return m_pixels;
+  const uint8*
+  getPixels() const {
+    return m_pixels.data();
   }
 
   Color 
@@ -140,5 +138,6 @@ class Image {
 
   bool m_brga = false;
 
-  unsigned char * m_pixels = nullptr; //in bytes
+  //unsigned char * m_pixels = nullptr; //in bytes
+  Vector<uint8> m_pixels; //in bytes
 };

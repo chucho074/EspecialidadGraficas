@@ -41,14 +41,24 @@ class Texture
   Texture() = default;
   ~Texture();
   
+  void
+  createFromFile(Path inFileName/*,
+                 bool inGenerateMips = false, 
+                 bool inCreateRTV = false, 
+                 bool inCreateDSV = false, 
+                 bool inCreateDSV_RO = false*/);
+
   void 
   createFromImage(Image& inImg);
 
   FloatColor 
-  sampleTexture(Vector2 inUVs, TEXTURE_ADDRESS::E inTexAddress = TEXTURE_ADDRESS::kCLAMP, SAMPLE_FILTER::E inFilter = SAMPLE_FILTER::kPOINT);
+  sampleTexture(Vector2 inUVs, 
+                TEXTURE_ADDRESS::E inTexAddress = TEXTURE_ADDRESS::kCLAMP, 
+                SAMPLE_FILTER::E inFilter = SAMPLE_FILTER::kPOINT);
   
   void
-  adjustTextureAddress(TEXTURE_ADDRESS::E inTexAddress, Vector2& inUVs);
+  adjustTextureAddress(TEXTURE_ADDRESS::E inTexAddress, 
+                       Vector2& inUVs);
 
   void
   draw(Image& inData, 

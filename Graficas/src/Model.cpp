@@ -54,11 +54,24 @@ processMesh(Model& inModel,
             const aiScene* scene,
             bool saveMat);
 
-Path
-loadMaterialTextures(Model& inModel,
-                     aiMaterial* mat,
-                     aiTextureType type);
+SPtr<Image>
+loadMaterialTexture(Model& inModel,
+                    aiMaterial* mat,
+                    aiTextureType type);
 
+Path
+getTexturePath(Model& inModel,
+               aiMaterial* mat,
+               aiTextureType type);
+
+String removeDoubleDots(String str) {
+  const String target = "..";
+  size_t pos;
+  while((pos = str.find(target)) != String::npos) {
+    str.erase(pos, target.length());
+  }
+  return str;
+}
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 bool
@@ -478,9 +491,6 @@ Model::draw(bool inWithMaterial) {
                                        mesh.baseIndex,
                                        mesh.baseVertex);
   }
-  /*GAPI.m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
-                                     m_meshes[0].baseIndex, 
-                                     m_meshes[0].baseVertex);*/
 }
 
 void 
@@ -530,16 +540,18 @@ processMesh(Model& inModel,
             const aiScene* scene, 
             bool saveMat) {
 
-    MeshData outMesh;
-    outMesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-    outMesh.baseVertex = inModel.m_vertices.size();
-    outMesh.numVertices = mesh->mNumVertices;
-    outMesh.baseIndex = inModel.m_indices.size();
-    //outMesh.baseIndex = 0;
-    outMesh.numIndices = mesh->mNumFaces * 3; //Assuming all faces are triangles
-    outMesh.meshMaterial.setShaderRef(g_shaderManager().getDefaultShader());
+  auto& texManager = g_textureManager();
 
-    for(uint32 i = 0; i < mesh->mNumVertices; i++) {
+  MeshData outMesh;
+  outMesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+  outMesh.baseVertex = inModel.m_vertices.size();
+  outMesh.numVertices = mesh->mNumVertices;
+  outMesh.baseIndex = inModel.m_indices.size();
+  //outMesh.baseIndex = 0;
+  outMesh.numIndices = mesh->mNumFaces * 3; //Assuming all faces are triangles
+  outMesh.meshMaterial.setShaderRef(g_shaderManager().getDefaultShader());
+
+  for(uint32 i = 0; i < mesh->mNumVertices; i++) {
       SimpleVertex vertex;
       // process vertex positions, normals and texture coordinates
       //Pos
@@ -592,83 +604,123 @@ processMesh(Model& inModel,
 
       inModel.m_vertices.push_back(vertex);
     }
-    // Process indices
-    for (uint32 i = 0; i < mesh->mNumFaces; ++i) {
-      aiFace face = mesh->mFaces[i];
-      for (uint32 j = 0; j < face.mNumIndices; ++j) {
-        inModel.m_indices.push_back(face.mIndices[j]);
-      }
+  // Process indices
+  for (uint32 i = 0; i < mesh->mNumFaces; ++i) {
+    aiFace face = mesh->mFaces[i];
+    for (uint32 j = 0; j < face.mNumIndices; ++j) {
+      inModel.m_indices.push_back(face.mIndices[j]);
     }
+  }
 
-    if (saveMat) {
+  if (saveMat) {
 
-      // Process material
-      if(mesh->mMaterialIndex >= 0) {
-        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        //To change for the creation of the textures in the resource Manager.
-        outMesh.meshMaterial.setAlbedo(loadMaterialTextures(inModel,
-                                                            material,
-                                                            aiTextureType_DIFFUSE));
+    // Process material
+    if(mesh->mMaterialIndex >= 0) {
+      aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+      ////To change for the creation of the textures in the resource Manager.
+      TextureRef tmpAlbedo = texManager.loadTexture(getTexturePath(inModel, 
+                                                                   material, 
+                                                                   aiTextureType_DIFFUSE));
 
-        //For assimp, evaluates if the information is on normals or heights variables.
-       
-        //To change for the creation of the textures in the resource Manager.
-        outMesh.meshMaterial.setNormalTexture(loadMaterialTextures(inModel,
-                                                                   material,
-                                                                   aiTextureType_NORMALS));
-                                                                   //aiTextureType_HEIGHT, 
-                                              
+      outMesh.meshMaterial.setTexture(tmpAlbedo,
+                                      TEXTURE_TYPE::kAlbedo);
 
-        //To change for the creation of the textures in the resource Manager.
-        outMesh.meshMaterial.setMetalicTexture(loadMaterialTextures(inModel,
+      ////For assimp, evaluates if the information is on normals or heights variables.
+     
+      ////To change for the creation of the textures in the resource Manager.
+      TextureRef tmpNormals = texManager.loadTexture(getTexturePath(inModel,
                                                                     material,
-                                                                    aiTextureType_SPECULAR));
+                                                                    aiTextureType_NORMALS));
+                                                                    //aiTextureType_HEIGHT));
+      outMesh.meshMaterial.setTexture(tmpNormals,
+                                      TEXTURE_TYPE::kNormal);
+
+      ////To change for the creation of the textures in the resource Manager.
+      TextureRef tmpSpecular = texManager.loadTexture(getTexturePath(inModel,
+                                                                     material, 
+                                                                     aiTextureType_SPECULAR));
+
+      outMesh.meshMaterial.setTexture(tmpSpecular,
+                                      TEXTURE_TYPE::kSpecular);
 
 
-        //To change for the creation of the textures in the resource Manager.
-        outMesh.meshMaterial.setRoughnessTexture(loadMaterialTextures(inModel,
-                                                                      material,
-                                                                      aiTextureType_SHININESS));
+      ////To change for the creation of the textures in the resource Manager.
+      TextureRef tmpMetallic = texManager.loadTexture(getTexturePath(inModel,
+                                                                     material,
+                                                                     aiTextureType_SHININESS));
+      outMesh.meshMaterial.setTexture(tmpMetallic,
+                                      TEXTURE_TYPE::kMetallic);
 
-      }
-    }
-
-
-    return outMesh;
-  }
-
-
-String 
-getPathCorrectly(String inFile) {
-  size_T realPos = 0;
-  size_T posInvSlash = inFile.rfind('\\');
-  size_T posSlash = inFile.rfind('/');
-
-  if(posInvSlash == String::npos) {
-    if(posSlash != String::npos) {
-      realPos = posSlash;
     }
   }
-  else {
-    realPos = posInvSlash;
-    if (posSlash == String::npos) {
-      if (posSlash > realPos) {
-        posSlash = realPos;
-      }
-    }
-  }
-  if (realPos == 0) {
-    return "/" + inFile;
-  }
-  return "/" + inFile.substr(realPos + 1, inFile.length() - realPos);
+
+
+  return outMesh;
 }
 
-Path
-loadMaterialTextures(Model& inModel,
-                     aiMaterial* mat,
-                     aiTextureType type) {
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+//String 
+//getPathCorrectly(String inFile) {
+//  size_T realPos = 0;
+//  size_T posInvSlash = inFile.rfind('\\');
+//  size_T posSlash = inFile.rfind('/');
+//
+//  if(posInvSlash == String::npos) {
+//    if(posSlash != String::npos) {
+//      realPos = posSlash;
+//    }
+//  }
+//  else {
+//    realPos = posInvSlash;
+//    if (posSlash == String::npos) {
+//      if (posSlash > realPos) {
+//        posSlash = realPos;
+//      }
+//    }
+//  }
+//  if (realPos == 0) {
+//    //return "/" + inFile;
+//  }
+//
+//  String prefix = "..\\";
+//  if(inFile.rfind(prefix, 0) == 0) {
+//    inFile.erase(0, prefix.size());
+//  }
+//
+//  String tmpPath = inFile;
+//  std::replace(tmpPath.begin(), tmpPath.end(), '\\', '/');
+//  return tmpPath;
+//  return "/" + inFile.substr(realPos + 1, inFile.length() - realPos);
+//}
+
+String
+getAbsolutePath(const Path& inPath) {
+  
+  auto tmpPath = fsys::absolute(inPath);
+  return tmpPath.string();
+}
+
+bool
+existPath(const Path& inPath) {
+  return fsys::exists(inPath);
+}
+
+String
+getFileName(const Path& inPath) {
+  
+  inPath.filename();
+  return inPath.string();
+}
+
+SPtr<Image>
+loadMaterialTexture(Model& inModel,
+                    aiMaterial* mat,
+                    aiTextureType type) {
 
   Path outPath;
+
+  SPtr<Image> outImage;
 
   bool noTexture = true;
   //Get the number of textures in assimp in the material.
@@ -686,7 +738,13 @@ loadMaterialTextures(Model& inModel,
 
     String tmpTextureName = str.C_Str();
     //Get just the name of the texture.
-    tmpTextureName = getPathCorrectly(tmpTextureName);
+    Path tmpPath = tmpTextureName;
+    Path tmpClean = tmpPath.lexically_normal();
+
+    tmpTextureName = tmpClean.string();
+    tmpTextureName = getAbsolutePath(tmpTextureName);
+    tmpPath = tmpTextureName;
+
     bool skip = false;
 
     //for(uint32 j = 0; j < inModel.lock()->m_materialsLoaded.size(); j++) {
@@ -707,17 +765,59 @@ loadMaterialTextures(Model& inModel,
     if(!skip) {   // if texture hasn't been loaded already, load it.
 
       //Get the path without the name of the model name.
-
-      outPath = inModel.m_path.parent_path().string() + tmpTextureName;
+      Path tmpParent = inModel.m_path.parent_path();
+      outPath = tmpParent.parent_path().string() + tmpTextureName;
 
     }
   }
 
   if(noTexture) {
-    return "";
+    //return "";
   }
 
 
 //  __debugbreak();
+  //return outPath;
+  return outImage;
+}
+
+Path
+getTexturePath(Model& inModel,
+               aiMaterial* mat,
+               aiTextureType type) {
+  Path outPath;  
+
+  bool noTexture = true;
+  //Get the number of textures in assimp in the material.
+  int32 texCount = mat->GetTextureCount(type);
+  
+  //Evaluate if is searching for normals and try heights if there is no normals available.
+  if(type == aiTextureType_NORMALS && 0 == texCount) {
+    type = aiTextureType_HEIGHT;
+  }
+
+  for(uint32 i = 0; i < texCount; i++) {
+    noTexture = false;
+    aiString str;
+    mat->GetTexture(type, i, &str);
+
+    String tmpTextureName = str.C_Str();
+    //Get just the name of the texture.
+    Path tmpParent = inModel.m_path.parent_path();
+    Path tmpAbsPath = getAbsolutePath(tmpParent);
+    tmpAbsPath.replace_filename("");
+    tmpTextureName = removeDoubleDots(tmpTextureName);
+    Path tmpCompleteAbs = getAbsolutePath(tmpAbsPath.string()+tmpTextureName);
+    tmpCompleteAbs = tmpCompleteAbs.lexically_normal();
+    outPath = tmpAbsPath.string() + tmpTextureName;
+
+  }
+  
+  if(noTexture) {
+    return "";
+  }
+
+
+  //__debugbreak();
   return outPath;
 }

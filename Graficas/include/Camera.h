@@ -180,7 +180,7 @@ class EditorCamera : public Camera {
   }
 
 
-  float m_speed = 1.f;
+  float m_speed = 400.f;
 
   bool m_front, m_back, m_left, m_right = false;
   bool m_up, m_down = false;

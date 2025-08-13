@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\SG">
-      <UniqueIdentifier>{4c5d4422-4bfe-46d0-ad84-f9a5ad182340}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Math">
       <UniqueIdentifier>{3fa9296b-a71c-4521-83ce-76786df2cba0}</UniqueIdentifier>
     </Filter>
@@ -27,6 +24,12 @@
     </Filter>
     <Filter Include="Header Files\Clock">
       <UniqueIdentifier>{c78b070c-8935-4ed8-87c0-a075f6a826ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\CORE">
+      <UniqueIdentifier>{e7e47573-099b-41ac-839a-b87582308f0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\SG">
+      <UniqueIdentifier>{4c5d4422-4bfe-46d0-ad84-f9a5ad182340}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +107,9 @@
     </ClCompile>
     <ClCompile Include="src\Radians.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TextureManager.cpp">
+      <Filter>Header Files\CORE</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -193,6 +199,12 @@
     </ClInclude>
     <ClInclude Include="include\Radians.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TextureManager.h">
+      <Filter>Header Files\CORE</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AssetManager.h">
+      <Filter>Header Files\CORE</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

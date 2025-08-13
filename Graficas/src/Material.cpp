@@ -10,32 +10,63 @@
  */
  #include "Material.h"
 
-BaseMaterial::BaseMaterial() {
-  m_albedo = make_shared<Texture>();
-}
-
-void
-BaseMaterial::setAlbedo(const Path& inPath) {
-  if(inPath.empty()) {
-    return;
+void 
+BaseMaterial::setTexture(TextureRef inTexture, 
+                         TEXTURE_TYPE::E inType) {
+  auto& texManager = g_textureManager();
+  if(!m_textures.empty()) {
+    auto iterTexture = m_textures.find(inType);
+    if(iterTexture != m_textures.end()) {
+      // If the texture is already set, remove it
+      if(iterTexture->second == inTexture) {
+        return; // No need to set the same texture again
+      }
+      // If the texture is a default or missing texture, remove it
+      if(iterTexture->second == texManager.getDefaultTexture() ||
+         iterTexture->second == texManager.getDefaultNormalTexture() ||
+         iterTexture->second == texManager.getMissingTexture()) {
+        m_textures.erase(iterTexture);
+      }
+    }    
   }
-  Image tmpAlbedo;
-  tmpAlbedo.decode(inPath);
-  m_albedo->createFromImage(tmpAlbedo);
+  m_textures.insert({inType, inTexture});
 }
 
- ////////////////////////////////////////////////////////////////////////////////////////////
+SPtr<Texture> 
+BaseMaterial::getTexture(TEXTURE_TYPE::E inType) const {
+  auto iter = m_textures.find(inType);
+
+  if(iter != m_textures.end()) {
+    return g_textureManager().getTexture(iter->second);
+  }
+  
+}
+
+void 
+BaseMaterial::draw() {
+  auto& GAPI = g_graphicsAPI();
+  auto& shadeManager = g_shaderManager();
+  auto& texManager = g_textureManager();
+
+  if(m_shader.shaderID != UID::ZERO) {
+    shadeManager.setDataToShader(m_shader);
+  }
+
+  GAPI.setShaderResource(0, getTexture(TEXTURE_TYPE::kAlbedo));
+  
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
 
 
 PBRMaterial::PBRMaterial() {
-  m_normalTexture = make_shared<Texture>();
-  m_roughnessTexture = make_shared<Texture>();
-  m_metalicTexture = make_shared<Texture>();
 
-  setAlbedo("Models/DefaultTexture.png");
-  setRoughnessTexture("Models/DefaultTexture.png");
-  setMetalicTexture("Models/DefaultTexture.png");
-  setNormalTexture("Models/DefaultNormal.png");
+  auto& texManager = g_textureManager();
+
+  setTexture(texManager.getDefaultTexture(), TEXTURE_TYPE::kAlbedo);
+  setTexture(texManager.getDefaultTexture(), TEXTURE_TYPE::kRoughness);
+  setTexture(texManager.getDefaultTexture(), TEXTURE_TYPE::kMetallic);
+  setTexture(texManager.getDefaultNormalTexture(), TEXTURE_TYPE::kNormal);
 
   m_albedoColor = {1.f, 1.f, 1.f};
   m_emissiveColor = {0.f, 0.f, 0.f};
@@ -49,54 +80,19 @@ PBRMaterial::PBRMaterial() {
 }
 
 void
-PBRMaterial::setNormalTexture(const Path& inPath) {
-  if(inPath.empty()) {
-    return;
-  }
-  Image tmpNormal;
-  tmpNormal.decode(inPath);
-  m_normalTexture->createFromImage(tmpNormal);
-}
-
-void
-PBRMaterial::setRoughnessTexture(const Path& inPath) {
-  if(inPath.empty()) {
-    return;
-  }
-  Image tmpRoughness;
-  tmpRoughness.decode(inPath);
-  m_roughnessTexture->createFromImage(tmpRoughness);
-}
-
-void
-PBRMaterial::setMetalicTexture(const Path& inPath) {
-  if(inPath.empty()) {
-    return;
-  }
-  Image tmpMetalic;
-  tmpMetalic.decode(inPath);
-  m_metalicTexture->createFromImage(tmpMetalic);
-}
-
-void
 PBRMaterial::draw() {
   auto& GAPI = g_graphicsAPI();
-  
+  auto& texManager = g_textureManager();
   auto& shadeManager = g_shaderManager();
+
 
   if(m_shader.shaderID != UID::ZERO) {
     shadeManager.setDataToShader(m_shader);
   }
   
-  GAPI.setShaderResource(0, m_albedo);
+  GAPI.setShaderResource(0, getTexture(TEXTURE_TYPE::kAlbedo));
+  GAPI.setShaderResource(1, getTexture(TEXTURE_TYPE::kNormal));
+  GAPI.setShaderResource(2, getTexture(TEXTURE_TYPE::kRoughness));
+  GAPI.setShaderResource(3, getTexture(TEXTURE_TYPE::kMetallic));
 
-  if(m_normalTexture) {
-    GAPI.setShaderResource(1, m_normalTexture);
-  }
-  if(m_roughnessTexture) {
-    GAPI.setShaderResource(2, m_roughnessTexture);
-  }
-  if(m_metalicTexture) {
-    GAPI.setShaderResource(3, m_metalicTexture);
-  }
 }

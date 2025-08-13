@@ -48,20 +48,26 @@ Image::decode(Path inFilePath) {
   comp = 4;
 
   //Save the information of the readed data.
-  //uint8 tmpData = (uint8)inFileData.m_data.c_str();
-
+  fsys::absolute(inFilePath);
   //Get the information of the image loadead.
-  m_pixels = stbi_load(inFilePath.string().c_str(),
+  uint8* tmpImg  = stbi_load(inFilePath.string().c_str(),
                             &w,
                             &h,
                             &comp, 4);
+  if (tmpImg == nullptr) {
+    ConsoleOut << "Texture not found: " << inFilePath << ConsoleLine;
+    return;
+  }
   m_width = w;
   m_height = h;
   m_bpp = comp << 3;
-  //m_pixels = tmpImg;
+
+  m_pixels.resize(w * h * 4);
+
+  memcpy(&m_pixels[0], tmpImg, w * h * 4);
 
   //Unload Data
-  //stbi_image_free(tmpImg);
+  stbi_image_free(tmpImg);
 
 }
 

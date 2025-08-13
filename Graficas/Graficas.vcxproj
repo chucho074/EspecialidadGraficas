@@ -167,12 +167,14 @@
     <ClCompile Include="src\Source.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\giTime.cpp" />
+    <ClCompile Include="src\TextureManager.cpp" />
     <ClCompile Include="src\Transform.cpp" />
     <ClCompile Include="src\UUID.cpp" />
     <ClCompile Include="src\Vectors.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Actor.h" />
+    <ClInclude Include="include\AssetManager.h" />
     <ClInclude Include="include\Buffers.h" />
     <ClInclude Include="include\Camera.h" />
     <ClInclude Include="include\Degrees.h" />
@@ -197,6 +199,7 @@
     <ClInclude Include="include\stdHeaders.h" />
     <ClInclude Include="include\Texture.h" />
     <ClInclude Include="include\giTime.h" />
+    <ClInclude Include="include\TextureManager.h" />
     <ClInclude Include="include\Timer.h" />
     <ClInclude Include="include\Transform.h" />
     <ClInclude Include="include\UUID.h" />
