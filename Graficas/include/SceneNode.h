@@ -26,7 +26,6 @@ class SceneNode : public Object {
   template<typename T, typename... Args>
   static SPtr<T> 
   createSceneObject(Args&&... args);
-
   
   Vector<SPtr<SceneNode>> m_children;
 

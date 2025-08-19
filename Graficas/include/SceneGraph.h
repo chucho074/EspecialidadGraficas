@@ -16,34 +16,46 @@
 #include "mathObjects.h"
 #include "Camera.h"
 
+
 class SceneGraph {
  public:
   SceneGraph() = default;
   ~SceneGraph() = default;
 
+  /**
+   * @brief      Initialize the information of the scene graph.
+   */
   void
   init();
 
+  /**
+   * @brief      Update the actors in scene.
+   * @param      inDeltaTime   The delta time to update the information.
+   */
   void
-  update(float inDT);
+  update(float inDeltaTime);
 
+  /**
+   * @brief      Draw the information inside the scene Graph.
+   * @param      inWithMaterial  If the scene graph can be draw without materials.
+   */
   void 
   draw(bool inWithMaterial = false);
 
   /**
-   * @brief      .
-   * @param      inParent      .
+   * @brief      Creates and spawns an actor in scene.
+   * @param      inParent      The parent to attatch the new actor.
    * @param      args          The rest of the arguments for the templates.
-   * @return     .
+   * @return     A pointer to the new actor.
    */
   template <typename T, typename... Args>
   SPtr<Actor>
   spawnActor(const SPtr<SceneNode>& inParent, Args&&... args);
 
   /**
-   * @brief    Adds an actor to the list.
-   * @param    inActor       The actor reference to add.
-   * @param    inParent      The parent to atatch the actor.
+   * @brief      Adds an actor to the list.
+   * @param      inActor       The actor reference to add.
+   * @param      inParent      The parent to atatch the actor.
    */
   void
   addActor(const SPtr<Actor>& inActor,
@@ -53,35 +65,43 @@ class SceneGraph {
   removeActor(SPtr<Actor> inActor);
   
   /**
-   * @brief    Obtain the actor childs of the root.
-   * @return   Returns the list of the actors who there parent is the root.
+   * @brief      Obtain the actor childs of the root.
+   * @return     Returns the list of the actors who there parent is the root.
    */
   Vector<SPtr<Actor>>&
   getActorsFromRoot();
  
   /**
-   * @brief    Gets a list of actors by the parent.
-   * @param    inParent      The reference of the parent to search.
+   * @brief      Gets a list of actors by the parent.
+   * @param      inParent      The reference of the parent to search.
    */
   List<SPtr<SceneNode>>&
   getNodesByParent(WPtr<SceneNode> inParent);
 
   /**
-   * @brief    Gets the root of the scene.
-   * @return   Returns the root of the scene.
+   * @brief      Gets the root of the scene.
+   * @return     Returns the root of the scene.
    */
   SPtr<SceneNode>
   getRoot();
 
   /**
-   * @brief    Delete that actor, asign the childs to the parent.
+   * @brief      Delete that actor, asign the childs to the parent.
    */
   void
   deleteActor(const SPtr<Actor>& inActor);
 
+  /**
+   * @brief      .
+   * @param      inActor       .
+   */
+  void
+  setSelectedActor(SPtr<Actor>& inActor) {
+    
+  };
 
   /**
-   * @brief    Clears the list of actors of the Graph.
+   * @brief      Clears the list of actors of the Graph.
    */
   void
   clearGraph();
@@ -89,34 +109,36 @@ class SceneGraph {
  private:
 
   /**
-   * @brief    The root of the Scene.
+   * @brief      The root of the Scene.
    */
   SPtr<Actor> m_root;
 
   /**
-   * @brief 
+   * @brief      The list of actors in scene.
    */
   Vector<SPtr<Actor>> m_actors;
 
  public:
    
   /**
-   * @brief    The name of the active Scene Graph.
+   * @brief      The name of the active Scene Graph.
    */
   String m_sceneName = "Untitled scene";
 
   /**
-   * @brief    The ID of the scene.
+   * @brief      The ID of the scene.
    */
   UID m_sceneID;
 
   /**
-   * @brief    The number of the actors.
+   * @brief      The number of the actors.
    */
   uint32 m_numActors;
 
+  /**
+   * @brief      The camera used in the scene.
+   */
   SPtr<EditorCamera> m_editorCamera;
-
 
 };
 
@@ -137,5 +159,6 @@ SceneGraph::spawnActor(const SPtr<SceneNode>& inParent, Args&&... args) {
   else {
     m_root->addChild(outActor);
   }
+  m_numActors++;
   return outActor;
 }

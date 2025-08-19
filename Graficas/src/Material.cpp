@@ -70,6 +70,7 @@ PBRMaterial::PBRMaterial() {
 
   m_albedoColor = {1.f, 1.f, 1.f};
   m_emissiveColor = {0.f, 0.f, 0.f};
+  m_diffuse = 0.5f;
   m_metalic = 0.5f;
   m_roughness = 0.5f;
   m_ambientOclussion = 0.5f;

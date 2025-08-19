@@ -44,6 +44,9 @@ class Model
   void
   computeTangentSpace();
 
+  void
+  computeNormals();
+
   bool 
   loadFromMem(const Vector<SimpleVertex>& inVertexData,
               const Vector<uint32>& inIndexData);

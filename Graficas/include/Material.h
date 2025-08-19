@@ -32,6 +32,8 @@ namespace TEXTURE_TYPE {
   };
 }
 
+
+
 class BaseMaterial {
  public:
   BaseMaterial() = default;
@@ -120,6 +122,7 @@ class PBRMaterial : public BaseMaterial {
  protected:
   
   Vector3 m_emissiveColor    = Vector3::ZERO;
+  float   m_diffuse          = 0.f;
   float   m_metalic          = 0.f;
   float   m_roughness        = 0.f;
   float   m_ambientOclussion = 0.f;

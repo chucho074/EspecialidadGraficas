@@ -84,4 +84,8 @@ class Actor : public SceneNode {
 
 
   Transform m_transform;
+
+  String m_name = "Actor";
+
+  bool isActive = true;
 };

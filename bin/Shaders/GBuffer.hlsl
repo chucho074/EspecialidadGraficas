@@ -69,12 +69,11 @@ PixelInput gbuffer_vertex_main(VertexInput Input) {
   
   output.position = float4(Input.position, 1.0f);
   output.position = mul(output.position, World);
-  output.posWorld = output.position.xyz; // Guardar la posición en el mundo
+  output.posWorld = output.position.xyz; // Guardar la posiciï¿½n en el mundo
   output.position = mul(output.position, View);
-  output.position = mul(output.position, Projection); //Ahora es posición de clip
+  output.position = mul(output.position, Projection); //Ahora es posiciï¿½n de clip
   
   output.normal = normalize(mul(Input.normal, (float3x3) World).xyz);
-  output.normal = output.normal * 0.5f + 0.5f;
   output.tangent = normalize(mul(Input.tangent, (float3x3) World).xyz);
   output.bitangent = -cross(output.normal, output.tangent); //para las normales invertidas
   //output.bitangent = cross(output.normal, output.tangent);
@@ -98,6 +97,11 @@ GBuffer gbuffer_pixel_main(PixelInput Input) {
   
   Output.position = float4(Input.posWorld, metallic);
   Output.normal = float4(normalize(normal.xyz * 0.5f + 0.5f), roughness);
+  
+  
+  //Output.position = float4(Input.posWorld, 1.f);
+  //Output.normal = float4(normal.xyz * 0.5f + 0.5f, 1.f);
+  //Output.normal = float4(Input.normal.xyz * 0.5f + 0.5f, 0.04f);
   Output.color = diffColor;
   
   return Output;
