@@ -320,8 +320,9 @@ class ShaderManager : public Module<ShaderManager> {
     m_pRS_Wireframe_NoCull = gapi.createRasterState(descRD);
 
     CD3D11_SAMPLER_DESC descSS(D3D11_DEFAULT);
-    descSS.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-    descSS.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    //Wrap Samplers
+    descSS.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    descSS.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
     descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
     m_pSS_Point = gapi.createSamplerState(descSS);
 
@@ -332,6 +333,34 @@ class ShaderManager : public Module<ShaderManager> {
     descSS.MaxAnisotropy = 16; //Esto es lo que cambiamos en las opciones de los juegos
     m_pSS_Anisotropic = gapi.createSamplerState(descSS);
 
+    //Clamp Samplers
+    descSS = CD3D11_SAMPLER_DESC(D3D11_DEFAULT);
+    descSS.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    descSS.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    m_pSS_PointClamp = gapi.createSamplerState(descSS);
+
+    descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    m_pSS_LinearClamp = gapi.createSamplerState(descSS);
+
+    descSS.Filter = D3D11_FILTER_ANISOTROPIC;
+    descSS.MaxAnisotropy = 16; 
+    m_pSS_AnisoClamp = gapi.createSamplerState(descSS);
+
+    //Mirror Samplers
+    descSS = CD3D11_SAMPLER_DESC(D3D11_DEFAULT);
+    descSS.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+    descSS.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
+    descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    m_pSS_PointMirror = gapi.createSamplerState(descSS);
+
+    descSS.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    m_pSS_LinearMirror = gapi.createSamplerState(descSS);
+
+    descSS.Filter = D3D11_FILTER_ANISOTROPIC;
+    descSS.MaxAnisotropy = 16;
+    m_pSS_AnisoMirror = gapi.createSamplerState(descSS);
+
     m_pCB_WVP = make_shared<GraphicsBuffers>();
 
   }
@@ -341,9 +370,18 @@ class ShaderManager : public Module<ShaderManager> {
     SAFE_RELEASE(m_pRS_Wireframe);
     SAFE_RELEASE(m_pRS_Wireframe_NoCull);
     SAFE_RELEASE(m_pRS_CullFront);
+
     SAFE_RELEASE(m_pSS_Point);
     SAFE_RELEASE(m_pSS_Linear);
     SAFE_RELEASE(m_pSS_Anisotropic);
+
+    SAFE_RELEASE(m_pSS_PointClamp);
+    SAFE_RELEASE(m_pSS_LinearClamp);
+    SAFE_RELEASE(m_pSS_AnisoClamp);
+
+    SAFE_RELEASE(m_pSS_PointMirror);
+    SAFE_RELEASE(m_pSS_LinearMirror);
+    SAFE_RELEASE(m_pSS_AnisoMirror);
   }
   
   /**
@@ -427,6 +465,14 @@ class ShaderManager : public Module<ShaderManager> {
         gapi.setSamplers(0, m_pSS_Point);
         gapi.setSamplers(1, m_pSS_Linear);
         gapi.setSamplers(2, m_pSS_Anisotropic);
+
+        gapi.setSamplers(3, m_pSS_PointClamp);
+        gapi.setSamplers(4, m_pSS_LinearClamp);
+        gapi.setSamplers(5, m_pSS_AnisoClamp);
+
+        gapi.setSamplers(6, m_pSS_PointMirror);
+        gapi.setSamplers(7, m_pSS_LinearMirror);
+        gapi.setSamplers(8, m_pSS_AnisoMirror);
       }
       
       //SetRaster
@@ -535,6 +581,14 @@ class ShaderManager : public Module<ShaderManager> {
   ID3D11SamplerState* m_pSS_Point = nullptr;
   ID3D11SamplerState* m_pSS_Linear = nullptr;
   ID3D11SamplerState* m_pSS_Anisotropic = nullptr;
+
+  ID3D11SamplerState* m_pSS_PointClamp = nullptr;
+  ID3D11SamplerState* m_pSS_LinearClamp = nullptr;
+  ID3D11SamplerState* m_pSS_AnisoClamp = nullptr;
+
+  ID3D11SamplerState* m_pSS_PointMirror = nullptr;
+  ID3D11SamplerState* m_pSS_LinearMirror = nullptr;
+  ID3D11SamplerState* m_pSS_AnisoMirror = nullptr;
 
   ShaderRef m_defaultShader;
 

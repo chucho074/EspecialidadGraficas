@@ -12,6 +12,14 @@ SamplerState samPoint : register(s0);
 SamplerState samLinear : register(s1);
 SamplerState samAniso : register(s2);
 
+SamplerState samPointClamp : register(s3);
+SamplerState samLinearClamp : register(s4);
+SamplerState samAnisoClamp : register(s5);
+
+SamplerState samPointMirror : register(s6);
+SamplerState samLinearMirror : register(s7);
+SamplerState samAnisoMirror : register(s8);
+
 struct PixelInput {
   float4 position : SV_POSITION;
   float2 texCoord : TEXCOORD0;
@@ -256,9 +264,10 @@ pixel_main(PixelInput input) : SV_Target {
   
   colorFinal *= shadowFactor;
   
+  //return float4(input.texCoord, 1.f, 1.f);
   //return float4(shadowSample.xxx, 1.f);
   
-  return color;
+  //return color;
   //return float4(colorFinal, 1.f);
   //return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
   return float4(pow(colorFinal, 1.f / GAMMA), 1.f);

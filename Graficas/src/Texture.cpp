@@ -24,30 +24,11 @@ Texture::createFromFile(Path inFileName/*,
                         bool inCreateRTV = false, 
                         bool inCreateDSV = false, 
                         bool inCreateDSV_RO = false*/) {
-  m_image.decode(inFileName);
+  Image tmpImage;
+  tmpImage.decode(inFileName);
 
-  auto& gapi = g_graphicsAPI();
+  createFromImage(tmpImage);
 
-  m_pTexture = gapi.createTexture(m_image.getWidth(),
-                                  m_image.getHeight(),
-                                  (m_image.m_brga) ? DXGI_FORMAT_B8G8R8A8_UNORM
-                                                   : DXGI_FORMAT_R8G8B8A8_UNORM,
-                                  D3D11_USAGE_DEFAULT, 
-                                  D3D11_BIND_SHADER_RESOURCE,
-                                  0, 
-                                  1,
-                                  &m_pSRV);
-
-  if(m_pTexture) {
-    gapi.m_pDeviceContext->UpdateSubresource1(m_pTexture,
-                                              0, 
-                                              nullptr, 
-                                              m_image.getPixels(),
-                                              m_image.getPitch(),
-                                              0, 
-                                              0);
-
-  }
 }
 
 void

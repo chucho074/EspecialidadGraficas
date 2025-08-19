@@ -64,7 +64,8 @@ getTexturePath(Model& inModel,
                aiMaterial* mat,
                aiTextureType type);
 
-String removeDoubleDots(String str) {
+String 
+removeDoubleDots(String str) {
   const String target = "..";
   size_t pos;
   while((pos = str.find(target)) != String::npos) {
@@ -787,7 +788,7 @@ getTexturePath(Model& inModel,
                aiTextureType type) {
   Path outPath;  
 
-  bool noTexture = true;
+  bool hasTexture = true;
   //Get the number of textures in assimp in the material.
   int32 texCount = mat->GetTextureCount(type);
   
@@ -795,29 +796,33 @@ getTexturePath(Model& inModel,
   if(type == aiTextureType_NORMALS && 0 == texCount) {
     type = aiTextureType_HEIGHT;
   }
-
+  // Verify if the material has any texture.
   for(uint32 i = 0; i < texCount; i++) {
-    noTexture = false;
+    hasTexture = false;
     aiString str;
-    mat->GetTexture(type, i, &str);
+    mat->GetTexture(type, i, &str); // Gets the texture path 
 
     String tmpTextureName = str.C_Str();
-    //Get just the name of the texture.
-    Path tmpParent = inModel.m_path.parent_path();
-    Path tmpAbsPath = getAbsolutePath(tmpParent);
-    tmpAbsPath.replace_filename("");
-    tmpTextureName = removeDoubleDots(tmpTextureName);
-    Path tmpCompleteAbs = getAbsolutePath(tmpAbsPath.string()+tmpTextureName);
-    tmpCompleteAbs = tmpCompleteAbs.lexically_normal();
-    outPath = tmpAbsPath.string() + tmpTextureName;
+    
+    // If the texture has 2 dots, verify in the parent path.
+    if (tmpTextureName.find("..") != String::npos) {
+      //Get just the name of the texture.
+      Path tmpAbsPath = getAbsolutePath(inModel.m_path.parent_path());
+      tmpAbsPath.replace_filename("");
+      String pathWithoutDots = removeDoubleDots(tmpTextureName);
+      outPath = tmpAbsPath.string() + pathWithoutDots;
+    }
+    else { 
+      // Obtain from the same folder as the model.
+      Path tmpPath = getAbsolutePath(inModel.m_path.parent_path());
+      outPath = tmpPath.string() + "/" + tmpTextureName;
+    }
 
   }
   
-  if(noTexture) {
+  if(hasTexture) {
     return "";
   }
-
-
   //__debugbreak();
   return outPath;
 }

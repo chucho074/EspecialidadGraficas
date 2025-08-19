@@ -31,7 +31,7 @@
 #include <imgui_impl_win32.cpp>
 #include <imgui_impl_dx11.cpp>
 
-Vector2 g_windowSize = {1280 , 720};
+Vector2i g_windowSize = {1280 , 720};
 
 SPtr<SceneGraph> g_pSceneGraph;
 
@@ -175,12 +175,15 @@ void renderUI() {
       ImGui::SameLine();
       ImGui::DragFloat3("YawPitchRoll", &g_shadowCamera->m_YPR.x);
 
-      ImGui::Separator(); // Delta Time
-      {
-        ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
-      }
+      
     }
+    ImGui::Separator(); // Delta Time
+    {
+      ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
 
+      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    }
   }
   ImGui::End();
 }
@@ -688,7 +691,7 @@ SDL_AppIterate(void* appstate) {
 
     g_pGAPI->setRenderTargets(3, rt, g_dsShadowMap);
 
-    g_pSceneGraph->draw(false);
+    //g_pSceneGraph->draw(false);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Draw in GBuffer
