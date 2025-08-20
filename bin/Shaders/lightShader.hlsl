@@ -215,7 +215,9 @@ pixel_main(PixelInput input) : SV_Target {
   float4 gBuffer2 = gbuffer_Color.Sample(samPoint, input.texCoord);
   float3 color = gBuffer2.rgb;
   float  stencil = gBuffer2.a;
+  
   clip(stencil < 1.f ? -1 : 1); // Stencil
+  
   //AO
   //float4 ao = gbuffer_AO.Sample(samPoint, input.texCoord);
   //normal = normal * 0.5f + 0.5f;
@@ -302,6 +304,8 @@ pixel_main(PixelInput input) : SV_Target {
   //}
   
   //colorFinal *= lightColor * lightIntensity * attenuation;
+  
+  //return float4(color, 1.f);
   
   //return float4(colorFinal, 1.f);
   //return float4(pow(colorFinal, 1.f / GAMMA), 1.f);

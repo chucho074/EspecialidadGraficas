@@ -632,7 +632,7 @@ processMesh(Model& inModel,
         vertex.tangent.z = 0.0f;
       }
       //Bitangentes
-      /*if (mesh->mBitangents) {
+      /*if(mesh->mBitangents) {
         vertex.binormals.x = mesh->mBitangents[i].x;
         vertex.binormals.y = mesh->mBitangents[i].y;
         vertex.binormals.z = mesh->mBitangents[i].z;
@@ -654,7 +654,6 @@ processMesh(Model& inModel,
   }
 
   if (saveMat) {
-
     // Process material
     if(mesh->mMaterialIndex >= 0) {
       aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];

@@ -252,13 +252,7 @@ void renderUI() {
       ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
-    ImGui::Separator(); // Delta Time
-    {
-      ImGui::Text("Delta Time: %.6f ms", g_appTime.getTime());
-
-      ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
-                  1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    }
+    
   }
   ImGui::End();
 }
@@ -353,8 +347,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     g_WVP.view = cameraRef->getViewMatrix();
     g_WVP.projection = cameraRef->getProjectionMatrix();
 
-  g_WVP.viewPos = cameraRef->getPosition();
-  g_WVP.time = 1.f;
+    g_WVP.viewPos = cameraRef->getPosition();
+    g_WVP.time = 1.f;
 
     g_WVP.lightIntensity = 1.f;
     g_WVP.lightRadius = 250.f;
@@ -771,7 +765,7 @@ SDL_AppIterate(void* appstate) {
 
     g_pGAPI->setRenderTargets(3, rt, g_dsShadowMap);
 
-    //g_pSceneGraph->draw(false);
+    g_pSceneGraph->draw(false);
   }
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Draw in GBuffer
@@ -842,7 +836,7 @@ SDL_AppIterate(void* appstate) {
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Present
 
-  g_pGAPI->m_pSwapChain->Present(1, 0);
+  g_pGAPI->m_pSwapChain->Present(0, 0);
 
   return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
