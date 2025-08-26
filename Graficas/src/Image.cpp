@@ -62,7 +62,7 @@ Image::decode(Path inFilePath) {
   }
   m_width = w;
   m_height = h;
-  m_bpp = 4 << 3; //32 pa 100pre
+  m_bpp = 4 << 3; //32 100pre
 
   m_pixels.resize(w * h * 4);
 

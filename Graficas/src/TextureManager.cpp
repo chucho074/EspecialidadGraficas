@@ -27,7 +27,7 @@ TextureManager::loadTexture(const Path& inFilePath) {
   
   if(inFilePath.empty()) {
     //ConsoleOut << "The filePath was empty when trying to load a texture" << ConsoleLine;
-    return m_defaultTexture;
+    return TextureRef();
   }
 
   auto& gapi = g_graphicsAPI();

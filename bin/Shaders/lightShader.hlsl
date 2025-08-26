@@ -121,12 +121,7 @@ float GeometrySmith(float NdotL, float NdotV, float alpha) {
 float3 LambertianDiffuse(float3 normal, float3 lightDir, float3 diffuseColor) {
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
-  //float NdotL = dot(normal, lightDir);
-
-  
-  return diffuseColor * NdotL;
-  return NdotL;
-  return normal;
+  return diffuseColor * (NdotL * 2);
 }
 
 float3
@@ -143,7 +138,7 @@ BRDF_Blinn_Phong(float3 normal,
   float NdotV = max(dot(normal, viewDir), 0.0f);
   float HdotV = max(dot(reflectDir, viewDir), 0.0f);
   
-  float specular = pow(HdotV, 32.0f); // El 32 es el specular power
+  float specular = pow(HdotV, 32.0f); // El 32 es el specular power, cambiar a variable
   
   return diffuse;
   return diffuse + specular * specularColor;
@@ -188,7 +183,7 @@ float4 GetPosition(float2 uv) {
 }
 
 float4 GetNormal(float2 uv) {
-  float4 normal = gbuffer_Normal.Sample(samPoint, uv);
+  float4 normal = gbuffer_Normal.Sample(samAniso, uv);
   normal.xyz = normal.xyz * 2.f - 1.f;
   return normal;
 }
@@ -199,6 +194,11 @@ float2 GetRandom(float2 uv) {
   float noiseZ = frac(sin(dot(uv.xy, float2(13.3232f, 63.123f) * 3.f)) * 59998.5736f);
   
   return normalize(float3(noiseX, noiseY, noiseZ));
+}
+
+float3 lambert(float3 inNormal, float3 inLightDir) {
+  float NdL = max(dot(inNormal, inLightDir), 0.0f);
+  return NdL * 2;
 }
 
 float4
@@ -212,105 +212,57 @@ pixel_main(PixelInput input) : SV_Target {
   float3 normal = gBuffer1.xyz;
   float  roughness = gBuffer1.a;
   //Albedo
-  float4 gBuffer2 = gbuffer_Color.Sample(samPoint, input.texCoord);
-  float3 color = gBuffer2.rgb;
+  float4 gBuffer2 = gbuffer_Color.Sample(samAniso, input.texCoord);
+  float3 color = pow(gBuffer2.rgb, 2.4f);
   float  stencil = gBuffer2.a;
   
   clip(stencil < 1.f ? -1 : 1); // Stencil
   
-  //AO
-  //float4 ao = gbuffer_AO.Sample(samPoint, input.texCoord);
-  //normal = normal * 0.5f + 0.5f;
+  //float3 lightDir = normalize(-lightPosition);
+  float3 lightDir = normalize(lightPosition);
+  float3 viewDir = normalize(ViewPos - position.xyz);
   
-  //Light position
-  //float3 lightPos = float3(65, 35, 5000);
+  color *= lambert(normal, lightDir);
+  //color = LambertianDiffuse(normal, lightDir, color);
   
-  //Shadows
-  float4 lightVP = mul(float4(position, 1.f), lightView);
-  lightVP = mul(lightVP, lightProjection);
-  lightVP /= lightVP.w;
-  lightVP.xy = lightVP.xy * 0.5f + 0.5f; //Convert to NDC
-  
-  lightVP.y = 1.f - lightVP.y;
-  /////////////////////////////////////////////////////////////////////////////
-  
-  //Rotate light position by time
-  //float cosTime = cos(time);
-  //float sinTime = sin(time);
-
-  //float3x3 rotationMatrix = float3x3(cosTime, 0.f, sinTime,
-  //                                   0.f, 1.f, 0.f,
-  //                                   -sinTime, 0.f, cosTime);
-
-  //float3 rotatedLightPos = mul(lightPos, rotationMatrix);
-  float3 rotatedLightPos = lightPosition;
-  //float3 rotatedLightPos = float3(-600, 5, 0);
-  
-  //Directional Light
-  float3 lightDir = rotatedLightPos - position;
-  
-  //Testing
-  //Sacar la magnitud
-  float distance = length(lightDir); 
-  lightDir /= distance;
-  
-  //float attenuation = saturate(1.0 - distance / lightRadius);
-  //float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
-  
-  float d = distance / lightRadius; // normalizar por radio
-  float attenuation = 1.0f;
-  //float attenuation = 1.0 / (1.0 + 0.1 * d + 0.01 * d * d);
-  //attenuation *= saturate(1.0 - d); // corta fuera del radio
-  
-  float3 specularColor = lerp(0.04f, color, metallic);
-  
-  float3 viewDir = normalize(ViewPos - position);
   float3 halfVec = normalize(lightDir + viewDir);
   float3 reflectDir = reflect(-lightDir, normal);
+  float3 H = normalize(lightDir + viewDir);
+  float VdR = max(dot(reflectDir, viewDir), 0.f);
+  float HdN = max(dot(H, normal), 0.f);
+  float specular = pow(HdN, 38);
   
+  if (false) {
+  /*
   float3 colorFinal = BRDF_Cook_Torrance(normal,
                                          lightDir,
                                          viewDir,
                                          reflectDir,
                                          color,
                                          specularColor,
-                                         roughness);
+                                         roughness);*/
   
   /*
-  float3 colorFinal = BRDF_Blinn_Phong(normal,
-                                       lightDir,
-                                       viewDir,
-                                       halfVec,
-                                       //normalize(reflect(-lightDir, normal.xyz)),
-                                       color,
-                                       specularColor);
-  */
+  float3 specular = BRDF_Blinn_Phong(normal,
+                                     lightDir,
+                                     viewDir,
+                                     reflectDir,
+                                     //halfVec,
+                                     color,
+                                     specularColor);*/
+  }
   
-  //float4 shadowSample = shadowMap.Sample(samPoint, lightVP.xy);
-  //float shadowDepth = shadowSample.x;
-  //float lightDepth = lightVP.z - 0.005; //BIAS HERE
-  //float shadowFactor = 0.f;
+  float3 ambient = 0.3f * color;
   
-  //if (lightDepth > shadowDepth) {
-  //  shadowFactor = 0.f;
-  //}
-  //else {
-  //  shadowFactor = 1.f;
-  //}
+  float3 colorFinal = pow(color + ambient + specular, 1.f/2.4f);
+  //float3 colorFinal = pow(color + ambient, 1.f/2.4f);
   
-  //if (lightVP.x < 0.01f || lightVP.x > 0.99f ||
-  //    lightVP.y < 0.01f || lightVP.y > 0.99f) {
-  //  shadowFactor = 1.f;
-  //}
+  //return float4(position, 1.f);
   
-  //colorFinal *= lightColor * lightIntensity * attenuation;
+  //return float4(normal, 1.f);
   
-  //return float4(color, 1.f);
-  
-  //return float4(colorFinal, 1.f);
+  return float4(colorFinal, 1.f);
   //return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
-  return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
-  //return float4(pow(colorFinal * ao.xyz, 1.f / GAMMA), 1.f);
 }
 
 float

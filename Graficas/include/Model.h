@@ -55,6 +55,9 @@ class Model
   createBuffers();
 
   void
+  createSphere(int32 inNumTriangles);
+
+  void
   setBuffers();
 
   void

@@ -17,6 +17,8 @@
 #include "GraphicsAPI.h"
 #include "ShaderManager.h"
 
+#define MIN_SPHERE_SECTOR 3
+#define MIN_SPHERE_STACK 2
 
 struct FaceVertex {
   int32 vertex_index = -1;
@@ -188,8 +190,8 @@ Model::loadFromFile(const Path& inPath) {
   mesh.topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
   //Compute tangents
-  computeNormals();
-  computeTangentSpace();
+  //computeNormals();
+  //computeTangentSpace();
 
   //Create the buffers
   if(!createBuffers()) {
@@ -230,9 +232,9 @@ Model::loadFromAssimp(const Path& inPath) {
 
   processNode(*this, tmpScene->mRootNode, tmpScene, true);
 
-
   //Compute tangents
-  computeTangentSpace();
+  //computeNormals();
+  //computeTangentSpace();
 
   //Create the buffers
   if(!createBuffers()) {
@@ -273,7 +275,7 @@ Model::loadFromBin(const Path& inPath) {
   // Close the file
   objFile.close();
 
-  computeNormals();
+  //computeNormals();
 
   //Create the buffers
   if(!createBuffers()) {
@@ -425,7 +427,6 @@ Model::loadFromMem(const Vector<SimpleVertex>& inVertexData,
 
   auto& GAPI = g_graphicsAPI();
 
-
   m_meshes.resize(1);
   auto& mesh = m_meshes[0];
   mesh.baseVertex = 0;
@@ -485,6 +486,140 @@ Model::createBuffers() {
     __debugbreak();
     return false;
   }
+}
+
+void 
+Model::createSphere(int32 inNumTriangles) {
+  float radius = 1;
+  uint32 sectors = MIN_SPHERE_SECTOR;
+  for(int32 i = MIN_SPHERE_SECTOR; (((inNumTriangles) % i) == 0); i += 3) {
+    sectors = i;
+  }
+
+  uint32 stacks = ((inNumTriangles) / sectors) / 2;
+
+  uint32 sphereSectors = sectors < MIN_SPHERE_SECTOR ? MIN_SPHERE_SECTOR : sectors;
+  uint32 sphereStacks = stacks < MIN_SPHERE_STACK ? MIN_SPHERE_STACK : stacks;
+
+  float x, y, z, xy;
+  float nx, ny, nz, lengthInv = 1.0f / radius;
+  float s, t;
+
+  float sectorStep = 2 * PI / sphereSectors;
+  float sectorAngle, stackAngle;
+
+  Vector<SimpleVertex> sphereVertices;
+  Vector<uint32> sphereIndices;
+  //Vector<ResourceRef> sphereTextures;
+  SimpleVertex vertex;
+  vertex.tangent = Vector3(1.0f, 1.0f, 1.0f);
+  //vertex.BiNor = Vector3(1.0f, 1.0f, 1.0f);
+
+  sphereVertices.resize((sphereSectors * (sphereStacks - 1)) + 2);
+  int32 tmpIter = 0;
+  tmpIter++;
+
+  //First Vertex data.
+  SimpleVertex tmpVertex;
+  tmpVertex.position = {0, 1, 0};
+  tmpVertex.normal = {0, 1, 0};
+  tmpVertex.u = 0.f;
+  tmpVertex.v = 1.f;
+  sphereVertices[0] = tmpVertex;
+
+  //Vertices
+  for(uint32 i = 0; i < sphereStacks - 1; ++i) {
+    auto phi = PI * double(i + 1) / double(sphereStacks);
+    for(uint32 j = 0; j < sphereSectors; ++j) {
+      sectorAngle = 2.0 * PI * double(j) / double(sphereSectors);
+
+      //Vertex
+      x = sin(phi) * cos(sectorAngle);
+      y = cos(phi);
+      z = sin(phi) * sin(sectorAngle);
+      vertex.position = Vector3(x, y, z);
+      //Normal
+      nx = x * lengthInv;
+      ny = y * lengthInv;
+      nz = z * lengthInv;
+      vertex.normal = Vector3(nx, ny, nz);
+      //Texcoords
+      s = (float)j / sphereSectors;
+      t = (float)i / sphereStacks;
+      Vector2 tmpTex = Vector2(s, t);
+      tmpTex = tmpTex.normalize();
+      vertex.u = s;
+      vertex.v = t;
+      if(tmpIter >= ((sphereSectors * (sphereStacks - 1)) + 2)) {
+        __debugbreak();
+        tmpIter = tmpIter - 1;
+        break;
+      }
+      else {
+        sphereVertices[tmpIter] = vertex;
+        tmpIter++;
+      }
+    }
+  }
+  //Last vertex data.
+  tmpVertex.position = {0, -1, 0};
+  tmpVertex.normal = {0, -1, 0};
+  tmpVertex.u = 0.5f;
+  tmpVertex.v = 0.5f;
+  sphereVertices[tmpIter] = tmpVertex;
+
+  //Indices
+
+  //Triangles with the first Vertex.
+  for(int32 i = 0; i < sphereSectors; ++i) {
+    auto i0 = i + 1;
+    auto i1 = (i + 1) % sphereSectors + 1;
+    sphereIndices.push_back(0);
+    sphereIndices.push_back(i0);
+    sphereIndices.push_back(i1);
+    i0 = i + sphereSectors * (sphereStacks - 2) + 1;
+    i1 = (i + 1) % sphereSectors + sphereSectors * (sphereStacks - 2) + 1;
+    sphereIndices.push_back(tmpIter);
+    sphereIndices.push_back(i0);
+    sphereIndices.push_back(i1);
+  }
+
+  //Middle triangles
+  for(int32 i = 0; i < sphereStacks - 2; ++i) {
+    auto i0 = i * sphereSectors + 1;
+    auto i1 = (i + 1) * sphereSectors + 1;
+    for(int32 j = 0; j < sphereSectors; ++j) {
+      auto j0 = i0 + j;
+      auto j1 = i0 + (j + 1) % sphereSectors;
+      auto j2 = i1 + (j + 1) % sphereSectors;
+      auto j3 = i1 + j;
+      sphereIndices.push_back(j0);
+      sphereIndices.push_back(j1);
+      sphereIndices.push_back(j2);
+
+      sphereIndices.push_back(j0);
+      sphereIndices.push_back(j2);
+      sphereIndices.push_back(j3);
+
+    }
+  }
+
+  /*sphereTextures.push_back(m_missingTextureRef);
+  Vector<SharedPtr<Mesh>> tmpMeshes;
+  tmpMeshes.reserve(1);
+  auto tmpMesh = make_shared<Mesh>(sphereVertices, sphereIndices, sphereTextures);
+  tmpMeshes.emplace(tmpMeshes.end(), tmpMesh);
+
+  Vector<ResourceRef> tmpMaterials;
+  tmpMaterials.reserve(1);
+  tmpMaterials.emplace(tmpMaterials.end(), m_missingTextureRef);*/
+
+  loadFromMem(sphereVertices, sphereIndices);
+  m_meshes[0].meshMaterial.setShaderRef(g_shaderManager().getDefaultShader());
+  //m_meshes[0].meshMaterial.setTexture(,TEXTURE_TYPE::kAlbedo);
+
+
+  //return tmpRef;
 }
 
 void 
@@ -661,36 +796,54 @@ processMesh(Model& inModel,
       TextureRef tmpAlbedo = texManager.loadTexture(getTexturePath(inModel, 
                                                                    material, 
                                                                    aiTextureType_DIFFUSE));
-
-      outMesh.meshMaterial.setTexture(tmpAlbedo,
-                                      TEXTURE_TYPE::kAlbedo);
-
-      ////For assimp, evaluates if the information is on normals or heights variables.
-     
+      if(tmpAlbedo) {
+        outMesh.meshMaterial.setTexture(tmpAlbedo,
+                                        TEXTURE_TYPE::kAlbedo);
+      }
+      else {
+        outMesh.meshMaterial.setTexture(texManager.getDefaultTexture(),
+                                        TEXTURE_TYPE::kAlbedo);
+      }
+           
       ////To change for the creation of the textures in the resource Manager.
       TextureRef tmpNormals = texManager.loadTexture(getTexturePath(inModel,
                                                                     material,
                                                                     aiTextureType_NORMALS));
                                                                     //aiTextureType_HEIGHT));
-      outMesh.meshMaterial.setTexture(tmpNormals,
-                                      TEXTURE_TYPE::kNormal);
+      if(tmpNormals) {
+        outMesh.meshMaterial.setTexture(tmpNormals,
+                                        TEXTURE_TYPE::kNormal);
+      }
+      else {
+        outMesh.meshMaterial.setTexture(texManager.getDefaultNormalTexture(),
+                                        TEXTURE_TYPE::kNormal);
+      }
 
       ////To change for the creation of the textures in the resource Manager.
       TextureRef tmpSpecular = texManager.loadTexture(getTexturePath(inModel,
                                                                      material, 
                                                                      aiTextureType_SPECULAR));
-
-      outMesh.meshMaterial.setTexture(tmpSpecular,
-                                      TEXTURE_TYPE::kSpecular);
-
+      if(tmpSpecular) {
+        outMesh.meshMaterial.setTexture(tmpSpecular,
+                                        TEXTURE_TYPE::kSpecular);
+      }
+      else {
+        outMesh.meshMaterial.setTexture(texManager.getDefaultTexture(),
+                                        TEXTURE_TYPE::kSpecular);
+      }
 
       ////To change for the creation of the textures in the resource Manager.
       TextureRef tmpMetallic = texManager.loadTexture(getTexturePath(inModel,
                                                                      material,
                                                                      aiTextureType_SHININESS));
-      outMesh.meshMaterial.setTexture(tmpMetallic,
-                                      TEXTURE_TYPE::kMetallic);
-
+      if(tmpMetallic) {
+        outMesh.meshMaterial.setTexture(tmpMetallic,
+                                        TEXTURE_TYPE::kMetallic);
+      }
+      else {
+        outMesh.meshMaterial.setTexture(texManager.getDefaultTexture(),
+                                        TEXTURE_TYPE::kMetallic);
+      }
     }
   }
 
@@ -830,11 +983,12 @@ getTexturePath(Model& inModel,
   bool hasTexture = true;
   //Get the number of textures in assimp in the material.
   int32 texCount = mat->GetTextureCount(type);
-  
-  //Evaluate if is searching for normals and try heights if there is no normals available.
-  if(type == aiTextureType_NORMALS && 0 == texCount) {
+
+  if(type == aiTextureType_NORMALS && 0 == mat->GetTextureCount(type)) {
     type = aiTextureType_HEIGHT;
+    texCount = mat->GetTextureCount(type);
   }
+
   // Verify if the material has any texture.
   for(uint32 i = 0; i < texCount; i++) {
     hasTexture = false;

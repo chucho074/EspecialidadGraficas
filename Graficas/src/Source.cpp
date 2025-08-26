@@ -52,6 +52,7 @@ SPtr<Camera> g_shadowCamera;
 
 SPtr<Prop> g_pDinoActor;
 SPtr<Prop> g_pTerrainActor;
+SPtr<Prop> g_pLightActor;
 
 SPtr<Texture> g_rtReflection;
 SPtr<Texture> g_dsReflection;
@@ -358,7 +359,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     g_shadowCamera->setLookAt(Vector3(-10, 5, 0), Vector3(0, 0, 0), Vector3(0, 1, 0));
     //g_shadowCamera->setLookAt(Vector3(-65, 35, 50), Vector3(0, 0, 0), Vector3(0, 1, 0));
     //g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
-    g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.1f, 500.f);  //Testing
+    g_shadowCamera->setOrthographic(-5.f,   5.f,   -5.f,   5.f,   0.01f, 10000.f);  //Testing
     //g_shadowCamera->setPerspectiveHalf(3.1415926353f / 4.f, g_windowSize, 0.1f, 1000.f);
 
     g_WVP.lightView = g_shadowCamera->getViewMatrix();
@@ -396,6 +397,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
   
   
+  //if(!g_pDinoActor->m_model.loadFromFile("Models/Rex/Rex.gltf")) {
   if(!g_pDinoActor->m_model.loadFromFile("Models/Rex/Rex_mat.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/bistro/Exterior/exterior.obj")) {
   //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
@@ -435,6 +437,13 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   g_dsReflection = make_shared<Texture>();
   g_dsShadowMap = make_shared<Texture>();
 
+  ////////////////////////////////////////////////////////////////////////////////////////////  Light reference
+
+  g_pLightActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
+                                                                           g_shadowCamera->getPosition(), 
+                                                                           Vector3(1, 1, 1)));
+
+  g_pLightActor->m_model.createSphere(50);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Reflect Tex
   
@@ -451,7 +460,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   g_dsReflection->m_pTexture = g_pGAPI->createTexture(g_windowSize.x, 
                                                       g_windowSize.y,
-                                                      DXGI_FORMAT_D24_UNORM_S8_UINT,
+                                                      //DXGI_FORMAT_D24_UNORM_S8_UINT,
+                                                      DXGI_FORMAT_R32G32B32A32_FLOAT,
                                                       D3D11_USAGE_DEFAULT,
                                                       D3D11_BIND_DEPTH_STENCIL, 
                                                       0,
@@ -699,6 +709,8 @@ SDL_AppIterate(void* appstate) {
   //IA > Input Assambly
   //OM > Output Merger
   
+  g_pLightActor->setPosition(g_shadowCamera->getPosition());
+
   //Set the viewport
   {
     D3D11_VIEWPORT vp;
@@ -748,6 +760,7 @@ SDL_AppIterate(void* appstate) {
   
   g_WVP.lightView = g_shadowCamera->getViewMatrix();
   g_WVP.lightView.transpose();
+  g_WVP.lightProjection = g_shadowCamera->getOrthoMatrix();
   g_pShaderManager->setConstantValues(g_WVP);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Shadow Pass
@@ -836,7 +849,7 @@ SDL_AppIterate(void* appstate) {
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Present
 
-  g_pGAPI->m_pSwapChain->Present(0, 0);
+  g_pGAPI->m_pSwapChain->Present(1, 0);
 
   return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
