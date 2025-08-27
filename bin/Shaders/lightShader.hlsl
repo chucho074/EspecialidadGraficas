@@ -63,9 +63,8 @@ PixelInput vertex_main(uint vertexId : SV_VertexID) {
 //Normal Distribution functions
 float ndf_BlinnPhong(float NdotH, float alpha) {
   float a2 = alpha * alpha;
-  float n = (2.0f / a2) - 1.0f;
-  return (n + 1.0f) / M_2PI * pow(NdotH, n);
-
+  float n = (2.0f / a2) - 2.0f;
+  return (n + 2.0f) / M_2PI * pow(NdotH, n);
 }
 
 float ndf_Beckmann(float NdotH, float alpha) {
@@ -75,7 +74,7 @@ float ndf_Beckmann(float NdotH, float alpha) {
   float tanThetaHSqr = (1.0f - cosThetaHSqr) / cosThetaHSqr;
   float e = exp(-tanThetaHSqr / a2);
   
-  return e / M_PI * a2 * cosThetaHSqr * NdotH;
+  return e / (M_PI * a2 * cosThetaHSqr * NdotH);
 }
 
 float ndf_OrenNayar(float NdotL, float NdotV, float alpha) {
@@ -97,14 +96,20 @@ float ndf_GGX(float NdotH, float alpha) {
   float e = exp(-tanThetaHSqr / a2);
   
   return e / M_PI * a2 * cosThetaHSqr * NdotH;
+  
+  
+  
+  //float a2 = alpha * alpha;
+  //float denom = (NdotH * NdotH) * (a2 - 1.f) + 1.f;
+  //return a2 / (M_PI * denom * denom);
 }
 
 float3 FresnelSchlick(float3 F0, float cosTheta, float F90) {
-  return F0 + (F90 - F0) * pow(1.0f - cosTheta, 5.0f);
+  return F0 + (F90 - F0) * pow(clamp(1.0f - cosTheta, 0.f, 1.f), 5.0f);
 }
 
 float3 FresnelSchlick(float3 F0, float cosTheta) {
-  return F0 + (1.f - F0) * pow(1.0f - cosTheta, 5.0f);
+  return F0 + (1.f - F0) * pow(clamp(1.0f - cosTheta, 0.f, 1.f), 5.0f);
 }
 
 //Geometric Distribution function Smith Schlick
@@ -118,10 +123,15 @@ float GeometrySmith(float NdotL, float NdotV, float alpha) {
          * GeometrySchlickGGX(NdotV, alpha);
 }
 
-float3 LambertianDiffuse(float3 normal, float3 lightDir, float3 diffuseColor) {
+float3 lambert(float3 kS, float3 albedo, float metallic) {
+  float3 kD = saturate(lerp(1.f - kS, 0.f, metallic));
+  return kD * albedo;
+}
+
+float3 LambertianDiffuse(float3 normal, float3 lightDir) {
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
-  return diffuseColor * (NdotL * 2);
+  return NdotL / M_PI;
 }
 
 float3
@@ -131,7 +141,7 @@ BRDF_Blinn_Phong(float3 normal,
                  float3 reflectDir,
                  float3 diffuseColor,
                  float3 specularColor) {
-  float3 diffuse = LambertianDiffuse(normal, lightDir, diffuseColor);
+  float3 diffuse = diffuseColor * LambertianDiffuse(normal, lightDir);
   
   // Blinn-Phong Specular
   float NdotH = max(dot(normal, reflectDir), 0.0f);
@@ -153,26 +163,23 @@ BRDF_Cook_Torrance(float3 normal,
                    float3 specularColor,
                    float roughness) {
   
-  float3 diffuse = LambertianDiffuse(normal, lightDir, diffuseColor);
+  float3 diffuse = diffuseColor * LambertianDiffuse(normal, lightDir);
   
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
   
   //Cook-Torrance Specular
-  //float NdotV = max(dot(normal, viewDir), 0.0f);
-  //float NdotH = max(dot(normal, reflectDir), 0.0f);
-  
-  float NdotV = dot(normal, viewDir);
-  float NdotH = dot(normal, reflectDir);
+  float NdotV = max(dot(normal, viewDir), 0.0f);
+  float NdotH = max(dot(normal, reflectDir), 0.0f);  
+  float VdotH = max(dot(viewDir, reflectDir), 0.f);
   
   //specular = D * F * G / (4 * NdotL * NdotV)
   float D = ndf_GGX(NdotH, roughness);
-  float3 F = FresnelSchlick(specularColor, NdotV);
+  float3 F = FresnelSchlick(specularColor, VdotH);
   float G = GeometrySmith(NdotL, NdotV, roughness);
   
-  //float3 specular = (D * F * G) / (4.0f * NdotL * NdotV);
-  float3 specular = (D * F * G) / min(0.00001, (NdotL * NdotV * 4.0f));
-  //float3 specular = min(0.00001, (D * F * G) / (NdotL * NdotV * 4.0f));
+  float denom = max(4.0f * NdotL * NdotV, 0.001f);
+  float3 specular = (D * F * G) / denom;
 
   return diffuse + specular;
   
@@ -196,10 +203,11 @@ float2 GetRandom(float2 uv) {
   return normalize(float3(noiseX, noiseY, noiseZ));
 }
 
-float3 lambert(float3 inNormal, float3 inLightDir) {
-  float NdL = max(dot(inNormal, inLightDir), 0.0f);
-  return NdL * 2;
-}
+//float3 dirLight(, float3 lightColor) {
+  
+  
+//  return lightColor * lightIntensity * max(dot(normal, lightDir));
+//}
 
 float4
 pixel_main(PixelInput input) : SV_Target {
@@ -222,25 +230,21 @@ pixel_main(PixelInput input) : SV_Target {
   float3 lightDir = normalize(lightPosition);
   float3 viewDir = normalize(ViewPos - position.xyz);
   
-  color *= lambert(normal, lightDir);
-  //color = LambertianDiffuse(normal, lightDir, color);
-  
   float3 halfVec = normalize(lightDir + viewDir);
-  float3 reflectDir = reflect(-lightDir, normal);
-  float3 H = normalize(lightDir + viewDir);
-  float VdR = max(dot(reflectDir, viewDir), 0.f);
-  float HdN = max(dot(H, normal), 0.f);
-  float specular = pow(HdN, 38);
+  //float3 reflectDir = reflect(-lightDir, normal);
   
+  float3 specularColor = lerp(0.04f, color, metallic);
+  
+  
+  float3 specular = BRDF_Cook_Torrance(normal,
+                                       lightDir,
+                                       viewDir,
+                                       //reflectDir,
+                                       halfVec,
+                                       color,
+                                       specularColor,
+                                       roughness);
   if (false) {
-  /*
-  float3 colorFinal = BRDF_Cook_Torrance(normal,
-                                         lightDir,
-                                         viewDir,
-                                         reflectDir,
-                                         color,
-                                         specularColor,
-                                         roughness);*/
   
   /*
   float3 specular = BRDF_Blinn_Phong(normal,
@@ -252,9 +256,12 @@ pixel_main(PixelInput input) : SV_Target {
                                      specularColor);*/
   }
   
+  float3 Light = (specular) * lightColor * lightIntensity * max(dot(normal, lightDir), 0.f);
+  
   float3 ambient = 0.3f * color;
   
-  float3 colorFinal = pow(color + ambient + specular, 1.f/2.4f);
+  float3 colorFinal = pow(Light + ambient, 1.f / GAMMA);
+  //float3 colorFinal = pow(color + ambient + specular, 1.f/2.4f);
   //float3 colorFinal = pow(color + ambient, 1.f/2.4f);
   
   //return float4(position, 1.f);

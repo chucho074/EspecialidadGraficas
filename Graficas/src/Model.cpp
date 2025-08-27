@@ -75,6 +75,7 @@ removeDoubleDots(String str) {
   }
   return str;
 }
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 bool
@@ -604,22 +605,9 @@ Model::createSphere(int32 inNumTriangles) {
     }
   }
 
-  /*sphereTextures.push_back(m_missingTextureRef);
-  Vector<SharedPtr<Mesh>> tmpMeshes;
-  tmpMeshes.reserve(1);
-  auto tmpMesh = make_shared<Mesh>(sphereVertices, sphereIndices, sphereTextures);
-  tmpMeshes.emplace(tmpMeshes.end(), tmpMesh);
-
-  Vector<ResourceRef> tmpMaterials;
-  tmpMaterials.reserve(1);
-  tmpMaterials.emplace(tmpMaterials.end(), m_missingTextureRef);*/
 
   loadFromMem(sphereVertices, sphereIndices);
   m_meshes[0].meshMaterial.setShaderRef(g_shaderManager().getDefaultShader());
-  //m_meshes[0].meshMaterial.setTexture(,TEXTURE_TYPE::kAlbedo);
-
-
-  //return tmpRef;
 }
 
 void 

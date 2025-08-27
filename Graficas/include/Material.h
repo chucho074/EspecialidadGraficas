@@ -75,6 +75,7 @@ class BaseMaterial {
 
   // Setters for albedo color
   void setAlbedoColor(const Vector3& inColor) { m_albedoColor = inColor; }
+
   // Getters for albedo color
   const Vector3& getAlbedoColor() const { return m_albedoColor; }
 

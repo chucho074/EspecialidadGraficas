@@ -86,7 +86,6 @@ PBRMaterial::draw() {
   auto& texManager = g_textureManager();
   auto& shadeManager = g_shaderManager();
 
-
   if(m_shader.shaderID != UID::ZERO) {
     shadeManager.setDataToShader(m_shader);
   }
