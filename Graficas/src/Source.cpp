@@ -536,8 +536,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   
   
   //if(!g_pDinoActor->createFromFile("Models/Rex/Rex.gltf")) {
-  if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
-  //if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
+  //if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
+  if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
   //if(!g_pDinoActor->createFromFile("D:/Biblioteca de chucho/Modelos/San_Miguel/san-miguel-low-poly.obj")) {
   //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
   //if(!g_pDinoActor->createFromFile("Models/R8_chico.obj")) {
@@ -990,7 +990,8 @@ SDL_AppIterate(void* appstate) {
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Present
 
-  g_pGAPI->m_pSwapChain->Present(1, 0);
+  //g_pGAPI->m_pSwapChain->Present(1, 0); //VSync on
+  g_pGAPI->m_pSwapChain->Present(0, 0); //VSync off
 
   return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
