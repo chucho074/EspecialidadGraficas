@@ -14,18 +14,21 @@ void
 BaseMaterial::setTexture(TextureRef inTexture, 
                          TEXTURE_TYPE::E inType) {
   auto& texManager = g_textureManager();
+
   if(!m_textures.empty()) {
     auto iterTexture = m_textures.find(inType);
     if(iterTexture != m_textures.end()) {
-      // If the texture is already set, remove it
+      // If the texture is already set, don't save again
       if(iterTexture->second == inTexture) {
         return; // No need to set the same texture again
       }
-      // If the texture is a default or missing texture, remove it
+
+      // If the texture is a default or missing texture, change the texture
       if(iterTexture->second == texManager.getDefaultTexture() ||
          iterTexture->second == texManager.getDefaultNormalTexture() ||
          iterTexture->second == texManager.getMissingTexture()) {
-        m_textures.erase(iterTexture);
+        //m_textures.erase(iterTexture);
+        iterTexture->second = inTexture;
       }
     }    
   }
@@ -39,7 +42,27 @@ BaseMaterial::getTexture(TEXTURE_TYPE::E inType) const {
   if(iter != m_textures.end()) {
     return g_textureManager().getTexture(iter->second);
   }
-  
+
+  return g_textureManager().getTexture(g_textureManager().getMissingTexture());
+}
+
+void 
+BaseMaterial::changeTexture(TextureRef inNewTexture, 
+                            TEXTURE_TYPE::E inType) {
+  if(!m_textures.empty()) {
+    auto iterTexture = m_textures.find(inType);
+    if(iterTexture != m_textures.end()) {
+      //If the texture is already set, don't save again
+      if(iterTexture->second == inNewTexture) {
+        return;
+      }
+      //Change the texture 
+      iterTexture->second = inNewTexture;
+    }
+  }
+  else {
+    m_textures.insert({inType, inNewTexture});
+  }
 }
 
 void 
@@ -71,7 +94,7 @@ PBRMaterial::PBRMaterial() {
   m_albedoColor = {1.f, 1.f, 1.f};
   m_emissiveColor = {0.f, 0.f, 0.f};
   m_diffuse = 0.5f;
-  m_metalic = 0.5f;
+  m_metallic = 0.5f;
   m_roughness = 0.5f;
   m_ambientOclussion = 0.5f;
   m_opacity = 0.5f;

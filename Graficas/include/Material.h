@@ -33,7 +33,6 @@ namespace TEXTURE_TYPE {
 }
 
 
-
 class BaseMaterial {
  public:
   BaseMaterial() = default;
@@ -45,8 +44,11 @@ class BaseMaterial {
   SPtr<Texture>
   getTexture(TEXTURE_TYPE::E inType) const;
 
+  void
+  changeTexture(TextureRef inNewTexture, TEXTURE_TYPE::E inType);
+
   virtual void 
-  draw(); 
+  draw();
   
   TextureRef
   getTextureRef(TEXTURE_TYPE::E inTexType) {
@@ -74,16 +76,33 @@ class BaseMaterial {
   }
 
   // Setters for albedo color
-  void setAlbedoColor(const Vector3& inColor) { m_albedoColor = inColor; }
+  void 
+  setAlbedoColor(const Vector3& inColor) { 
+    m_albedoColor = inColor; 
+  }
 
   // Getters for albedo color
-  const Vector3& getAlbedoColor() const { return m_albedoColor; }
+  const Vector3& 
+  getAlbedoColor() const { 
+    return m_albedoColor; 
+  }
+
+  void
+  setName(StringView& inName) {
+    m_materialName = inName;
+  }
+
+  StringView
+  getName() {
+    return m_materialName;
+  }
+
+
+  Vector3 m_albedoColor = Vector3::ZERO;
+  String m_materialName;
 
  protected:
   UMap<TEXTURE_TYPE::E, TextureRef> m_textures;
-
-  Vector3 m_albedoColor = Vector3::ZERO;
-
   ShaderRef m_shader;
 };
 
@@ -102,7 +121,7 @@ class PBRMaterial : public BaseMaterial {
 
   //Setters for PBR properties
   void setEmissiveColor(const Vector3& inColor) { m_emissiveColor = inColor; }
-  void setMetalic(float inMetalic) { m_metalic = inMetalic; }
+  void setMetallic(float inMetalic) { m_metallic = inMetalic; }
   void setRoughness(float inRoughness) { m_roughness = inRoughness; }
   void setAmbientOclussion(float inAmbientOclussion) { m_ambientOclussion = inAmbientOclussion; }
   void setOpacity(float inOpacity) { m_opacity = inOpacity; }
@@ -111,7 +130,7 @@ class PBRMaterial : public BaseMaterial {
 
   //Getters for PBR properties
   const Vector3& getEmissiveColor() const { return m_emissiveColor; }
-  float getMetalic() const { return m_metalic; }
+  float getMetallic() const { return m_metallic; }
   float getRoughness() const { return m_roughness; }
   float getAmbientOclussion() const { return m_ambientOclussion; }
   float getOpacity() const { return m_opacity; }
@@ -119,12 +138,12 @@ class PBRMaterial : public BaseMaterial {
   float getSpecular() const { return m_specular; }
 
 
-  ////////////////////////////////////////////////////////////////////////////////////////////
- protected:
+ ////////////////////////////////////////////////////////////////////////////////////////////
+ //protected:
   
   Vector3 m_emissiveColor    = Vector3::ZERO;
-  float   m_diffuse          = 0.f;
-  float   m_metalic          = 0.f;
+  float   m_diffuse          = 0.f; //?
+  float   m_metallic          = 0.f;
   float   m_roughness        = 0.f;
   float   m_ambientOclussion = 0.f;
   float   m_opacity          = 0.f;

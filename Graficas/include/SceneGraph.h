@@ -97,8 +97,17 @@ class SceneGraph {
    */
   void
   setSelectedActor(SPtr<Actor>& inActor) {
-    
+    m_selectedActor = inActor;
   };
+
+  SPtr<Actor>
+  getSelectedActor() {
+    if(!m_selectedActor) {
+      return m_root;
+    }
+    
+    return m_selectedActor;
+  }
 
   /**
    * @brief      Clears the list of actors of the Graph.
@@ -139,6 +148,9 @@ class SceneGraph {
    * @brief      The camera used in the scene.
    */
   SPtr<EditorCamera> m_editorCamera;
+
+  //
+  SPtr<Actor> m_selectedActor;
 
 };
 

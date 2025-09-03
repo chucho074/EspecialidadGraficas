@@ -22,5 +22,7 @@ struct MeshData
   int32 baseIndex;
   int32 numIndices;
 
+  String meshName;
+
   PBRMaterial meshMaterial;
 };

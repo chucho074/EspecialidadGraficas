@@ -19,15 +19,17 @@
 
 class Prop : public Actor {
  public:
-  Prop() = default;
+  Prop() { 
+    m_type = ActorType::kProp;
+  }
+
   ~Prop() = default;
 
   void
   init(Vector3 inPos, 
        Vector3 inScale = Vector3::UNIT, 
        Vector3 inRotation = Vector3::ZERO) override {
-    Actor::init(inPos, inScale, inRotation);
-
+    Actor::init(inPos, inScale, inRotation);  
   }
 
   void
@@ -40,16 +42,26 @@ class Prop : public Actor {
     auto& shaderManager = g_shaderManager();
 
     shaderManager.setTransform(m_transform);
-
-    if(inWithMaterial) {
-      //m_material.draw();
-    }
-
+    
     m_model.draw(inWithMaterial);
   }
 
+  void 
+  setModel(Model& inModel) {
+    m_model = inModel;
+    m_name = m_model.m_path.stem().string();
+  }
 
-
+  bool
+  createFromFile(const Path& inPath) {
+    if(!m_model.loadFromFile(inPath)) {
+      return false; 
+    }
+    m_model.createBuffers();
+    m_name = m_model.m_path.stem().string();
+    return true;
+  }
+ 
   Model m_model;
 
   //sPBRMaterial m_material;

@@ -80,7 +80,7 @@ public:
     return m_missingTexture;
   }
 
- protected:
+ //protected:
   UMap<TextureRef, SPtr<Texture>> m_textures;
   UMap<Path, TextureRef> m_readedFiles;
 

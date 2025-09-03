@@ -714,6 +714,7 @@ processMesh(Model& inModel,
   //outMesh.baseIndex = 0;
   outMesh.numIndices = mesh->mNumFaces * 3; //Assuming all faces are triangles
   outMesh.meshMaterial.setShaderRef(g_shaderManager().getDefaultShader());
+  outMesh.meshName = mesh->mName.C_Str();
 
   for(uint32 i = 0; i < mesh->mNumVertices; i++) {
       SimpleVertex vertex;
@@ -780,6 +781,8 @@ processMesh(Model& inModel,
     // Process material
     if(mesh->mMaterialIndex >= 0) {
       aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+      outMesh.meshMaterial.m_materialName = material->GetName().C_Str();
+
       ////To change for the creation of the textures in the resource Manager.
       TextureRef tmpAlbedo = texManager.loadTexture(getTexturePath(inModel, 
                                                                    material, 

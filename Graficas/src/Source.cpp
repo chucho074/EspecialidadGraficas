@@ -62,6 +62,20 @@ SPtr<Texture> g_dsShadowMap;
 
 Transform g_worldTransform;
 
+
+ImGuiTreeNodeFlags m_rootFlags = ImGuiTreeNodeFlags_OpenOnArrow
+| ImGuiTreeNodeFlags_OpenOnDoubleClick
+| ImGuiTreeNodeFlags_SpanFullWidth;
+
+ImGuiTreeNodeFlags m_treeSelectableFlags = m_rootFlags | ImGuiTreeNodeFlags_Selected;
+
+
+ImGuiTreeNodeFlags m_leafFlags = m_treeSelectableFlags |= ImGuiTreeNodeFlags_Leaf
+| ImGuiTreeNodeFlags_Bullet
+| ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+int32 g_UI_meshIndex = 0;
+
 void recompileShaders() {
   g_pShaderManager->compileAllShaders();
 }
@@ -75,26 +89,28 @@ void renderNode(SPtr<Actor> inNode) {
   bool tmpOpenNode = false;
 
   if(0 < inNode->m_children.size()) {  //It has a child
-    //tmpOpenNode = ImGui::TreeNodeEx(inNode->m_actor->m_actorName.c_str(), m_rootFlags);
+    tmpOpenNode = ImGui::TreeNodeEx(inNode->getName().c_str(), m_rootFlags);
   }
   else {  //It hasn't childs
-    ImGui::TreeNodeEx(inNode->m_name.c_str());
+    ImGui::TreeNodeEx(inNode->getName().c_str(), m_leafFlags);
   }
 
   if(ImGui::IsItemClicked()) {
     sg->setSelectedActor(inNode);
   }
 
+  //Type of actor
   ImGui::TableNextColumn();
-  ImGui::TextDisabled("Actor");
+  ImGui::Text(inNode->getTypeAsString().c_str());
 
+  //Actor active
   ImGui::TableNextColumn();
-  //TODO: Fix the functionality of the checkbox.
+  //TODO: Fix the functionality of this checkbox.
   ImGui::Checkbox("", &inNode->isActive);
 
   if(0 < inNode->m_children.size() && tmpOpenNode) {
     for(auto& nodes : inNode->m_children) {
-      //renderNode(reinterpret_cast<Actor>(nodes));
+      renderNode(static_pointer_cast<Actor>(nodes));
     }
     ImGui::TreePop();
   }
@@ -103,10 +119,12 @@ void renderNode(SPtr<Actor> inNode) {
 void renderUI() {
   auto& gapi = g_graphicsAPI();
   auto& shadMan = g_shaderManager();
+  auto& texMan = g_textureManager();
+  auto& sg = g_pSceneGraph;
 
   //ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
-  if(ImGui::Begin("Menu")) {
+  if(ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove)) {
     
     if(ImGui::CollapsingHeader("IO")) {
       if(ImGui::Button("Write model bin")) {
@@ -117,7 +135,6 @@ void renderUI() {
         
       }
     }
-    
     //Cameras
     if(ImGui::CollapsingHeader("CameraSettings")) {
       auto tmpMainCamera = g_pSceneGraph->m_editorCamera;
@@ -215,7 +232,7 @@ void renderUI() {
       ImGui::Text("Scene ID: %s", toString(g_pSceneGraph->m_sceneID.getUID()).c_str());
       ImGui::Text("Scene Name: %s", g_pSceneGraph->m_sceneName.c_str());
       ImGui::Text("Scene Graph Actors: %d", g_pSceneGraph->m_numActors);
-
+      ImGui::Text("Actor Selected: %s", sg->getSelectedActor()->getName().c_str());
       //Hierarchy list
       if(ImGui::BeginTable("Hierarchy List", 3, ImGuiTableFlags_Resizable | 
                                                 ImGuiTableFlags_NoBordersInBody |
@@ -226,8 +243,9 @@ void renderUI() {
         ImGui::TableHeadersRow();
 
         ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-
-        //renderNode();
+        
+        renderNode(static_pointer_cast<Actor>(g_pSceneGraph->getRoot()));
+        
 
         ImGui::EndTable();
       }
@@ -243,8 +261,127 @@ void renderUI() {
       }*/
 
     }
+    ImGui::Separator(); //Materials in model
+    if(ImGui::CollapsingHeader("Materials From a model")) {
+      if(sg->getSelectedActor()->m_type != ActorType::kProp) {
+        ImGui::Text("Select another Actor");
+      }
+      else {
+        auto& tmpProp = static_pointer_cast<Prop>(sg->getSelectedActor())->m_model;
+
+        ImGui::Text("Actor Selected: %s", sg->getSelectedActor()->getName().c_str());
+        ImGui::Text("Actor UID: %s", toString(sg->getSelectedActor()->getID()).c_str());
+        
+        auto& tmpMat = tmpProp.m_meshes[g_UI_meshIndex].meshMaterial;
+        ImGui::Text("Material name: %s", tmpMat.m_materialName.c_str());
 
 
+        ImGui::SliderInt(tmpProp.m_meshes[g_UI_meshIndex].meshName.c_str(), 
+                         &g_UI_meshIndex, 
+                         0, 
+                         tmpProp.m_meshes.size() - 1);
+        ImGui::ColorEdit3("Albedo Color",    &tmpMat.m_albedoColor.x);
+        ImGui::ColorEdit3("Emissive Color",  &tmpMat.m_emissiveColor.x);
+        ImGui::SliderFloat("Metallic value", &tmpMat.m_metallic, 0, 1);
+        ImGui::SliderFloat("Rougness value", &tmpMat.m_roughness, 0, 1);
+        ImGui::SliderFloat("Specular value", &tmpMat.m_specular, 0, 1);
+        
+        ImGui::Separator();
+        //Albedo
+        ImVec2 imgSize = {50.f, 50.f};
+        ImTextureID texturesID[5];
+        TextureRef texRefID[5];
+
+        texRefID[0] = tmpMat.getTextureRef(TEXTURE_TYPE::kAlbedo);
+        texRefID[1] = tmpMat.getTextureRef(TEXTURE_TYPE::kNormal);
+        texRefID[2] = tmpMat.getTextureRef(TEXTURE_TYPE::kMetallic);
+        texRefID[3] = tmpMat.getTextureRef(TEXTURE_TYPE::kRoughness);
+        texRefID[4] = tmpMat.getTextureRef(TEXTURE_TYPE::kEmissive);
+
+        texturesID[0] = texMan.getTexture(texRefID[0])->m_pSRV;
+        texturesID[1] = texMan.getTexture(texRefID[1])->m_pSRV;
+        texturesID[2] = texMan.getTexture(texRefID[2])->m_pSRV;
+        texturesID[3] = texMan.getTexture(texRefID[3])->m_pSRV;
+        texturesID[4] = texMan.getTexture(texRefID[4])->m_pSRV;
+        
+        for(int32 i = 0; i < 5; ++i) {
+          ImGui::PushID(i);
+          if(ImGui::ImageButton(texturesID[i], imgSize)) {
+            //tmpMat.changeTexture(, TEXTURE_TYPE::kAlbedo);
+          }
+          //D&D Source
+          if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+            ImGui::SetDragDropPayload("TexChange", &texRefID[i], sizeof(TextureRef));
+            ImGui::Text("Copying texture: %s", toString(texRefID[i].id).c_str());
+            ImGui::EndDragDropSource();
+          }
+          //D&D Target
+          if(ImGui::BeginDragDropTarget()) {
+            if(const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TexChange")) {
+              IM_ASSERT(payload->DataSize == sizeof(TextureRef));
+              TextureRef payload_n = *(const TextureRef*)payload->Data;
+              switch(i) {
+                case 0:
+                  tmpMat.changeTexture(payload_n, TEXTURE_TYPE::kAlbedo);
+                  break;
+                case 1:
+                  tmpMat.changeTexture(payload_n, TEXTURE_TYPE::kNormal);
+                  break;
+                case 2:
+                  tmpMat.changeTexture(payload_n, TEXTURE_TYPE::kMetallic);
+                  break;
+                case 3:
+                  tmpMat.changeTexture(payload_n, TEXTURE_TYPE::kRoughness);
+                  break;
+                case 4:
+                  tmpMat.changeTexture(payload_n, TEXTURE_TYPE::kEmissive);
+                  break;
+                default:
+                  ConsoleOut << "Error: Out of bounds texture type." << ConsoleLine;
+                  __debugbreak();
+                  break;
+              }
+              tmpProp.m_meshes[g_UI_meshIndex].meshMaterial = tmpMat;
+              
+            }
+            ImGui::EndDragDropTarget();
+          }
+          ImGui::PopID();
+          ImGui::SameLine();
+        }
+      }
+    }
+    ImGui::Separator(); // Texture Manager
+    if(ImGui::CollapsingHeader("Texture Manager")) {
+      ImGui::Text("Texture Manager / Loaded Textures");
+      ImGui::Text("Total Loaded Textures: %d", texMan.m_textures.size());
+
+      ImVec2 imgSize = {50.f, 50.f};
+      auto size = texMan.m_textures.size();
+
+      //ImTextureID* texturesID = new ImTextureID[size];
+      
+      int32 i = 0;
+      for(auto& tex : texMan.m_textures) {
+        ImGui::PushID(i);
+        if((i % 3) != 0) {
+          ImGui::SameLine();
+        }
+        if(ImGui::ImageButton(tex.second->m_pSRV, imgSize)) {
+
+        }
+        //D&D Source
+        if(ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+          ImGui::SetDragDropPayload("TexChange", &tex.first, sizeof(TextureRef));
+          ImGui::Text("Copying texture: %s", toString(tex.first.id).c_str());
+          ImGui::EndDragDropSource();
+        }
+        
+        ImGui::PopID();
+        //ImGui::SameLine();
+        ++i;
+      }
+    }
     ImGui::Separator(); // Delta Time
     {
       ImGui::Text("Delta Time: %.3f ms/frame", g_appTime.getTime());
@@ -256,6 +393,7 @@ void renderUI() {
     
   }
   ImGui::End();
+  ImGui::ShowDemoWindow();
 }
 
 /* This function runs once at startup. */
@@ -394,15 +532,16 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
   //if(!g_pDinoActor->m_model.loadFromBin("Models/R8_chico.bin")) {
   //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
   
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
+  //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
   
   
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/Rex/Rex.gltf")) {
-  if(!g_pDinoActor->m_model.loadFromFile("Models/Rex/Rex_mat.obj")) {
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/bistro/Exterior/exterior.obj")) {
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/BistroExt.obj")) {
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/R8_chico.obj")) {
-  //if(!g_pDinoActor->m_model.loadFromFile("Models/bunny.obj")) {
+  //if(!g_pDinoActor->createFromFile("Models/Rex/Rex.gltf")) {
+  if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
+  //if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
+  //if(!g_pDinoActor->createFromFile("D:/Biblioteca de chucho/Modelos/San_Miguel/san-miguel-low-poly.obj")) {
+  //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
+  //if(!g_pDinoActor->createFromFile("Models/R8_chico.obj")) {
+  //if(!g_pDinoActor->createFromFile("Models/bunny.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
@@ -424,7 +563,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   //Disc model
   //if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj")) {
-  if(!g_pTerrainActor->m_model.loadFromFile("Models/Plane.obj")) {
+  if(!g_pTerrainActor->createFromFile("Models/Plane.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
@@ -444,6 +583,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                                            Vector3(1, 1, 1)));
 
   g_pLightActor->m_model.createSphere(50);
+  g_pLightActor->setName("Light");
+  g_pLightActor->m_type = ActorType::kLight;
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Reflect Tex
   
