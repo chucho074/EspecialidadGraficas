@@ -19,3 +19,5 @@ const Vector4 Vector4::UNIT = Vector4(1.f, 1.f, 1.f, 1.f);
 const Vector3 Vector3::UP    = Vector3(0.f, 1.f, 0.f);
 const Vector3 Vector3::RIGHT = Vector3(1.f, 0.f, 0.f);
 const Vector3 Vector3::FRONT = Vector3(0.f, 0.f, -1.f);
+
+const Vector2 Vector2::ZERO = Vector2(0.f, 0.f);

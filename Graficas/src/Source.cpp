@@ -31,6 +31,8 @@
 #include <imgui_impl_win32.cpp>
 #include <imgui_impl_dx11.cpp>
 
+#include "WindowsFileDialogs.h"
+
 Vector2i g_windowSize = {1280 , 720};
 
 SPtr<SceneGraph> g_pSceneGraph;
@@ -57,10 +59,15 @@ SPtr<Prop> g_pLightActor;
 SPtr<Texture> g_rtReflection;
 SPtr<Texture> g_dsReflection;
 
+SPtr<Texture> g_renderPassRT;
+
 Vector<SPtr<Texture>> gbuffer;
 SPtr<Texture> g_dsShadowMap;
 
 Transform g_worldTransform;
+
+Vector2 g_viewportSize = Vector2::ZERO;
+Vector2 g_prevViewportSize = Vector2::ZERO;
 
 
 ImGuiTreeNodeFlags m_rootFlags = ImGuiTreeNodeFlags_OpenOnArrow
@@ -75,6 +82,101 @@ ImGuiTreeNodeFlags m_leafFlags = m_treeSelectableFlags |= ImGuiTreeNodeFlags_Lea
 | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
 int32 g_UI_meshIndex = 0;
+
+void resizeTextures() {
+  
+  SDL_GetWindowSize(g_pWindow, &g_windowSize.x, &g_windowSize.y);
+
+  g_prevViewportSize = g_viewportSize;
+
+  //Unbind shader resources
+  auto& gapi = g_graphicsAPI();
+  for(int32 i = 0; i < 5; ++i) {
+    gapi.clearSRV(i);
+  }
+
+  Vector2i newSize;
+  newSize = g_windowSize;
+  /*if(g_prevViewportSize == Vector2::ZERO) {
+    newSize = g_windowSize;
+    g_prevViewportSize = Vector2(g_windowSize.x, g_windowSize.y);
+  }
+  else {
+    newSize = {(int32)g_prevViewportSize.x,
+               (int32)g_prevViewportSize.y};
+  }*/
+
+  if(gbuffer.size() > 0) {
+    gbuffer.clear();
+    gapi.resizeBackBuffer(Vector2(g_windowSize.x, g_windowSize.y));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////  GBuffer
+  gbuffer.resize(3);
+  for(int i = 0; i < gbuffer.size(); ++i) {
+    gbuffer[i] = make_shared<Texture>();
+  }
+
+  //Pos
+  gbuffer[0]->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                  newSize.y,
+                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[0]->m_pSRV,
+                                                  &gbuffer[0]->m_pRTV);
+  //Normals
+  gbuffer[1]->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                  newSize.y,
+                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[1]->m_pSRV,
+                                                  &gbuffer[1]->m_pRTV);
+  //Color
+  gbuffer[2]->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                  newSize.y,
+                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[2]->m_pSRV,
+                                                  &gbuffer[2]->m_pRTV);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////  Render Pass RT
+
+  g_renderPassRT = make_shared<Texture>();
+  g_renderPassRT->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                      newSize.y,
+                                                      DXGI_FORMAT_B8G8R8A8_UNORM,
+                                                      D3D11_USAGE_DEFAULT,
+                                                      D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                      0,
+                                                      1,
+                                                      &g_renderPassRT->m_pSRV,
+                                                      &g_renderPassRT->m_pRTV);
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////  Shadow Map Texture
+
+  g_dsShadowMap->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
+                                                     g_windowSize.y,
+                                                     DXGI_FORMAT_D32_FLOAT,
+                                                     D3D11_USAGE_DEFAULT,
+                                                     D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
+                                                     0,
+                                                     1,
+                                                     &g_dsShadowMap->m_pSRV,
+                                                     &g_dsShadowMap->m_pRTV,
+                                                     &g_dsShadowMap->m_pDSV,
+                                                     &g_dsShadowMap->m_pDSV_RO);
+
+}
 
 void recompileShaders() {
   g_pShaderManager->compileAllShaders();
@@ -122,9 +224,9 @@ void renderUI() {
   auto& texMan = g_textureManager();
   auto& sg = g_pSceneGraph;
 
-  //ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+  ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
-  if(ImGui::Begin("Menu", NULL, ImGuiWindowFlags_NoMove)) {
+  if(ImGui::Begin("Menu" /*, NULL, ImGuiWindowFlags_NoMove */ )) {
     
     if(ImGui::CollapsingHeader("IO")) {
       if(ImGui::Button("Write model bin")) {
@@ -355,11 +457,19 @@ void renderUI() {
     if(ImGui::CollapsingHeader("Texture Manager")) {
       ImGui::Text("Texture Manager / Loaded Textures");
       ImGui::Text("Total Loaded Textures: %d", texMan.m_textures.size());
+      if(ImGui::Button("Add Texture", {256, ImGui::GetFontSize() * 1.5f})) {
+        auto pHandle = SDL_GetPointerProperty(SDL_GetWindowProperties(g_pWindow),
+                                              SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+                                              nullptr);
+        Path tmpPath = WindowsFileDialogs::openFileDialog(pHandle, WindowsFileDialogs::m_fileFiltersImage);
+        if(!tmpPath.empty()) {
+          texMan.loadTexture(tmpPath);
+        }
+      }
 
+      ImGui::Separator();
       ImVec2 imgSize = {50.f, 50.f};
       auto size = texMan.m_textures.size();
-
-      //ImTextureID* texturesID = new ImTextureID[size];
       
       int32 i = 0;
       for(auto& tex : texMan.m_textures) {
@@ -391,8 +501,19 @@ void renderUI() {
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
     
+    ImGui::End();
   }
-  ImGui::End();
+
+  if(ImGui::Begin("Viewport")) {
+    auto tmpSize = ImGui::GetContentRegionAvail();
+    g_viewportSize = Vector2(tmpSize.x, tmpSize.y);
+    if(g_prevViewportSize != g_viewportSize) {
+      resizeTextures();
+    }
+    
+    ImGui::Image(g_renderPassRT->m_pSRV, tmpSize);
+    ImGui::End();
+  }
   ImGui::ShowDemoWindow();
 }
 
@@ -425,6 +546,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     if (!g_pGAPI) {
       return SDL_APP_FAILURE;
     }
+
     //Initialize the ShaderManager
     ShaderManager::startUp();
     ShaderManager* shMan = new ShaderManager();
@@ -520,71 +642,72 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
 
   //Load models and textures
-  
-  ////////////////////////////////////////////////////////////////////////////////////////////  Dino
-  g_pDinoActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
-                                                                           Vector3(0, 0, 0), 
-                                                                           Vector3(1, 1, 1)));
-
-  //Rex model
-  //if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
-  //if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
-  //if(!g_pDinoActor->m_model.loadFromBin("Models/R8_chico.bin")) {
-  //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
-  
-  //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
-  
-  
-  //if(!g_pDinoActor->createFromFile("Models/Rex/Rex.gltf")) {
-  //if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
-  if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
-  //if(!g_pDinoActor->createFromFile("D:/Biblioteca de chucho/Modelos/San_Miguel/san-miguel-low-poly.obj")) {
-  //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
-  //if(!g_pDinoActor->createFromFile("Models/R8_chico.obj")) {
-  //if(!g_pDinoActor->createFromFile("Models/bunny.obj")) {
+  {
+    ////////////////////////////////////////////////////////////////////////////////////////////  Dino
+    g_pDinoActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
+                                                                             Vector3(0, 0, 0), 
+                                                                             Vector3(1, 1, 1)));
+    
+    //Rex model
+    //if(!g_pDinoActor->m_model.loadFromBin("Models/rex_norm.bin")) {
+    //if(!g_pDinoActor->m_model.loadFromBin("Models/BistroExt.bin")) {
+    //if(!g_pDinoActor->m_model.loadFromBin("Models/R8_chico.bin")) {
+    //if(!g_pDinoActor->m_model.loadFromBin("Models/bunny.bin")) {
+    
+    //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
+    
+    
+    //if(!g_pDinoActor->createFromFile("Models/Rex/Rex.gltf")) {
+    if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
+    //if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
+    //if(!g_pDinoActor->createFromFile("D:/Biblioteca de chucho/Modelos/San_Miguel/san-miguel-low-poly.obj")) {
+    //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
+    //if(!g_pDinoActor->createFromFile("Models/R8_chico.obj")) {
+    //if(!g_pDinoActor->createFromFile("Models/bunny.obj")) {
     __debugbreak();
     return SDL_APP_FAILURE;
   }
-
-  /*g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
-  g_pDinoActor->m_material.setNormalTexture("Models/Rex_N.bmp");
-  g_pDinoActor->m_material.setRoughnessTexture("Models/Rex_R.bmp");
-  g_pDinoActor->m_material.setMetalicTexture("Models/Rex_M.bmp");
-  g_pDinoActor->m_material.setShaderRef(g_GBufferShaderRef);*/
-
-
-
-  ////////////////////////////////////////////////////////////////////////////////////////////  Terrain
-  
-  g_pTerrainActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
-                                                                              Vector3(0, 0, 0), 
-                                                                              //Vector3(1.f, 1.f, 1.f)));
-                                                                              Vector3(10.f, 10.f, 10.f)));
-
-  //Disc model
-  //if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj")) {
-  if(!g_pTerrainActor->createFromFile("Models/Plane.obj")) {
-    __debugbreak();
-    return SDL_APP_FAILURE;
+    
+    /*g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
+    g_pDinoActor->m_material.setNormalTexture("Models/Rex_N.bmp");
+    g_pDinoActor->m_material.setRoughnessTexture("Models/Rex_R.bmp");
+    g_pDinoActor->m_material.setMetalicTexture("Models/Rex_M.bmp");
+    g_pDinoActor->m_material.setShaderRef(g_GBufferShaderRef);*/
+    
+    
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////  Terrain
+    
+    g_pTerrainActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
+                                                                                Vector3(0, 0, 0), 
+                                                                                //Vector3(1.f, 1.f, 1.f)));
+                                                                                Vector3(10.f, 10.f, 10.f)));
+    
+    //Disc model
+    //if(!g_pTerrainActor->m_model.loadFromFile("Models/disc.obj")) {
+    if(!g_pTerrainActor->createFromFile("Models/Plane.obj")) {
+      __debugbreak();
+      return SDL_APP_FAILURE;
+    }
+    
+    //g_pTerrainActor->m_material.setAlbedo("Models/Terrain.bmp");
+    //g_pTerrainActor->m_material.setShaderRef(g_GBufferShaderRef);
+    
+    
+    g_rtReflection = make_shared<Texture>();
+    g_dsReflection = make_shared<Texture>();
+    g_dsShadowMap = make_shared<Texture>();
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////  Light reference
+    
+    g_pLightActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
+                                                                             g_shadowCamera->getPosition(), 
+                                                                             Vector3(1, 1, 1)));
+    
+    g_pLightActor->m_model.createSphere(50);
+    g_pLightActor->setName("Light");
+    g_pLightActor->m_type = ActorType::kLight;
   }
-
-  //g_pTerrainActor->m_material.setAlbedo("Models/Terrain.bmp");
-  //g_pTerrainActor->m_material.setShaderRef(g_GBufferShaderRef);
-
-
-  g_rtReflection = make_shared<Texture>();
-  g_dsReflection = make_shared<Texture>();
-  g_dsShadowMap = make_shared<Texture>();
-
-  ////////////////////////////////////////////////////////////////////////////////////////////  Light reference
-
-  g_pLightActor = static_pointer_cast<Prop>(g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
-                                                                           g_shadowCamera->getPosition(), 
-                                                                           Vector3(1, 1, 1)));
-
-  g_pLightActor->m_model.createSphere(50);
-  g_pLightActor->setName("Light");
-  g_pLightActor->m_type = ActorType::kLight;
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Reflect Tex
   
@@ -611,54 +734,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
                                                       nullptr,
                                                       &g_dsReflection->m_pDSV);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////  GBuffer
-  gbuffer.resize(3);
-  for(int i = 0; i < gbuffer.size(); ++i) {
-    gbuffer[i] = make_shared<Texture>();
-  }
-
-  //Pos
-  gbuffer[0]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                  g_windowSize.y,
-                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                                  D3D11_USAGE_DEFAULT,
-                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                  0,
-                                                  1,
-                                                  &gbuffer[0]->m_pSRV,
-                                                  &gbuffer[0]->m_pRTV);
-  //Normals
-  gbuffer[1]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                  g_windowSize.y,
-                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                  D3D11_USAGE_DEFAULT,
-                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                  0,
-                                                  1,
-                                                  &gbuffer[1]->m_pSRV,
-                                                  &gbuffer[1]->m_pRTV);
-  //Color
-  gbuffer[2]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                  g_windowSize.y,
-                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                  D3D11_USAGE_DEFAULT,
-                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                  0,
-                                                  1,
-                                                  &gbuffer[2]->m_pSRV,
-                                                  &gbuffer[2]->m_pRTV);
-
-  g_dsShadowMap->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                     g_windowSize.y,
-                                                     DXGI_FORMAT_D32_FLOAT,
-                                                     D3D11_USAGE_DEFAULT,
-                                                     D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
-                                                     0,
-                                                     1,
-                                                     &g_dsShadowMap->m_pSRV,
-                                                     &g_dsShadowMap->m_pRTV,
-                                                     &g_dsShadowMap->m_pDSV,
-                                                     &g_dsShadowMap->m_pDSV_RO);
+  resizeTextures();
 
   ////////////////////////////////////////////////////////////////////////////////////////////  ImGui
 
@@ -698,6 +774,10 @@ SDL_AppEvent(void* appstate, SDL_Event* event) {
 
   if (event->type == SDL_EVENT_QUIT) {
     return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+  }
+
+  if(event->type == SDL_EVENT_WINDOW_RESIZED) {
+    //resizeTextures();
   }
 
   if (event->type == SDL_EVENT_KEY_UP) {
@@ -879,6 +959,7 @@ SDL_AppIterate(void* appstate) {
     g_pGAPI->setRenderTargets(gbuffer.size(), gbuffer, g_pGAPI->m_pBackBufferDSV);
 
     g_pGAPI->clearRTV(g_pGAPI->m_pBackBufferRTV, clearColor);
+    g_pGAPI->clearRTV(g_renderPassRT, clearColor);
     g_pGAPI->clearDSV(g_pGAPI->m_pBackBufferDSV);
     g_pGAPI->clearDSV(g_dsShadowMap);
 
@@ -942,7 +1023,7 @@ SDL_AppIterate(void* appstate) {
     g_pShaderManager->setConstantValues(g_WVP);
 
     Vector<SPtr<Texture>> rt = {
-      g_pGAPI->m_pBackBufferRTV,
+      g_renderPassRT,
       nullptr,
       nullptr
     };
@@ -952,7 +1033,7 @@ SDL_AppIterate(void* appstate) {
     g_pGAPI->setShaderResource(0, gbuffer[0]);
     g_pGAPI->setShaderResource(1, gbuffer[1]);
     g_pGAPI->setShaderResource(2, gbuffer[2]);
-    g_pGAPI->setShaderResource(3, nullptr);
+    g_pGAPI->setShaderResource(3, nullptr);  //AO map here
     g_pGAPI->setShaderResource(4, g_dsShadowMap);
 
     g_pGAPI->m_pDeviceContext->Draw(3, 0);
@@ -963,6 +1044,13 @@ SDL_AppIterate(void* appstate) {
     g_pGAPI->setShaderResource(3, nullptr);
     g_pGAPI->setShaderResource(4, nullptr);
 
+    rt = {
+      g_pGAPI->m_pBackBufferRTV,
+      nullptr,
+      nullptr
+    };
+
+    g_pGAPI->setRenderTargets(3, rt, nullptr);
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////  ImGui
@@ -973,8 +1061,6 @@ SDL_AppIterate(void* appstate) {
     ImGui::NewFrame();
 
     ImGuiIO& io = ImGui::GetIO();
-
-    //ImGui::ShowDemoWindow();
 
     renderUI();
 

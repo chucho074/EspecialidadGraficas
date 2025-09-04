@@ -171,6 +171,7 @@
     <ClCompile Include="src\Transform.cpp" />
     <ClCompile Include="src\UUID.cpp" />
     <ClCompile Include="src\Vectors.cpp" />
+    <ClCompile Include="src\WindowsFileDialogs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Actor.h" />
@@ -204,6 +205,7 @@
     <ClInclude Include="include\Transform.h" />
     <ClInclude Include="include\UUID.h" />
     <ClInclude Include="include\Vectors.h" />
+    <ClInclude Include="include\WindowsFileDialogs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
