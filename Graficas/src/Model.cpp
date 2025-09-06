@@ -645,7 +645,14 @@ Model::draw(bool inWithMaterial) {
 
   setBuffers();
 
-  for (auto& mesh : m_meshes) {
+  //for (auto& mesh : m_meshes) {
+  for (int32 i = 0; i < m_meshes.size(); ++i) {
+    auto& mesh = m_meshes[i];
+    if (i > m_debugMesh && -1 != m_debugMesh) {
+      //__debugbreak();
+      continue;
+    }
+
     if(4 == mesh.topology) { //If is a triangle
       GAPI.setTopology(mesh.topology);
       

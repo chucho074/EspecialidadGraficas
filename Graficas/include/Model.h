@@ -73,6 +73,9 @@ class Model
   Vector<uint32> m_indices;
 
   Path m_path;
+
+  int32 m_debugMesh = -1; //-1 means draw all meshes
+
  protected:
   SPtr<GraphicsBuffers> m_pVertexBuffer;
   SPtr<GraphicsBuffers> m_pIndexBuffer;

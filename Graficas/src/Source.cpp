@@ -121,8 +121,8 @@ void resizeTextures() {
   //Pos
   gbuffer[0]->m_pTexture = g_pGAPI->createTexture(newSize.x,
                                                   newSize.y,
-                                                  //DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                                  DXGI_FORMAT_R16G16B16A16_FLOAT,
+                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  //DXGI_FORMAT_R16G16B16A16_FLOAT,
                                                   D3D11_USAGE_DEFAULT,
                                                   D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
                                                   0,
@@ -492,6 +492,19 @@ void renderUI() {
         ++i;
       }
     }
+    ImGui::Separator(); // Debug
+    if(ImGui::CollapsingHeader("Debug")) {
+      ImGui::Separator();
+      if(sg->getSelectedActor()->m_type != ActorType::kProp) {
+        ImGui::Text("Select another Actor");
+      }
+      else {
+        Model& tmpModel = static_pointer_cast<Prop>(sg->getSelectedActor())->m_model;
+        
+        ImGui::SliderInt("Mesh draw limit", &tmpModel.m_debugMesh, -1, tmpModel.m_meshes.size()-1);
+      }
+      ImGui::Separator();
+    }
     ImGui::Separator(); // Delta Time
     {
       ImGui::Text("Delta Time: %.3f ms/frame", g_appTime.getTime());
@@ -655,8 +668,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     
     
     //if(!g_pDinoActor->createFromFile("Models/Rex/Rex.gltf")) {
-    if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
-    //if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
+    //if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
+    if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
     //if(!g_pDinoActor->createFromFile("D:/Biblioteca de chucho/Modelos/San_Miguel/san-miguel-low-poly.obj")) {
     //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
     //if(!g_pDinoActor->createFromFile("Models/R8_chico.obj")) {
