@@ -74,6 +74,7 @@
     <IncludePath>$(DEVLIBS)/SDL/include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)bin/$(PlatformShortName)/</OutDir>
     <IntDir>$(SolutionDir)intermediate/$(ProjectName)/$(PlatformShortName)/$(Configuration)/</IntDir>
+    <TargetName>$(ProjectName)_d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(DEVLIBS)/SDL/include;$(IncludePath)</IncludePath>
@@ -154,6 +155,7 @@
     <ClCompile Include="src\imgui_draw.cpp" />
     <ClCompile Include="src\imgui_tables.cpp" />
     <ClCompile Include="src\imgui_widgets.cpp" />
+    <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\Material.cpp" />
     <ClCompile Include="src\Matrix4.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
@@ -181,6 +183,7 @@
     <ClInclude Include="include\Degrees.h" />
     <ClInclude Include="include\GraphicsAPI.h" />
     <ClInclude Include="include\Image.h" />
+    <ClInclude Include="include\Logger.h" />
     <ClInclude Include="include\Material.h" />
     <ClInclude Include="include\mathObjects.h" />
     <ClInclude Include="include\Matrix4.h" />

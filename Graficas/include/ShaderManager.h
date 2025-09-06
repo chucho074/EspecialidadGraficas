@@ -29,9 +29,11 @@ struct MatrixCollection {
   Matrix4 world;
   Matrix4 view;
   Matrix4 projection;
+  Matrix4 viewProjection;
 
   Matrix4 lightView;
   Matrix4 lightProjection;
+  Matrix4 lightViewProjection;
 
   Vector3 lightPosition;
   float lightIntensity;
@@ -448,6 +450,9 @@ class ShaderManager : public Module<ShaderManager> {
     if(it != m_shaders.end()) {
       auto& tmpShader = it->second;
 
+      /*m_matrixCollection.viewProjection = m_matrixCollection.view * m_matrixCollection.projection;
+      m_matrixCollection.lightViewProjection = m_matrixCollection.lightView * m_matrixCollection.lightProjection;*/
+
       //Set the shaders and constant buffer
       tmpShader->setShader(m_matrixCollection);
 
@@ -592,7 +597,7 @@ class ShaderManager : public Module<ShaderManager> {
 
   ShaderRef m_defaultShader;
 
-  Map<UID, SPtr<ShaderProgram>> m_shaders;
+  UMap<UID, SPtr<ShaderProgram>> m_shaders;
 };
 
 ShaderManager& g_shaderManager();

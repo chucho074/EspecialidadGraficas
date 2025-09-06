@@ -69,6 +69,7 @@ Transform g_worldTransform;
 Vector2 g_viewportSize = Vector2::ZERO;
 Vector2 g_prevViewportSize = Vector2::ZERO;
 
+bool g_vsync = true;
 
 ImGuiTreeNodeFlags m_rootFlags = ImGuiTreeNodeFlags_OpenOnArrow
 | ImGuiTreeNodeFlags_OpenOnDoubleClick
@@ -120,7 +121,8 @@ void resizeTextures() {
   //Pos
   gbuffer[0]->m_pTexture = g_pGAPI->createTexture(newSize.x,
                                                   newSize.y,
-                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  //DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  DXGI_FORMAT_R16G16B16A16_FLOAT,
                                                   D3D11_USAGE_DEFAULT,
                                                   D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
                                                   0,
@@ -225,6 +227,14 @@ void renderUI() {
   auto& sg = g_pSceneGraph;
 
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+
+  ImGui::BeginMainMenuBar(); {
+    if(ImGui::BeginMenu("Options")) {
+      if(ImGui::MenuItem("VSync", NULL, &g_vsync)) {}
+      ImGui::EndMenu();
+    }
+    ImGui::EndMainMenuBar();
+  }
 
   if(ImGui::Begin("Menu" /*, NULL, ImGuiWindowFlags_NoMove */ )) {
     
@@ -351,16 +361,6 @@ void renderUI() {
 
         ImGui::EndTable();
       }
-      /*if(ImGui::Button("Spawn Prop")) {
-        g_pSceneGraph->spawnActor<Prop>(g_pSceneGraph->getRoot(), 
-                                        Vector3(0, 0, 0), 
-                                        Vector3(1, 1, 1));
-      }
-      if(ImGui::Button("Spawn Light")) {
-        g_pSceneGraph->spawnActor<Light>(g_pSceneGraph->getRoot(), 
-                                         Vector3(0, 0, 0), 
-                                         Vector3(1, 1, 1));
-      }*/
 
     }
     ImGui::Separator(); //Materials in model
@@ -501,8 +501,7 @@ void renderUI() {
                   1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     }
     
-    ImGui::End();
-  }
+  } ImGui::End();
 
   if(ImGui::Begin("Viewport")) {
     auto tmpSize = ImGui::GetContentRegionAvail();
@@ -512,8 +511,8 @@ void renderUI() {
     }
     
     ImGui::Image(g_renderPassRT->m_pSRV, tmpSize);
-    ImGui::End();
-  }
+  } ImGui::End();
+  
   ImGui::ShowDemoWindow();
 }
 
@@ -566,18 +565,16 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   {
     g_ShadowShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
-                                                               "shadow_map_vertex_main",
-                                                               "shadow_map_pixel_main");
+                                                              "shadow_map_vertex_main",
+                                                              "shadow_map_pixel_main");
 
     g_shaderManager().setSamplerToShader(g_ShadowShaderRef, SAMPLER_USAGE::kAll);
-    g_shaderManager().setRasterToShader(g_ShadowShaderRef, RASTER_USAGE::kDefault);
 
     g_GBufferShaderRef = g_pShaderManager->createShaderProgram("Shaders/GBuffer.hlsl",
                                                                "gbuffer_vertex_main",
                                                                "gbuffer_pixel_main");
 
     g_shaderManager().setSamplerToShader(g_GBufferShaderRef, SAMPLER_USAGE::kAll);
-    g_shaderManager().setRasterToShader(g_GBufferShaderRef, RASTER_USAGE::kDefault);
     
     g_shaderManager().setDefaultShader(g_GBufferShaderRef);
 
@@ -664,9 +661,9 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
     //if(!g_pDinoActor->createFromFile("Models/R8_chico.obj")) {
     //if(!g_pDinoActor->createFromFile("Models/bunny.obj")) {
-    __debugbreak();
-    return SDL_APP_FAILURE;
-  }
+      __debugbreak();
+      return SDL_APP_FAILURE;
+    }
     
     /*g_pDinoActor->m_material.setAlbedo("Models/Rex_C.bmp");
     g_pDinoActor->m_material.setNormalTexture("Models/Rex_N.bmp");
@@ -953,8 +950,8 @@ SDL_AppIterate(void* appstate) {
     
     FloatColor clearColor = { 0.5f, 0.5f, 1.0f, 1.0f };
     FloatColor blackClearColor = { 0.0f, 0.f, 0.0f, 0.0f };
-    g_rtReflection->clearTexture(blackClearColor.toArray());
-    g_dsReflection->clearTexture(blackClearColor.toArray());
+    //g_rtReflection->clearTexture(blackClearColor.toArray());
+    //g_dsReflection->clearTexture(blackClearColor.toArray());
 
     g_pGAPI->setRenderTargets(gbuffer.size(), gbuffer, g_pGAPI->m_pBackBufferDSV);
 
@@ -977,12 +974,17 @@ SDL_AppIterate(void* appstate) {
   g_WVP.world.identity();
   g_WVP.view = cameraRef->getViewMatrix();
   g_WVP.projection = cameraRef->getProjectionMatrix();
+  g_WVP.viewProjection = g_WVP.view * g_WVP.projection;
   g_WVP.view.transpose();
   g_WVP.projection.transpose();
+  g_WVP.viewProjection.transpose();
   
   g_WVP.lightView = g_shadowCamera->getViewMatrix();
-  g_WVP.lightView.transpose();
   g_WVP.lightProjection = g_shadowCamera->getOrthoMatrix();
+  g_WVP.lightViewProjection = g_WVP.lightView * g_WVP.lightProjection;
+  g_WVP.lightView.transpose();
+  g_WVP.lightViewProjection.transpose();
+
   g_pShaderManager->setConstantValues(g_WVP);
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Shadow Pass
@@ -1013,8 +1015,8 @@ SDL_AppIterate(void* appstate) {
   
   ////////////////////////////////////////////////////////////////////////////////////////////  Light Pass
   
-  { 
-    
+  {
+
     g_pShaderManager->setConstantValues(g_WVP);
     g_pShaderManager->setDataToShader(g_LightShaderRef);
     g_WVP.lightPosition = g_shadowCamera->getPosition();
@@ -1053,7 +1055,7 @@ SDL_AppIterate(void* appstate) {
     g_pGAPI->setRenderTargets(3, rt, nullptr);
   }
 
-  //////////////////////////////////////////////////////////////////////////////////////////////  ImGui
+  ////////////////////////////////////////////////////////////////////////////////////////////  ImGui
 
   {
     ImGui_ImplDX11_NewFrame();
@@ -1076,8 +1078,12 @@ SDL_AppIterate(void* appstate) {
 
   ////////////////////////////////////////////////////////////////////////////////////////////  Present
 
-  //g_pGAPI->m_pSwapChain->Present(1, 0); //VSync on
-  g_pGAPI->m_pSwapChain->Present(0, 0); //VSync off
+  if (g_vsync) {
+    g_pGAPI->m_pSwapChain->Present(1, 0); //VSync on
+  }
+  else {
+    g_pGAPI->m_pSwapChain->Present(0, 0); //VSync off
+  }
 
   return SDL_APP_CONTINUE;  /* carry on with the program! */
 }

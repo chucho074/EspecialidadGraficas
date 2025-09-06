@@ -64,5 +64,4 @@ class Prop : public Actor {
  
   Model m_model;
 
-  //sPBRMaterial m_material;
 };

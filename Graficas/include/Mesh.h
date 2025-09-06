@@ -25,4 +25,6 @@ struct MeshData
   String meshName;
 
   PBRMaterial meshMaterial;
+
+  bool isVisible = true;
 };

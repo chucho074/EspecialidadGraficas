@@ -616,7 +616,7 @@ Model::setBuffers() {
   auto& GAPI = g_graphicsAPI();
   
   if (!m_pVertexBuffer || !m_pIndexBuffer) {
-    return;
+    return; // Maybe create the buffers if a model info exists.
   }
 
   uint32 stride = sizeof(SimpleVertex);
@@ -639,21 +639,24 @@ Model::draw(bool inWithMaterial) {
   auto& GAPI = g_graphicsAPI();
   
   if (!m_pVertexBuffer || !m_pIndexBuffer) {
+    //Logger xd
     return;
   }
 
   setBuffers();
 
   for (auto& mesh : m_meshes) {
-    GAPI.setTopology(mesh.topology);
-    
-    if(inWithMaterial) {
-      mesh.meshMaterial.draw();
-    }
+    if(4 == mesh.topology) { //If is a triangle
+      GAPI.setTopology(mesh.topology);
+      
+      if(inWithMaterial) {
+        mesh.meshMaterial.draw();
+      }
 
-    GAPI.m_pDeviceContext->DrawIndexed(mesh.numIndices, 
-                                       mesh.baseIndex,
-                                       mesh.baseVertex);
+      GAPI.m_pDeviceContext->DrawIndexed(mesh.numIndices, 
+                                         mesh.baseIndex,
+                                         mesh.baseVertex);
+    }
   }
 }
 
@@ -718,6 +721,12 @@ processMesh(Model& inModel,
 
   for(uint32 i = 0; i < mesh->mNumVertices; i++) {
       SimpleVertex vertex;
+
+      if(4 != mesh->mPrimitiveTypes) { //Verify the topology
+        outMesh.topology = mesh->mPrimitiveTypes;
+        //__debugbreak();
+      }
+
       // process vertex positions, normals and texture coordinates
       //Pos
       vertex.position.x = mesh->mVertices[i].x;

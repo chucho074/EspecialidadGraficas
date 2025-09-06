@@ -29,9 +29,11 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   float4x4 World;
   float4x4 View;
   float4x4 Projection;
+  float4x4 ViewProjection;
   
   float4x4 lightView;
   float4x4 lightProjection;
+  float4x4 lightViewProjection;
   
   float3 lightPosition;
   float  lightIntensity;
@@ -128,10 +130,11 @@ float3 lambert(float3 kS, float3 albedo, float metallic) {
   return kD * albedo;
 }
 
-float3 LambertianDiffuse(float3 normal, float3 lightDir) {
+float3 LambertianDiffuse(float3 color, float3 normal, float3 lightDir) {
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
-  return NdotL / M_PI;
+  //return NdotL / M_PI;
+  return color * NdotL;
 }
 
 float3
@@ -141,7 +144,7 @@ BRDF_Blinn_Phong(float3 normal,
                  float3 reflectDir,
                  float3 diffuseColor,
                  float3 specularColor) {
-  float3 diffuse = diffuseColor * LambertianDiffuse(normal, lightDir);
+  float3 diffuse = LambertianDiffuse(diffuseColor, normal, lightDir);
   
   // Blinn-Phong Specular
   float NdotH = max(dot(normal, reflectDir), 0.0f);
@@ -163,7 +166,7 @@ BRDF_Cook_Torrance(float3 normal,
                    float3 specularColor,
                    float roughness) {
   
-  float3 diffuse = diffuseColor * LambertianDiffuse(normal, lightDir);
+  float3 diffuse = LambertianDiffuse(diffuseColor, normal, lightDir);
   
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
@@ -182,6 +185,7 @@ BRDF_Cook_Torrance(float3 normal,
   float3 specular = (D * F * G) / denom;
 
   return diffuse + specular;
+  //return specular;
   
 }
 
@@ -204,31 +208,30 @@ float2 GetRandom(float2 uv) {
 }
 
 //float3 dirLight(, float3 lightColor) {
-  
-  
 //  return lightColor * lightIntensity * max(dot(normal, lightDir));
 //}
 
 float4
 pixel_main(PixelInput input) : SV_Target {
   //Position
-  float4 gBuffer0 = GetPosition(input.texCoord);
-  float3 position = gBuffer0.xyz;
-  float  metallic = gBuffer0.a;
+  float4 gBuffer0  = GetPosition(input.texCoord);
+  float3 position  = gBuffer0.xyz;
+  float  metallic  = gBuffer0.a;
   //Normals
-  float4 gBuffer1 = GetNormal(input.texCoord);
-  float3 normal = gBuffer1.xyz;
+  float4 gBuffer1  = GetNormal(input.texCoord);
+  float3 normal    = gBuffer1.xyz;
   float  roughness = gBuffer1.a;
   //Albedo
-  float4 gBuffer2 = gbuffer_Color.Sample(samAniso, input.texCoord);
-  float3 color = pow(gBuffer2.rgb, 2.4f);
-  float  stencil = gBuffer2.a;
+  float4 gBuffer2  = gbuffer_Color.Sample(samAniso, input.texCoord);
+  float3 color     = pow(gBuffer2.rgb, 2.4f);
+  float  stencil   = gBuffer2.a;
   
   clip(stencil < 1.f ? -1 : 1); // Stencil
   
   //float3 lightDir = normalize(-lightPosition);
-  float3 lightDir = normalize(lightPosition);
-  float3 viewDir = normalize(ViewPos - position.xyz);
+  float3 lightDir = normalize(lightPosition - position);  //Debe ir de pixel a la luz
+    
+  float3 viewDir = normalize(ViewPos - position);
   
   float3 halfVec = normalize(lightDir + viewDir);
   //float3 reflectDir = reflect(-lightDir, normal);
@@ -236,14 +239,15 @@ pixel_main(PixelInput input) : SV_Target {
   float3 specularColor = lerp(0.04f, color, metallic);
   
   
-  float3 specular = BRDF_Cook_Torrance(normal,
-                                       lightDir,
-                                       viewDir,
-                                       //reflectDir,
-                                       halfVec,
-                                       color,
-                                       specularColor,
-                                       roughness);
+  float3 directLighting = BRDF_Cook_Torrance(normal,
+                                             lightDir,
+                                             viewDir,
+                                             //reflectDir,
+                                             halfVec,
+                                             color,
+                                             specularColor,
+                                             roughness);
+  //return float4(specular, 1.f);
   if (false) {
   
   /*
@@ -256,9 +260,12 @@ pixel_main(PixelInput input) : SV_Target {
                                      specularColor);*/
   }
   
-  float3 Light = (specular) * lightColor * lightIntensity * max(dot(normal, lightDir), 0.f);
+ 
   
-  float3 ambient = 0.3f * color;
+  //float3 Light = (specular) * lightColor * lightIntensity * max(dot(normal, lightDir), 0.f);
+  float3 Light = directLighting * lightColor * lightIntensity;
+  
+  float3 ambient = 0.03f * color; //Deberia ser el diffuse o albedo
   
   float3 colorFinal = pow(Light + ambient, 1.f / GAMMA);
   //float3 colorFinal = pow(color + ambient + specular, 1.f/2.4f);

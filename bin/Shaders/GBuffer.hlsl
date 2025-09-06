@@ -28,11 +28,9 @@ struct VertexInput {
 struct PixelInput {
   float4 position  : SV_POSITION;
   float3 color     : TEXCOORD0;
-  float2 texCoord  : TEXCOORD1;
-  float3 normal    : TEXCOORD2;
-  float3 posWorld  : TEXCOORD3;
-  float3 tangent   : TEXCOORD4;
-  float3 bitangent : TEXCOORD5;
+  float3 posWorld  : TEXCOORD1;
+  float2 texCoord  : TEXCOORD2;
+  float3x3 TBN     : TEXCOORD3;
 };
 
 struct ShadowPixel  {
@@ -49,10 +47,12 @@ struct GBuffer {
 cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   float4x4 World;
   float4x4 View;
-  float4x4 Projection;       //Mandar VP y WVP
+  float4x4 Projection;       
+  float4x4 ViewProjection;   
   
   float4x4 lightView;
   float4x4 lightProjection;  //Mandar calculada la matriz de VP
+  float4x4 lightViewProjection;
   
   float3   lightPosition;
   float    lightIntensity;
@@ -70,13 +70,15 @@ PixelInput gbuffer_vertex_main(VertexInput Input) {
   output.position = float4(Input.position, 1.0f);
   output.position = mul(output.position, World);
   output.posWorld = output.position.xyz; // Guardar la posicion en el mundo
-  output.position = mul(output.position, View);
-  output.position = mul(output.position, Projection); //Ahora es posicion de clip
+  output.position = mul(output.position, ViewProjection);
+  //output.position = mul(output.position, Projection); //Ahora es posicion de clip
   
-  output.normal = normalize(mul(Input.normal, (float3x3) World).xyz);
-  output.tangent = normalize(mul(Input.tangent, (float3x3) World).xyz);
-  output.bitangent = -cross(output.normal, output.tangent); //para las normales invertidas
+  float3 normal = normalize(mul(float4(Input.normal, 1.f), World).xyz);
+  float3 tangent = normalize(mul(float4(Input.tangent, 1.f), World).xyz);
+  float3 bitangent = -cross(normal, tangent); //para las normales invertidas
   //output.bitangent = cross(output.normal, output.tangent);
+  
+  output.TBN = float3x3(tangent, bitangent, normal); //Es el esapcio de tangentes
   
   output.color = Input.color;
   output.texCoord = Input.texCoord;
@@ -92,8 +94,7 @@ GBuffer gbuffer_pixel_main(PixelInput Input) {
   float roughness  = txRough.Sample(samAniso, Input.texCoord).r;
   float metallic   = txMetal.Sample(samAniso, Input.texCoord).r;
   
-  float3x3 TBN = float3x3(Input.tangent, Input.bitangent, Input.normal); //Es el esapcio de tangentes
-  normal.xyz = normalize(mul(normal.xyz, TBN));
+  normal.xyz = normalize(mul(normal.xyz, Input.TBN));
   
   Output.position = float4(Input.posWorld, metallic);
   //Output.normal = float4(normalize(normal.xyz * 0.5f + 0.5f), roughness);
