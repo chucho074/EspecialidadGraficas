@@ -116,7 +116,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>./include/;$(DEVLIBS)/SDL/include/;$(DEVLIBS)/ImGui/;$(DEVLIBS)/ImguiSamples;$(DEVLIBS)/Assimp/include;$(DEVLIBS)/stb/</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include/;$(DEVLIBS)/SDL/include/;$(DEVLIBS)/ImGui/;$(DEVLIBS)/ImguiSamples/;$(DEVLIBS)/Assimp/include;$(DEVLIBS)/stb/</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

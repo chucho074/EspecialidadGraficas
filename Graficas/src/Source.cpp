@@ -226,7 +226,7 @@ void renderUI() {
   auto& texMan = g_textureManager();
   auto& sg = g_pSceneGraph;
 
-  ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+  ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()->ID);
 
   ImGui::BeginMainMenuBar(); {
     if(ImGui::BeginMenu("Options")) {
@@ -391,7 +391,7 @@ void renderUI() {
         ImGui::Separator();
         //Albedo
         ImVec2 imgSize = {50.f, 50.f};
-        ImTextureID texturesID[5];
+        ImTextureRef texturesID[5];
         TextureRef texRefID[5];
 
         texRefID[0] = tmpMat.getTextureRef(TEXTURE_TYPE::kAlbedo);
@@ -408,7 +408,7 @@ void renderUI() {
         
         for(int32 i = 0; i < 5; ++i) {
           ImGui::PushID(i);
-          if(ImGui::ImageButton(texturesID[i], imgSize)) {
+          if(ImGui::ImageButton("xd", texturesID[i], imgSize)) {
             //tmpMat.changeTexture(, TEXTURE_TYPE::kAlbedo);
           }
           //D&D Source
@@ -477,7 +477,7 @@ void renderUI() {
         if((i % 3) != 0) {
           ImGui::SameLine();
         }
-        if(ImGui::ImageButton(tex.second->m_pSRV, imgSize)) {
+        if(ImGui::ImageButton("xd2", tex.second->m_pSRV, imgSize)) {
 
         }
         //D&D Source
@@ -668,8 +668,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     
     
     //if(!g_pDinoActor->createFromFile("Models/Rex/Rex.gltf")) {
-    //if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
-    if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
+    if(!g_pDinoActor->createFromFile("Models/Rex/Rex_mat.obj")) {
+    //if(!g_pDinoActor->createFromFile("Models/bistro/Exterior/exterior.obj")) {
     //if(!g_pDinoActor->createFromFile("D:/Biblioteca de chucho/Modelos/San_Miguel/san-miguel-low-poly.obj")) {
     //if(!g_pDinoActor->createFromFile("Models/BistroExt.obj")) {
     //if(!g_pDinoActor->createFromFile("Models/R8_chico.obj")) {
