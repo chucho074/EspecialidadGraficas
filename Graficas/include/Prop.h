@@ -103,5 +103,55 @@ class LightProp : public Prop {
   
   float lightRadius = 10.f;
 
+};
+
+class LightProp : public Prop {
+ public:
+  LightProp() { 
+    m_shadowCamera = make_shared<Camera>();
+    m_type = ActorType::kLight;
+    m_name = "Light";
+    m_model.createSphere(50);
+  }
+
+  ~LightProp() = default;
+
+
+  void
+  init(Vector3 inPos, 
+       Vector3 inScale = Vector3::UNIT, 
+       Vector3 inRotation = Vector3::ZERO) override {
+    Actor::init(inPos, inScale, inRotation);  
+    m_shadowCamera->setLookAt(inPos, Vector3(0, 0, 0), Vector3(0, 1, 0));
+    //g_shadowCamera->setOrthographic(-0.75f, 0.75f, -0.75f, 0.75f, 0.1f, 500.f);  //El bueno 
+    m_shadowCamera->setOrthographic(-5.f, 5.f, -5.f, 5.f, 0.01f, 10000.f);  //Testing
+  }
+
+  void
+  update(float inDT) override {
+    Actor::update(inDT);
+    m_shadowCamera->m_position = m_transform.getGlobalPosition();
+  }
+
+  void
+  draw(bool inWithMaterial) override {
+    auto& shaderManager = g_shaderManager();
+
+    shaderManager.setTransform(m_transform);
+    
+    m_model.draw(inWithMaterial);
+  }
+
+ public:
+  
+  SPtr<Camera> m_shadowCamera;
+
+  bool isActiveLight = true;
+  Vector3 lightColor = Vector3(1.f, 1.f, 1.f);
+  
+  float lightIntensity = 1.f;
+  
+  float lightRadius = 10.f;
+
   //Light type
 };

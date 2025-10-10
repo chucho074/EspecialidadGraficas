@@ -69,7 +69,6 @@ void resizeTextures() {
   g_app().gbuffer[0]->m_pTexture = g_graphicsAPI().createTexture(newSize.x,
                                                   newSize.y,
                                                   DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                                  //DXGI_FORMAT_R16G16B16A16_FLOAT,
                                                   D3D11_USAGE_DEFAULT,
                                                   D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
                                                   0,
@@ -174,54 +173,7 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   g_app().init(pHandle);
 
-  ////////////////////////////////////////////////////////////////////////////////////////////  GBuffer
-  gbuffer.resize(3);
-  for(int i = 0; i < gbuffer.size(); ++i) {
-    gbuffer[i] = make_shared<Texture>();
-  }
-
-  //Pos
-  gbuffer[0]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                  g_windowSize.y,
-                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
-                                                  D3D11_USAGE_DEFAULT,
-                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                  0,
-                                                  1,
-                                                  &gbuffer[0]->m_pSRV,
-                                                  &gbuffer[0]->m_pRTV);
-  //Normals
-  gbuffer[1]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                  g_windowSize.y,
-                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                  D3D11_USAGE_DEFAULT,
-                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                  0,
-                                                  1,
-                                                  &gbuffer[1]->m_pSRV,
-                                                  &gbuffer[1]->m_pRTV);
-  //Color
-  gbuffer[2]->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                  g_windowSize.y,
-                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                  D3D11_USAGE_DEFAULT,
-                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
-                                                  0,
-                                                  1,
-                                                  &gbuffer[2]->m_pSRV,
-                                                  &gbuffer[2]->m_pRTV);
-
-  g_dsShadowMap->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
-                                                     g_windowSize.y,
-                                                     DXGI_FORMAT_D32_FLOAT,
-                                                     D3D11_USAGE_DEFAULT,
-                                                     D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
-                                                     0,
-                                                     1,
-                                                     &g_dsShadowMap->m_pSRV,
-                                                     &g_dsShadowMap->m_pRTV,
-                                                     &g_dsShadowMap->m_pDSV,
-                                                     &g_dsShadowMap->m_pDSV_RO);
+  resizeTextures();
 
   g_app().m_appTime.startTimer();
 

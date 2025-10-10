@@ -524,6 +524,16 @@ class ShaderManager : public Module<ShaderManager> {
     m_matrixCollection.world = m_worldTransform.getMatrix() * inTransform.getMatrix();
   }
 
+  void
+  setDefaultShader(ShaderRef inDefault) {
+    m_defaultShader = inDefault;
+  }
+
+  ShaderRef
+  getDefaultShader() const {
+    return m_defaultShader;
+  }
+
  protected:
   
   MatrixCollection m_matrixCollection;
