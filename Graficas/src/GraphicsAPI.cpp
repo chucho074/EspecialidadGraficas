@@ -604,6 +604,56 @@ GraphicsAPI::clearSRV(int32 inSlot) {
   m_pDeviceContext->PSSetShaderResources(inSlot, 1, &nullSRV);
 }
 
+void 
+GraphicsAPI::resizeBackBuffer(Vector2 inSize) {
+  m_pDeviceContext->OMSetRenderTargets(0, 0, 0);
+  m_pBackBufferRTV.reset(new Texture);
+  m_pBackBufferDSV.reset(new Texture);
+
+  if(FAILED(m_pSwapChain->ResizeBuffers(0, inSize.x, inSize.y, DXGI_FORMAT_UNKNOWN, 0))) {
+    __debugbreak();
+    //Logger::instance().SetError(ERROR_TYPE::kResizeTextures, "Error resizing the viewport Texture");
+    return;
+  }
+
+  SPtr<Texture> backBuffer(new Texture);
+  if(FAILED(m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
+                                    (void**)&backBuffer->m_pTexture))) {
+    __debugbreak();
+    //Logger::instance().SetError(ERROR_TYPE::kResizeTextures, "Error obtaining back buffer from swapchain");
+    return;
+  }
+
+  if(FAILED(m_pDevice->CreateRenderTargetView(backBuffer->m_pTexture,
+                                              nullptr,
+                                              &backBuffer->m_pRTV))) {
+    __debugbreak();
+    //Logger::instance().SetError(ERROR_TYPE::kResizeTextures, "Error creating the render target view for the back buffer");
+    return;
+  }
+
+
+  m_pBackBufferRTV = backBuffer;
+
+  m_pDeviceContext->OMSetRenderTargets(1, &backBuffer->m_pRTV, NULL);
+
+  ID3D11Texture2D* pDepthStencil = nullptr;
+  pDepthStencil = createTexture(inSize.x,
+                                inSize.y,
+                                DXGI_FORMAT_D24_UNORM_S8_UINT,
+                                D3D11_USAGE_DEFAULT,
+                                D3D11_BIND_DEPTH_STENCIL,
+                                0, 1, nullptr, nullptr, &m_pBackBufferDSV->m_pDSV);
+
+  //m_pBackBufferDSV = static_pointer_cast<Texture>(depthTex);
+
+  //setViewport(0, 0, inW, inH, 0.f, 1.f);
+}
+
+void 
+GraphicsAPI::present(bool inVsync) {
+  m_pSwapChain->Present((inVsync ? 1 : 0), 0);
+}
 
 GraphicsAPI&
 g_graphicsAPI() {

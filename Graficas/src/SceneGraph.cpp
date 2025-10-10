@@ -44,14 +44,29 @@ SceneGraph::removeActor(SPtr<Actor> inActor) {
   }
 }
 
+Vector<SPtr<Actor>>
+SceneGraph::getActorsByType(ActorType::E inType) {
+  Vector<SPtr<Actor>> tmpVector;
+  for(int32 i = 0; i < m_actors.size(); ++i) {
+  //for(auto& actor : m_actors) {
+    tmpVector.resize(m_actors.size());
+    auto& actor = m_actors[i];
+    if(actor->m_type == inType) {
+      //tmpVector.emplace_back(actor);
+      tmpVector[i] = actor;
+    }
+  }
+  return tmpVector;
+}
+
 Vector<SPtr<Actor>>& 
 SceneGraph::getActorsFromRoot() {
   Vector<SPtr<Actor>> tmpVector;
   for(auto& nodes : m_root->m_children) {
     tmpVector.push_back(static_pointer_cast<Actor>(nodes));
   }
-
-  return tmpVector;
+  __debugbreak();
+  return tmpVector; //Check if returns something valid
 }
 
 List<SPtr<SceneNode>>& 
@@ -61,8 +76,8 @@ SceneGraph::getNodesByParent(WPtr<SceneNode> inParent) {
     tmpList.push_back(m_root);
     return tmpList;
   }
-
-  return getNodesByParent(inParent);
+  __debugbreak();
+  return getNodesByParent(inParent); //Check if returns something valid
 }
 
 SPtr<SceneNode> 
@@ -78,4 +93,9 @@ SceneGraph::deleteActor(const SPtr<Actor>& inActor) {
 void 
 SceneGraph::clearGraph() {
   
+}
+
+SceneGraph& 
+g_sceneGraph() {
+  return SceneGraph::instance();
 }

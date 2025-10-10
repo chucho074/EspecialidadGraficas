@@ -132,19 +132,12 @@ class ShaderProgram {
    * @param      inCBufferData The information of the cBuffer to set.
    */
   void
-  setShader(MatrixCollection& inCBufferData) {
+  setShader() {
     auto& gapi = g_graphicsAPI();
     
-    Vector<char> matrix_data;
-    matrix_data.resize(sizeof(inCBufferData));
-
     gapi.setVertexShader(m_vertexShader);
     gapi.setPixelShader(m_pixelShader);
     gapi.setInputLayout(m_inputLayout);
-
-    //Verify if it can be send with the shader manager
-    //memcpy(matrix_data.data(), &inCBufferData, sizeof(inCBufferData));
-    //gapi.writeToBuffer(m_pCB_WVP, matrix_data);
 
   }
 
@@ -406,12 +399,14 @@ class ShaderManager : public Module<ShaderManager> {
 
     auto& gapi = g_graphicsAPI();
 
+    setConstantsToShader();
+
     auto it = m_shaders.find(inShaderRef.shaderID);
     if(it != m_shaders.end()) {
       auto& tmpShader = it->second;
 
       //Set the shaders and constant buffer
-      tmpShader->setShader(m_matrixCollection);
+      tmpShader->setShader();
 
       //SetSamplers
       if (SAMPLER_USAGE::kAnisotropic == tmpShader->getSamplerUsage()) {
@@ -452,6 +447,36 @@ class ShaderManager : public Module<ShaderManager> {
   void
   setConstantValues(MatrixCollection& inConstant) {
     m_matrixCollection = inConstant;
+    m_constantsAllreadyTransposed = false;
+  }
+
+  void 
+  setConstantsToShader() {
+    auto& gapi = g_graphicsAPI();
+
+    if(!m_constantsAllreadyTransposed) {
+      //Transpose the matrices before sending to the GPU
+      m_matrixCollection.world.transpose();
+      m_matrixCollection.view.transpose();
+      m_matrixCollection.projection.transpose();
+      m_matrixCollection.lightView.transpose();
+      m_matrixCollection.lightProjection.transpose();
+      m_matrixCollection.viewProjection = m_matrixCollection.view * m_matrixCollection.projection;
+      m_matrixCollection.viewProjection.transpose();
+      m_matrixCollection.lightViewProjection = m_matrixCollection.lightView * m_matrixCollection.lightProjection;
+      m_matrixCollection.lightViewProjection.transpose();
+    }
+    Vector<char> matrix_data;
+    matrix_data.resize(sizeof(m_matrixCollection));
+
+    memcpy(matrix_data.data(), &m_matrixCollection, sizeof(m_matrixCollection));
+    if(!m_pCB_WVP->m_pBuffer) {
+      m_pCB_WVP = gapi.createConstantBuffer(matrix_data);
+    }
+    else {
+      gapi.writeToBuffer(m_pCB_WVP, matrix_data);
+    }
+    gapi.setConstantBuffer(0, m_pCB_WVP);
   }
 
   /**
@@ -497,16 +522,6 @@ class ShaderManager : public Module<ShaderManager> {
     matrix_data.resize(sizeof(m_matrixCollection));
 
     m_matrixCollection.world = m_worldTransform.getMatrix() * inTransform.getMatrix();
-    m_matrixCollection.world.transpose();
-    
-    memcpy(matrix_data.data(), &m_matrixCollection, sizeof(m_matrixCollection));
-    if(!m_pCB_WVP->m_pBuffer) {
-      m_pCB_WVP = gapi.createConstantBuffer(matrix_data);
-    }
-    else {
-      gapi.writeToBuffer(m_pCB_WVP, matrix_data);
-    }
-    gapi.setConstantBuffer(0, m_pCB_WVP);
   }
 
  protected:
@@ -516,6 +531,8 @@ class ShaderManager : public Module<ShaderManager> {
   Transform m_worldTransform;
 
   SPtr<GraphicsBuffers> m_pCB_WVP;
+
+  bool m_constantsAllreadyTransposed = false;
 
   ID3D11RasterizerState1* m_pRS_Default = nullptr;
   ID3D11RasterizerState1* m_pRS_Wireframe = nullptr;

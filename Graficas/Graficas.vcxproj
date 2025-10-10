@@ -146,6 +146,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Actor.cpp" />
+    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\Configs.cpp" />
     <ClCompile Include="src\Degrees.cpp" />
     <ClCompile Include="src\GraphicsAPI.cpp" />
     <ClCompile Include="src\Image.cpp" />
@@ -168,13 +170,17 @@
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\giTime.cpp" />
     <ClCompile Include="src\Transform.cpp" />
+    <ClCompile Include="src\UI.cpp" />
     <ClCompile Include="src\UUID.cpp" />
     <ClCompile Include="src\Vectors.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Actor.h" />
+    <ClInclude Include="include\App.h" />
+    <ClInclude Include="include\AssetManager.h" />
     <ClInclude Include="include\Buffers.h" />
     <ClInclude Include="include\Camera.h" />
+    <ClInclude Include="include\Configs.h" />
     <ClInclude Include="include\Degrees.h" />
     <ClInclude Include="include\GraphicsAPI.h" />
     <ClInclude Include="include\Image.h" />
@@ -199,6 +205,7 @@
     <ClInclude Include="include\giTime.h" />
     <ClInclude Include="include\Timer.h" />
     <ClInclude Include="include\Transform.h" />
+    <ClInclude Include="include\UI.h" />
     <ClInclude Include="include\UUID.h" />
     <ClInclude Include="include\Vectors.h" />
   </ItemGroup>

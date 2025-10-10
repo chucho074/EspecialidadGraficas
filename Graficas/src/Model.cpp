@@ -436,6 +436,18 @@ Model::draw() {
 
   GAPI.setTopology(m_meshes[0].topology);
 
+    if(4 == mesh.topology) { //If is a triangle
+      GAPI.setTopology(mesh.topology);
+      
+      if(inWithMaterial) {
+        mesh.meshMaterial.draw();
+      }
+      else {
+        auto& shaderManager = g_shaderManager();
+
+        shaderManager.setConstantsToShader();
+      }
+
 
   GAPI.m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
                                      m_meshes[0].baseIndex, 

@@ -109,6 +109,12 @@ class GraphicsAPI : public Module<GraphicsAPI> {
   void
   clearSRV(int32 inSlot);
 
+  void
+  resizeBackBuffer(Vector2 inSize);
+
+  void
+  present(bool inVsync);
+
   ID3D11Device1*
   getDevice() { return m_pDevice; }
 

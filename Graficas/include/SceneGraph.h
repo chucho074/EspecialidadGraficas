@@ -15,9 +15,10 @@
 #include "UUID.h"
 #include "mathObjects.h"
 #include "Camera.h"
+#include "Module.h"
 
 
-class SceneGraph {
+class SceneGraph : public Module<SceneGraph>{
  public:
   SceneGraph() = default;
   ~SceneGraph() = default;
@@ -60,10 +61,23 @@ class SceneGraph {
   void
   addActor(const SPtr<Actor>& inActor,
            SPtr<SceneNode> inParent) {}
-
+  
+  /**
+   * @brief      .
+   * @param      inActor       .
+   */
   void
   removeActor(SPtr<Actor> inActor);
   
+  /**
+   * @brief      .
+   * @param      inType        .
+   * @return     . 
+   */
+  Vector<SPtr<Actor>>
+  getActorsByType(ActorType::E inType);
+
+
   /**
    * @brief      Obtain the actor childs of the root.
    * @return     Returns the list of the actors who there parent is the root.
@@ -162,3 +176,8 @@ SceneGraph::spawnActor(const SPtr<SceneNode>& inParent, Args&&... args) {
   m_numActors++;
   return outActor;
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+SceneGraph&
+g_sceneGraph();
