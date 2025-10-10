@@ -457,6 +457,10 @@ Model::draw() {
       }
 
 
+        shaderManager.setConstantsToShader();
+      }
+
+
   GAPI.m_pDeviceContext->DrawIndexed(m_meshes[0].numIndices,
                                      m_meshes[0].baseIndex, 
                                      m_meshes[0].baseVertex);
