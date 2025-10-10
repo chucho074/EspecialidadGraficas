@@ -116,6 +116,19 @@ class LightProp : public Prop {
 
   ~LightProp() = default;
 
+};
+
+class LightProp : public Prop {
+ public:
+  LightProp() { 
+    m_shadowCamera = make_shared<Camera>();
+    m_type = ActorType::kLight;
+    m_name = "Light";
+    m_model.createSphere(50);
+  }
+
+  ~LightProp() = default;
+
 
   void
   init(Vector3 inPos, 
