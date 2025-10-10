@@ -5,6 +5,10 @@
  * @date    04/01/25
  */
 #include "Image.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "PrerequisiteGraficas.h"
 
 #pragma pack(push, 2)
@@ -38,9 +42,43 @@ struct MY_BITMAPSAVEHEADER {
 
 void 
 Image::decode(Path inFilePath) {
+
+  int32 w = 0, h = 0, comp = 0;
+
+  comp = 4;
+
+  //Save the information of the readed data.
+  fsys::absolute(inFilePath);
+
+  //Get the information of the image loadead.
+  uint8* tmpImg  = stbi_load(inFilePath.string().c_str(),
+                             &w,
+                             &h,
+                             &comp, 
+                             4);
+  if (tmpImg == nullptr) {
+    ConsoleOut << "Texture not found: " << inFilePath << ConsoleLine;
+    return;
+  }
+  m_width = w;
+  m_height = h;
+  m_bpp = 4 << 3; //32 100pre
+
+  m_pixels.resize(w * h * 4);
+
+  memcpy(&m_pixels[0], tmpImg, w * h * 4);
+
+  //Unload Data
+  stbi_image_free(tmpImg);
+
+}
+
+void 
+Image::decodeOld(Path inFilePath) {
+  m_brga = true;
   fstream imgFile(inFilePath, ios::in | ios::binary | ios::ate);
   if(!imgFile.is_open()) {
-    decode("Models/missingTextureV2.bmp");
+    decode("Models/missingTextureV2.png");
     __debugbreak();
     return;
   }
@@ -52,7 +90,7 @@ Image::decode(Path inFilePath) {
   imgFile.read(reinterpret_cast<char*>(&fileHeader), sizeof(MY_BITMAPFILEHEADER));
 
   if(fileHeader.bfType != 0x4D42) {
-    decode("Models/missingTextureV2.bmp");
+    decode("Models/missingTextureV2.png");
     __debugbreak();
     return; //Not a BMP
   }

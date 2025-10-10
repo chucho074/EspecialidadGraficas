@@ -88,7 +88,6 @@ class Camera {
     return (m_target - m_position).normalize();
   }
 
-
   Matrix4
   getViewMatrix() {
     viewMatrix.lookAt(m_position, (m_position + m_cameraFront), m_upVec);
@@ -181,7 +180,7 @@ class EditorCamera : public Camera {
   }
 
 
-  float m_speed = 1.f;
+  float m_speed = 400.f;
 
   bool m_front, m_back, m_left, m_right = false;
   bool m_up, m_down = false;
@@ -193,7 +192,5 @@ class ShadowCamera : public Camera {
  public:
   ShadowCamera() = default;
   ~ShadowCamera() = default;
-
-
 
 };

@@ -35,6 +35,9 @@ class Model
   bool
   loadFromFile(const Path& inPath);
 
+  void
+  loadFromAssimp(const Path& inPath);
+  
   bool
   loadFromBin(const Path& inPath);
 
@@ -52,18 +55,26 @@ class Model
   createBuffers();
 
   void
+  createSphere(int32 inNumTriangles);
+
+  void
   setBuffers();
 
   void
-  draw();
+  draw(bool inWithMaterial);
 
   void
   exportToFile(Path inExportPath);
+
 
   Vector<MeshData> m_meshes;
 
   Vector<SimpleVertex> m_vertices;
   Vector<uint32> m_indices;
+
+  Path m_path;
+
+  int32 m_debugMesh = -1; //-1 means draw all meshes
 
  protected:
   SPtr<GraphicsBuffers> m_pVertexBuffer;

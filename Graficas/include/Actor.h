@@ -13,9 +13,21 @@
 #include "Transform.h"
 #include "GraphicsAPI.h"
 
+namespace ActorType {
+  enum E {
+    kActor = 0,
+    kProp,
+    kLight,
+    kCamera,
+
+  };
+}
+
 class Actor : public SceneNode {
  public:
-  Actor() = default;
+  Actor() {
+    setName("Actor");
+  }
   virtual ~Actor() = default;
 
   virtual void
@@ -29,20 +41,20 @@ class Actor : public SceneNode {
 
   virtual void 
   update(float inDT) override {
-    UNREFERENCED_PARAMETER(inDT);
+    MY_UNREFERENCED_PARAMETER(inDT);
     updateTransforms();
   }
 
   virtual void
   draw(bool inWithMaterial) {
-    UNREFERENCED_PARAMETER(inWithMaterial);
+    MY_UNREFERENCED_PARAMETER(inWithMaterial);
   }
 
   void
   setPosition(Vector3 inPosition) {
     m_transform.setLocalPosition(inPosition);
   }
-
+  
   void
   setScale(Vector3 inScale) {
     m_transform.setLocalScale(inScale);
@@ -65,7 +77,7 @@ class Actor : public SceneNode {
       rotatedPosition.x = m_transform.getLocalPosition().x * cos(parentRotation.y) - m_transform.getLocalPosition().z * sin(parentRotation.y);
       rotatedPosition.y = m_transform.getLocalPosition().y + parentActor->m_transform.getGlobalPosition().y;
       rotatedPosition.z = m_transform.getLocalPosition().x * sin(parentRotation.y) + m_transform.getLocalPosition().z * cos(parentRotation.y);
-
+      
       m_transform.setGlobalPosition(parentActor->m_transform.getGlobalPosition() + rotatedPosition);
       m_transform.setGlobalRotation(parentActor->m_transform.getGlobalRotation() + m_transform.getLocalRotation());
 
@@ -82,10 +94,21 @@ class Actor : public SceneNode {
     }
   }
 
+  //
+  String
+  getTypeAsString() const {
+    switch(m_type) {
+      case ActorType::kActor: return "Actor"; break;
+      case ActorType::kProp: return "Prop"; break;
+      case ActorType::kLight: return "Light"; break;
+      case ActorType::kCamera: return "Camera"; break;
+      default: return "Unknown"; break;
+    }
+  }
 
   Transform m_transform;
 
-  String m_name = "Actor";
+  ActorType::E m_type = ActorType::kActor;
 
   bool isActive = true;
 };

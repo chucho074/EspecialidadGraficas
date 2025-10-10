@@ -17,16 +17,28 @@
 #include "PrerequisiteGraficas.h"
 #include "GraphicsAPI.h"
 #include "Texture.h"
+#include "Transform.h"
+#include "SceneGraph.h"
+#include "Prop.h"
+#include "ShaderManager.h"
+#include "TextureManager.h"
+#include "giTime.h"
 
 #include "App.h"
 #include "Configs.h"
 
 #include <imgui.h>
 
+#include "WindowsFileDialogs.h"
+
+Vector2i g_windowSize = {1280 , 720};
 
 Vector2i g_windowSize = {1280 , 720};
 
 SDL_Window* g_pWindow = nullptr;
+GraphicsAPI* g_pGAPI = nullptr;
+ShaderManager* g_pShaderManager = nullptr;
+TextureManager* g_pTextureManager = nullptr;
 
 Vector2 g_viewportSize = Vector2::ZERO;
 Vector2 g_prevViewportSize = Vector2::ZERO;
@@ -126,6 +138,120 @@ void resizeTextures() {
 
 }
 
+Vector2 g_viewportSize = Vector2::ZERO;
+Vector2 g_prevViewportSize = Vector2::ZERO;
+
+bool g_vsync = true;
+
+ImGuiTreeNodeFlags m_rootFlags = ImGuiTreeNodeFlags_OpenOnArrow
+| ImGuiTreeNodeFlags_OpenOnDoubleClick
+| ImGuiTreeNodeFlags_SpanFullWidth;
+
+ImGuiTreeNodeFlags m_treeSelectableFlags = m_rootFlags | ImGuiTreeNodeFlags_Selected;
+
+
+ImGuiTreeNodeFlags m_leafFlags = m_treeSelectableFlags |= ImGuiTreeNodeFlags_Leaf
+| ImGuiTreeNodeFlags_Bullet
+| ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+int32 g_UI_meshIndex = 0;
+
+void resizeTextures() {
+  
+  SDL_GetWindowSize(g_pWindow, &g_windowSize.x, &g_windowSize.y);
+
+  g_prevViewportSize = g_viewportSize;
+
+  //Unbind shader resources
+  auto& gapi = g_graphicsAPI();
+  for(int32 i = 0; i < 5; ++i) {
+    gapi.clearSRV(i);
+  }
+
+  Vector2i newSize;
+  newSize = g_windowSize;
+  /*if(g_prevViewportSize == Vector2::ZERO) {
+    newSize = g_windowSize;
+    g_prevViewportSize = Vector2(g_windowSize.x, g_windowSize.y);
+  }
+  else {
+    newSize = {(int32)g_prevViewportSize.x,
+               (int32)g_prevViewportSize.y};
+  }*/
+
+  if(gbuffer.size() > 0) {
+    gbuffer.clear();
+    gapi.resizeBackBuffer(Vector2(g_windowSize.x, g_windowSize.y));
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////////////////  GBuffer
+  gbuffer.resize(3);
+  for(int i = 0; i < gbuffer.size(); ++i) {
+    gbuffer[i] = make_shared<Texture>();
+  }
+
+  //Pos
+  gbuffer[0]->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                  newSize.y,
+                                                  DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                  //DXGI_FORMAT_R16G16B16A16_FLOAT,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[0]->m_pSRV,
+                                                  &gbuffer[0]->m_pRTV);
+  //Normals
+  gbuffer[1]->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                  newSize.y,
+                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[1]->m_pSRV,
+                                                  &gbuffer[1]->m_pRTV);
+  //Color
+  gbuffer[2]->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                  newSize.y,
+                                                  DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                  D3D11_USAGE_DEFAULT,
+                                                  D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                  0,
+                                                  1,
+                                                  &gbuffer[2]->m_pSRV,
+                                                  &gbuffer[2]->m_pRTV);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////  Render Pass RT
+
+  g_renderPassRT = make_shared<Texture>();
+  g_renderPassRT->m_pTexture = g_pGAPI->createTexture(newSize.x,
+                                                      newSize.y,
+                                                      DXGI_FORMAT_B8G8R8A8_UNORM,
+                                                      D3D11_USAGE_DEFAULT,
+                                                      D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,
+                                                      0,
+                                                      1,
+                                                      &g_renderPassRT->m_pSRV,
+                                                      &g_renderPassRT->m_pRTV);
+
+
+  ////////////////////////////////////////////////////////////////////////////////////////////  Shadow Map Texture
+
+  g_dsShadowMap->m_pTexture = g_pGAPI->createTexture(g_windowSize.x,
+                                                     g_windowSize.y,
+                                                     DXGI_FORMAT_D32_FLOAT,
+                                                     D3D11_USAGE_DEFAULT,
+                                                     D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
+                                                     0,
+                                                     1,
+                                                     &g_dsShadowMap->m_pSRV,
+                                                     &g_dsShadowMap->m_pRTV,
+                                                     &g_dsShadowMap->m_pDSV,
+                                                     &g_dsShadowMap->m_pDSV_RO);
+
+}
+
 void recompileShaders() {
   g_shaderManager().compileAllShaders();
 }
@@ -158,6 +284,8 @@ SDL_AppInit(void** appstate, int argc, char* argv[]) {
     SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
+   
+  // Create systems & Initialize Values
 
   SDL_Log("Window created!");
 
@@ -187,6 +315,10 @@ SDL_AppEvent(void* appstate, SDL_Event* event) {
 
   if (event->type == SDL_EVENT_QUIT) {
     return SDL_APP_SUCCESS;  /* end the program, reporting success to the OS. */
+  }
+
+  if(event->type == SDL_EVENT_WINDOW_RESIZED) {
+    //resizeTextures();
   }
 
   if (event->type == SDL_EVENT_KEY_UP) {

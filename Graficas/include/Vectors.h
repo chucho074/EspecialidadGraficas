@@ -207,12 +207,14 @@ class Vector3 {
 class Vector2 {
  public:
   Vector2() = default;
-   Vector2(float inX, float inY = 0.f) :
+  Vector2(float inX, float inY = 0.f) :
      x(inX),
      y(inY) {   }
 
   float x;
   float y;
+
+  static const Vector2 ZERO;
 
   Vector2 
   operator+(const Vector2& inVec) const {

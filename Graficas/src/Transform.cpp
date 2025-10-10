@@ -92,8 +92,6 @@ Transform::getGlobalRotation() const {
   return m_globalRotation;
 }
 
-
-
 Matrix4 
 Transform::getMatrix() {
   Matrix4 outData;

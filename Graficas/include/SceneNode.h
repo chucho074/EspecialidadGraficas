@@ -56,6 +56,7 @@ SceneNode::createSceneObject(Args&&... args) {
   //auto node = SPtr<T>(new T(std::forward<Args>(args)...));
   auto node = make_shared<T>(std::forward<Args>(args)...); //Always perfer make_shared
   node->setSelfPtr(node);
+  node->setID(UID());
 
   return node;
 }

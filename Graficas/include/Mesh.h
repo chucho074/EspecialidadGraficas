@@ -10,6 +10,7 @@
  */
 #pragma once
 #include "PrerequisiteGraficas.h"
+#include "Material.h"
 
 struct MeshData
 {
@@ -21,4 +22,9 @@ struct MeshData
   int32 baseIndex;
   int32 numIndices;
 
+  String meshName;
+
+  PBRMaterial meshMaterial;
+
+  bool isVisible = true;
 };

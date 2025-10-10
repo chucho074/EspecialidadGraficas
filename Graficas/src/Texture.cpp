@@ -3,7 +3,6 @@
  * @author  Jesus Alberto Del Moral Cupil
  * @e       edgv24c.jmoral@uartesdigitales.edu.mx
  * @date    18/01/25
- * @brief   .
  */
 
 /**
@@ -19,6 +18,19 @@ Texture::~Texture() {
   SAFE_RELEASE(m_pDSV);
 }
 
+void 
+Texture::createFromFile(Path inFileName/*, 
+                        bool inGenerateMips = false, 
+                        bool inCreateRTV = false, 
+                        bool inCreateDSV = false, 
+                        bool inCreateDSV_RO = false*/) {
+  Image tmpImage;
+  tmpImage.decode(inFileName);
+
+  createFromImage(tmpImage);
+
+}
+
 void
 Texture::createFromImage(Image& inImg) {
 
@@ -28,7 +40,8 @@ Texture::createFromImage(Image& inImg) {
 
   m_pTexture = gapi.createTexture(inImg.getWidth(),
                                   inImg.getHeight(), 
-                                  DXGI_FORMAT_B8G8R8A8_UNORM, 
+                                  (inImg.m_brga) ? DXGI_FORMAT_B8G8R8A8_UNORM 
+                                                   : DXGI_FORMAT_R8G8B8A8_UNORM,
                                   D3D11_USAGE_DEFAULT, 
                                   D3D11_BIND_SHADER_RESOURCE,
                                   0, 
@@ -39,22 +52,18 @@ Texture::createFromImage(Image& inImg) {
     gapi.m_pDeviceContext->UpdateSubresource1(m_pTexture,
                                               0, 
                                               nullptr, 
-                                              reinterpret_cast<char*>(inImg.getPixels()), 
+                                              inImg.getPixels(),
                                               inImg.getPitch(),
                                               0, 
                                               0);
 
-
-
-    
   }
-
-  
-
 }
 
 FloatColor 
-Texture::sampleTexture(Vector2 inUVs, TEXTURE_ADDRESS::E inTexAddress, SAMPLE_FILTER::E inFilter) {
+Texture::sampleTexture(Vector2 inUVs, 
+                       TEXTURE_ADDRESS::E inTexAddress, 
+                       SAMPLE_FILTER::E inFilter) {
   
   switch (inFilter) {
   case SAMPLE_FILTER::kPOINT: {
@@ -205,7 +214,6 @@ Texture::draw(Image& inData,
       //Esta es la lina donde se deberia de cambiar para el modo de blend.
       //FloatColor blendedColor = srcColor * srcColor.a + dstColor * (1.f - srcColor.a);
       FloatColor blendedColor;
-
 
       switch (inBlend)
       {

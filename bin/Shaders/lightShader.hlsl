@@ -12,6 +12,14 @@ SamplerState samPoint : register(s0);
 SamplerState samLinear : register(s1);
 SamplerState samAniso : register(s2);
 
+SamplerState samPointClamp : register(s3);
+SamplerState samLinearClamp : register(s4);
+SamplerState samAnisoClamp : register(s5);
+
+SamplerState samPointMirror : register(s6);
+SamplerState samLinearMirror : register(s7);
+SamplerState samAnisoMirror : register(s8);
+
 struct PixelInput {
   float4 position : SV_POSITION;
   float2 texCoord : TEXCOORD0;
@@ -21,9 +29,11 @@ cbuffer MatrixCollection : register(b0) { //Registro de buffer 0
   float4x4 World;
   float4x4 View;
   float4x4 Projection;
+  float4x4 ViewProjection;
   
   float4x4 lightView;
   float4x4 lightProjection;
+  float4x4 lightViewProjection;
   
   float3 lightPosition;
   float  lightIntensity;
@@ -55,9 +65,8 @@ PixelInput vertex_main(uint vertexId : SV_VertexID) {
 //Normal Distribution functions
 float ndf_BlinnPhong(float NdotH, float alpha) {
   float a2 = alpha * alpha;
-  float n = (2.0f / a2) - 1.0f;
-  return (n + 1.0f) / M_2PI * pow(NdotH, n);
-
+  float n = (2.0f / a2) - 2.0f;
+  return (n + 2.0f) / M_2PI * pow(NdotH, n);
 }
 
 float ndf_Beckmann(float NdotH, float alpha) {
@@ -67,7 +76,7 @@ float ndf_Beckmann(float NdotH, float alpha) {
   float tanThetaHSqr = (1.0f - cosThetaHSqr) / cosThetaHSqr;
   float e = exp(-tanThetaHSqr / a2);
   
-  return e / M_PI * a2 * cosThetaHSqr * NdotH;
+  return e / (M_PI * a2 * cosThetaHSqr * NdotH);
 }
 
 float ndf_OrenNayar(float NdotL, float NdotV, float alpha) {
@@ -89,14 +98,20 @@ float ndf_GGX(float NdotH, float alpha) {
   float e = exp(-tanThetaHSqr / a2);
   
   return e / M_PI * a2 * cosThetaHSqr * NdotH;
+  
+  
+  
+  //float a2 = alpha * alpha;
+  //float denom = (NdotH * NdotH) * (a2 - 1.f) + 1.f;
+  //return a2 / (M_PI * denom * denom);
 }
 
 float3 FresnelSchlick(float3 F0, float cosTheta, float F90) {
-  return F0 + (F90 - F0) * pow(1.0f - cosTheta, 5.0f);
+  return F0 + (F90 - F0) * pow(clamp(1.0f - cosTheta, 0.f, 1.f), 5.0f);
 }
 
 float3 FresnelSchlick(float3 F0, float cosTheta) {
-  return F0 + (1.f - F0) * pow(1.0f - cosTheta, 5.0f);
+  return F0 + (1.f - F0) * pow(clamp(1.0f - cosTheta, 0.f, 1.f), 5.0f);
 }
 
 //Geometric Distribution function Smith Schlick
@@ -110,15 +125,16 @@ float GeometrySmith(float NdotL, float NdotV, float alpha) {
          * GeometrySchlickGGX(NdotV, alpha);
 }
 
-float3 LambertianDiffuse(float3 normal, float3 lightDir, float3 diffuseColor) {
+float3 lambert(float3 kS, float3 albedo, float metallic) {
+  float3 kD = saturate(lerp(1.f - kS, 0.f, metallic));
+  return kD * albedo;
+}
+
+float3 LambertianDiffuse(float3 color, float3 normal, float3 lightDir) {
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
-  //float NdotL = dot(normal, lightDir);
-
-  
-  return diffuseColor * NdotL;
-  return NdotL;
-  return normal;
+  //return NdotL / M_PI;
+  return color * NdotL;
 }
 
 float3
@@ -128,14 +144,14 @@ BRDF_Blinn_Phong(float3 normal,
                  float3 reflectDir,
                  float3 diffuseColor,
                  float3 specularColor) {
-  float3 diffuse = LambertianDiffuse(normal, lightDir, diffuseColor);
+  float3 diffuse = LambertianDiffuse(diffuseColor, normal, lightDir);
   
   // Blinn-Phong Specular
   float NdotH = max(dot(normal, reflectDir), 0.0f);
   float NdotV = max(dot(normal, viewDir), 0.0f);
   float HdotV = max(dot(reflectDir, viewDir), 0.0f);
   
-  float specular = pow(HdotV, 32.0f); // El 32 es el specular power
+  float specular = pow(HdotV, 32.0f); // El 32 es el specular power, cambiar a variable
   
   return diffuse;
   return diffuse + specular * specularColor;
@@ -150,28 +166,26 @@ BRDF_Cook_Torrance(float3 normal,
                    float3 specularColor,
                    float roughness) {
   
-  float3 diffuse = LambertianDiffuse(normal, lightDir, diffuseColor);
+  float3 diffuse = LambertianDiffuse(diffuseColor, normal, lightDir);
   
   //Lambertian Diffuse
   float NdotL = max(dot(normal, lightDir), 0.0f);
   
   //Cook-Torrance Specular
-  //float NdotV = max(dot(normal, viewDir), 0.0f);
-  //float NdotH = max(dot(normal, reflectDir), 0.0f);
-  
-  float NdotV = dot(normal, viewDir);
-  float NdotH = dot(normal, reflectDir);
+  float NdotV = max(dot(normal, viewDir), 0.0f);
+  float NdotH = max(dot(normal, reflectDir), 0.0f);  
+  float VdotH = max(dot(viewDir, reflectDir), 0.f);
   
   //specular = D * F * G / (4 * NdotL * NdotV)
   float D = ndf_GGX(NdotH, roughness);
-  float3 F = FresnelSchlick(specularColor, NdotV);
+  float3 F = FresnelSchlick(specularColor, VdotH);
   float G = GeometrySmith(NdotL, NdotV, roughness);
   
-  //float3 specular = (D * F * G) / (4.0f * NdotL * NdotV);
-  float3 specular = (D * F * G) / min(0.00001, (NdotL * NdotV * 4.0f));
-  //float3 specular = min(0.00001, (D * F * G) / (NdotL * NdotV * 4.0f));
+  float denom = max(4.0f * NdotL * NdotV, 0.001f);
+  float3 specular = (D * F * G) / denom;
 
   return diffuse + specular;
+  //return specular;
   
 }
 
@@ -180,7 +194,7 @@ float4 GetPosition(float2 uv) {
 }
 
 float4 GetNormal(float2 uv) {
-  float4 normal = gbuffer_Normal.Sample(samPoint, uv);
+  float4 normal = gbuffer_Normal.Sample(samAniso, uv);
   normal.xyz = normal.xyz * 2.f - 1.f;
   return normal;
 }
@@ -193,115 +207,77 @@ float2 GetRandom(float2 uv) {
   return normalize(float3(noiseX, noiseY, noiseZ));
 }
 
+//float3 dirLight(, float3 lightColor) {
+//  return lightColor * lightIntensity * max(dot(normal, lightDir));
+//}
+
 float4
 pixel_main(PixelInput input) : SV_Target {
   //Position
-  float4 gBuffer0 = GetPosition(input.texCoord);
-  float3 position = gBuffer0.xyz;
-  float  metallic = gBuffer0.a;
+  float4 gBuffer0  = GetPosition(input.texCoord);
+  float3 position  = gBuffer0.xyz;
+  float  metallic  = gBuffer0.a;
   //Normals
-  float4 gBuffer1 = GetNormal(input.texCoord);
-  float3 normal = gBuffer1.xyz;
+  float4 gBuffer1  = GetNormal(input.texCoord);
+  float3 normal    = gBuffer1.xyz;
   float  roughness = gBuffer1.a;
   //Albedo
-  float4 gBuffer2 = gbuffer_Color.Sample(samPoint, input.texCoord);
-  float3 color = gBuffer2.rgb;
-  float  stencil = gBuffer2.a;
+  float4 gBuffer2  = gbuffer_Color.Sample(samAniso, input.texCoord);
+  float3 color     = pow(gBuffer2.rgb, 2.4f);
+  float  stencil   = gBuffer2.a;
+  
   clip(stencil < 1.f ? -1 : 1); // Stencil
-  //AO
-  //float4 ao = gbuffer_AO.Sample(samPoint, input.texCoord);
-  //normal = normal * 0.5f + 0.5f;
   
-  //Light position
-  //float3 lightPos = float3(65, 35, 5000);
+  //float3 lightDir = normalize(-lightPosition);
+  float3 lightDir = normalize(lightPosition - position);  //Debe ir de pixel a la luz
+    
+  float3 viewDir = normalize(ViewPos - position);
   
-  //Shadows
-  float4 lightVP = mul(float4(position, 1.f), lightView);
-  lightVP = mul(lightVP, lightProjection);
-  lightVP /= lightVP.w;
-  lightVP.xy = lightVP.xy * 0.5f + 0.5f; //Convert to NDC
-  
-  lightVP.y = 1.f - lightVP.y;
-  /////////////////////////////////////////////////////////////////////////////
-  
-  //Rotate light position by time
-  //float cosTime = cos(time);
-  //float sinTime = sin(time);
-
-  //float3x3 rotationMatrix = float3x3(cosTime, 0.f, sinTime,
-  //                                   0.f, 1.f, 0.f,
-  //                                   -sinTime, 0.f, cosTime);
-
-  //float3 rotatedLightPos = mul(lightPos, rotationMatrix);
-  float3 rotatedLightPos = lightPosition;
-  //float3 rotatedLightPos = float3(-600, 5, 0);
-  
-  //Directional Light
-  float3 lightDir = rotatedLightPos - position;
-  
-  //Testing
-  //Sacar la magnitud
-  float distance = length(lightDir); 
-  lightDir /= distance;
-  
-  //float attenuation = saturate(1.0 - distance / lightRadius);
-  //float attenuation = 1.0 / (1.0 + 0.1 * distance + 0.01 * distance * distance);
-  
-  float d = distance / lightRadius; // normalizar por radio
-  float attenuation = 1.0f;
-  //float attenuation = 1.0 / (1.0 + 0.1 * d + 0.01 * d * d);
-  //attenuation *= saturate(1.0 - d); // corta fuera del radio
+  float3 halfVec = normalize(lightDir + viewDir);
+  //float3 reflectDir = reflect(-lightDir, normal);
   
   float3 specularColor = lerp(0.04f, color, metallic);
   
-  float3 viewDir = normalize(ViewPos - position);
-  float3 halfVec = normalize(lightDir + viewDir);
-  float3 reflectDir = reflect(-lightDir, normal);
   
-  float3 colorFinal = BRDF_Cook_Torrance(normal,
-                                         lightDir,
-                                         viewDir,
-                                         reflectDir,
-                                         color,
-                                         specularColor,
-                                         roughness);
+  float3 directLighting = BRDF_Cook_Torrance(normal,
+                                             lightDir,
+                                             viewDir,
+                                             //reflectDir,
+                                             halfVec,
+                                             color,
+                                             specularColor,
+                                             roughness);
+  //return float4(specular, 1.f);
+  if (false) {
   
   /*
-  float3 colorFinal = BRDF_Blinn_Phong(normal,
-                                       lightDir,
-                                       viewDir,
-                                       halfVec,
-                                       //normalize(reflect(-lightDir, normal.xyz)),
-                                       color,
-                                       specularColor);
-  */
+  float3 specular = BRDF_Blinn_Phong(normal,
+                                     lightDir,
+                                     viewDir,
+                                     reflectDir,
+                                     //halfVec,
+                                     color,
+                                     specularColor);*/
+  }
   
-  //float4 shadowSample = shadowMap.Sample(samPoint, lightVP.xy);
-  //float shadowDepth = shadowSample.x;
-  //float lightDepth = lightVP.z - 0.005; //BIAS HERE
-  //float shadowFactor = 0.f;
+ 
   
-  //if (lightDepth > shadowDepth) {
-  //  shadowFactor = 0.f;
-  //}
-  //else {
-  //  shadowFactor = 1.f;
-  //}
+  //float3 Light = (specular) * lightColor * lightIntensity * max(dot(normal, lightDir), 0.f);
+  float3 Light = directLighting * lightColor * lightIntensity;
   
-  //if (lightVP.x < 0.01f || lightVP.x > 0.99f ||
-  //    lightVP.y < 0.01f || lightVP.y > 0.99f) {
-  //  shadowFactor = 1.f;
-  //}
+  float3 ambient = 0.03f * color; //Deberia ser el diffuse o albedo
   
-  //colorFinal *= lightColor * lightIntensity * attenuation;
+  float3 colorFinal = pow(Light + ambient, 1.f / GAMMA);
+  //float3 colorFinal = pow(color + ambient + specular, 1.f/2.4f);
+  //float3 colorFinal = pow(color + ambient, 1.f/2.4f);
   
-  //return float4(colorFinal, 1.f);
+  //return float4(position, 1.f);
+  
+  //return float4(normal, 1.f);
+  
+  return float4(colorFinal, 1.f);
   //return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
-  return float4(pow(colorFinal, 1.f / GAMMA), 1.f);
-  //return float4(pow(colorFinal * ao.xyz, 1.f / GAMMA), 1.f);
 }
-
-
 
 float
 DoAmbienOcclussion(in float2 tcoord, in float2 uv, in float3 p, in float3 ncoord) {
